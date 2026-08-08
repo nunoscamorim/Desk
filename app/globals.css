@@ -63,8 +63,9 @@ button { font: inherit; }
 .calendar-item strong { font-size: 13px; line-height: 1.1; }
 .calendar-item div span { color: var(--muted); font-size: 11px; }
 .music-card { grid-column: 3; grid-row: 1; display: block; padding: 0; background: #272420; }
-.music-card .card-label { align-self: flex-start; height: 22px; display: inline-flex; align-items: center; gap: 5px; margin: 0; border-radius: 999px; padding: 0 8px 0 5px; background: var(--lime); color: #11120e; font-size: 8px; line-height: 1; }
-.music-card .card-label svg { width: 13px; height: 13px; flex: 0 0 auto; fill: currentColor; }
+.music-card .card-label { align-self: flex-start; height: 26px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0; border-radius: 999px; padding: 0 11px 0 6px; background: var(--lime); color: #11120e; font-size: 9px; line-height: 1; }
+.music-card .card-label svg { width: 15px; height: 15px; flex: 0 0 auto; fill: currentColor; }
+.music-card .card-label > span { display: inline-flex; align-items: center; height: 15px; }
 .album-art { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 25%, #ef6e79, transparent 28%), linear-gradient(135deg, #5c2449, #261844 55%, #9a5e36); }
 .album-art.has-artwork span { display: none; }
 .album-art span { font-size: 28px; }
