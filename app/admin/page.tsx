@@ -47,7 +47,8 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
   useEffect(() => {
     if (!interaction) return;
     const grid = 16;
-    const edge = 16;
+    const canvasWidth = 960;
+    const canvasHeight = 414;
     const snap = (value: number) => Math.round(value / grid) * grid;
     const move = (event: PointerEvent) => {
       const element = document.querySelector(".admin-preview-canvas") as HTMLElement | null;
@@ -62,8 +63,8 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
         const minWidth = 160;
         const minHeight = 112;
         const candidate = interaction.resize
-          ? { ...widget, width: Math.max(minWidth, Math.min(948 - edge - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(414 - edge - widget.y, snap(interaction.widget.height + dy))) }
-          : { ...widget, x: Math.max(edge, Math.min(948 - edge - widget.width, snap(interaction.widget.x + dx))), y: Math.max(edge, Math.min(414 - edge - widget.height, snap(interaction.widget.y + dy))) };
+          ? { ...widget, width: Math.max(minWidth, Math.min(canvasWidth - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(canvasHeight - widget.y, snap(interaction.widget.height + dy))) }
+          : { ...widget, x: Math.max(0, Math.min(canvasWidth - widget.width, snap(interaction.widget.x + dx))), y: Math.max(0, Math.min(canvasHeight - widget.height, snap(interaction.widget.y + dy))) };
         return candidate;
       });
       onChange(next);
@@ -74,7 +75,7 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
   }, [config, interaction, onChange]);
   const begin = (event: ReactPointerEvent<HTMLDivElement>, widget: WidgetConfig, resize = false) => { event.preventDefault(); event.stopPropagation(); setSelected(widget.id); setInteraction({ id: widget.id, resize, x: event.clientX, y: event.clientY, widget }); };
   useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
-  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section></main></div><span className="preview-caption">1024 × 600 · 16px snap grid and safe-area margin · drag to move · corner handle to resize</span></div>;
+  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section></main></div><span className="preview-caption">1024 × 600 · 32px screen safe area · 16px snap grid · drag to move · corner handle to resize</span></div>;
 }
 
 export default function AdminPage() {
