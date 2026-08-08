@@ -45,6 +45,19 @@ npm run dev
 
 Open `/admin` to configure the 1024×600 layout and `/preview` for the clean display view.
 
+## Coolify deployment
+
+Create a Docker application in Coolify from the GitHub repository and use the included `Dockerfile`. Set the container port to `3000`, enable HTTPS, and mount a persistent volume at `/app/data` so dashboard configuration and encrypted credentials survive redeploys.
+
+Required environment variables:
+
+```env
+ADMIN_PASSWORD=
+AUTH_SECRET=
+```
+
+Add provider variables from `.env.example` only when those integrations are configured. Set the health check path to `/api/config/services`.
+
 ## Real service configuration
 
 The dashboard uses mocks when credentials are absent. Add these server-only variables to enable the available adapters:
