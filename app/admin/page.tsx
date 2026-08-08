@@ -97,8 +97,9 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
         if (widget.id !== interaction.id) return widget;
         const minWidth = 160;
         const minHeight = 112;
+        const squareSize = Math.max(160, Math.min(BENTO_WIDTH - widget.x, BENTO_HEIGHT - widget.y, snap(Math.max(interaction.widget.width + dx, interaction.widget.height + dy))));
         const candidate = interaction.resize
-          ? { ...widget, width: Math.max(minWidth, Math.min(BENTO_WIDTH - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(BENTO_HEIGHT - widget.y, snap(interaction.widget.height + dy))) }
+          ? widget.type === "music" ? { ...widget, width: squareSize, height: squareSize } : { ...widget, width: Math.max(minWidth, Math.min(BENTO_WIDTH - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(BENTO_HEIGHT - widget.y, snap(interaction.widget.height + dy))) }
           : { ...widget, x: Math.max(0, Math.min(BENTO_WIDTH - widget.width, snap(interaction.widget.x + dx))), y: Math.max(0, Math.min(BENTO_HEIGHT - widget.height, snap(interaction.widget.y + dy))) };
         return candidate;
       });

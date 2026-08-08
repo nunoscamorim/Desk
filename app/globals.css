@@ -62,20 +62,20 @@ button { font: inherit; }
 .calendar-item div { display: flex; flex-direction: column; gap: 1px; }
 .calendar-item strong { font-size: 13px; line-height: 1.1; }
 .calendar-item div span { color: var(--muted); font-size: 11px; }
-.music-card { grid-column: 3; grid-row: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 14px; }
+.music-card { grid-column: 3; grid-row: 1; display: block; padding: 0; background: #272420; }
 .music-card .card-label { align-self: flex-start; margin-bottom: 0; border-radius: 999px; padding: 5px 8px; background: var(--lime); color: #11120e; font-size: 8px; line-height: 1; }
-.album-art { height: 100%; width: auto; min-width: 0; aspect-ratio: 1; border-radius: 12px; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 25%, #ef6e79, transparent 28%), linear-gradient(135deg, #5c2449, #261844 55%, #9a5e36); box-shadow: 0 8px 20px rgba(0,0,0,.22); }
+.album-art { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 25%, #ef6e79, transparent 28%), linear-gradient(135deg, #5c2449, #261844 55%, #9a5e36); }
 .album-art.has-artwork span { display: none; }
 .album-art span { font-size: 28px; }
-.spotify-info { min-width: 0; display: flex; flex-direction: column; padding: 2px 0; }
-.track-copy { min-width: 0; margin-top: auto; padding-bottom: 12px; }
+.spotify-info { position: relative; z-index: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; padding: 14px; background: linear-gradient(180deg, rgba(8,8,7,.2) 0%, rgba(8,8,7,.05) 32%, rgba(8,8,7,.88) 100%); }
+.track-copy { min-width: 0; margin-top: auto; padding-bottom: 10px; }
 .track-copy h2 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.track-copy p { margin: 5px 0 0; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.track-copy small { display: block; margin-top: 4px; overflow: hidden; color: #74716a; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.track-copy p { margin: 5px 0 0; color: #d3d0c8; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-copy small { display: block; margin-top: 4px; overflow: hidden; color: #aaa69d; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .spotify-playback { margin-top: auto; }
 .track-progress, .meter { overflow: hidden; height: 4px; border-radius: 4px; background: #353431; }
 .track-progress span, .meter span { display: block; height: 100%; border-radius: inherit; background: var(--lime); }
-.track-times { display: flex; justify-content: space-between; margin-top: 5px; color: var(--muted); font-size: 9px; }
+.track-times { display: flex; justify-content: space-between; margin-top: 5px; color: #c1bdb4; font-size: 9px; }
 .tasks-card { grid-column: 1; grid-row: 2; padding: 18px 20px; }
 .task-list { margin-top: 12px; }
 .task-item { display: grid; grid-template-columns: 20px 1fr auto; gap: 9px; align-items: center; min-height: 45px; border-top: 1px solid var(--line); }

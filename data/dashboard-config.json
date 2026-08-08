@@ -29,9 +29,9 @@
       "id": "spotify",
       "type": "music",
       "enabled": true,
-      "x": 672,
+      "x": 768,
       "y": 0,
-      "width": 288,
+      "width": 192,
       "height": 192,
       "settings": {
         "label": "Now playing"

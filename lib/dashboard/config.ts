@@ -16,7 +16,7 @@ export type WidgetConfig = {
 export const defaultWidgetConfig: WidgetConfig[] = [
   { id: "next-meeting", type: "meeting", enabled: true, x: 0, y: 0, width: 288, height: 192, settings: { label: "Next meeting" } },
   { id: "today-calendar", type: "calendar", enabled: true, x: 304, y: 0, width: 352, height: 400, settings: { label: "Today", showLocations: true } },
-  { id: "spotify", type: "music", enabled: true, x: 672, y: 0, width: 288, height: 192, settings: { label: "Now playing" } },
+  { id: "spotify", type: "music", enabled: true, x: 768, y: 0, width: 192, height: 192, settings: { label: "Now playing" } },
   { id: "tasks", type: "tasks", enabled: true, x: 0, y: 208, width: 288, height: 192, settings: { label: "Tasks" } },
   { id: "ai-usage", type: "usage", enabled: true, x: 672, y: 208, width: 288, height: 112, settings: { label: "AI usage" } },
 ];
