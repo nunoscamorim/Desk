@@ -56,7 +56,7 @@ button { font: inherit; }
 .card-title-row > span { color: var(--muted); font-size: 11px; }
 .calendar-list, .task-list { margin: 12px 0 0; padding: 0; list-style: none; }
 .calendar-list { display: grid; gap: 8px; }
-.calendar-item { display: grid; grid-template-columns: 42px 3px 1fr; gap: 8px; min-height: 34px; padding: 4px; align-items: center; border-radius: 8px; background: color-mix(in srgb, var(--event-color) 25%, transparent); }
+.calendar-item { display: grid; grid-template-columns: 42px 3px 1fr; gap: 8px; min-height: 34px; padding: 6px; align-items: center; border-radius: 8px; background: color-mix(in srgb, var(--event-color) 25%, transparent); }
 .calendar-item time { color: var(--ink); font-size: 13px; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
 .event-line { width: 3px; height: 36px; border-radius: 3px; background: var(--event-color); }
 .calendar-item div { display: flex; flex-direction: column; gap: 1px; }
