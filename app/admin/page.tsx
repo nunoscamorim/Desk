@@ -32,7 +32,15 @@ function widgetsOverlap(a: WidgetConfig, b: WidgetConfig) {
 }
 
 function reflowBento(config: WidgetConfig[], anchorId: string): WidgetConfig[] {
-  const normalized = config.map((widget) => widget.enabled ? { ...widget, width: Math.min(BENTO_WIDTH, Math.max(160, Math.floor(widget.width / BENTO_GRID) * BENTO_GRID)), height: Math.min(400, Math.max(112, Math.floor(widget.height / BENTO_GRID) * BENTO_GRID)), x: Math.max(0, Math.min(BENTO_WIDTH - widget.width, Math.round(widget.x / BENTO_GRID) * BENTO_GRID)), y: Math.max(0, Math.min(BENTO_HEIGHT - widget.height, Math.round(widget.y / BENTO_GRID) * BENTO_GRID)) } : widget);
+  const normalized = config.map((widget) => {
+    if (!widget.enabled) return widget;
+    const width = Math.min(BENTO_WIDTH, Math.max(160, Math.floor(widget.width / BENTO_GRID) * BENTO_GRID));
+    const height = Math.min(400, Math.max(112, Math.floor(widget.height / BENTO_GRID) * BENTO_GRID));
+    const squareSize = Math.min(width, height);
+    const normalizedWidth = widget.type === "music" ? squareSize : width;
+    const normalizedHeight = widget.type === "music" ? squareSize : height;
+    return { ...widget, width: normalizedWidth, height: normalizedHeight, x: Math.max(0, Math.min(BENTO_WIDTH - normalizedWidth, Math.round(widget.x / BENTO_GRID) * BENTO_GRID)), y: Math.max(0, Math.min(BENTO_HEIGHT - normalizedHeight, Math.round(widget.y / BENTO_GRID) * BENTO_GRID)) };
+  });
   const enabled = normalized.filter((widget) => widget.enabled);
   const anchor = enabled.find((widget) => widget.id === anchorId);
   if (!anchor) return normalized;
@@ -51,7 +59,8 @@ function reflowBento(config: WidgetConfig[], anchorId: string): WidgetConfig[] {
     let position = findPosition(adapted);
     if (!position && widget.id !== anchorId) {
       const variants: WidgetConfig[] = [];
-      for (let width = widget.width; width >= 160; width -= BENTO_GRID) for (let height = widget.height; height >= 112; height -= BENTO_GRID) variants.push({ ...widget, width, height });
+      if (widget.type === "music") for (let size = Math.min(widget.width, widget.height); size >= 160; size -= BENTO_GRID) variants.push({ ...widget, width: size, height: size });
+      else for (let width = widget.width; width >= 160; width -= BENTO_GRID) for (let height = widget.height; height >= 112; height -= BENTO_GRID) variants.push({ ...widget, width, height });
       variants.sort((a, b) => (widget.width - a.width) + (widget.height - a.height) - ((widget.width - b.width) + (widget.height - b.height)));
       for (const variant of variants) { const nextPosition = findPosition(variant); if (nextPosition) { adapted = variant; position = nextPosition; break; } }
     }
