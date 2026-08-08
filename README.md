@@ -34,3 +34,37 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Desk Dashboard
+
+## Run locally
+
+```bash
+npm install
+npm run dev
+```
+
+Open `/admin` to configure the 1024×600 layout and `/preview` for the clean display view.
+
+## Real service configuration
+
+The dashboard uses mocks when credentials are absent. Add these server-only variables to enable the available adapters:
+
+```env
+OPENWEATHER_API_KEY=
+WEATHER_LOCATION=Lisbon
+GOOGLE_CALENDAR_ACCESS_TOKEN=
+GOOGLE_CALENDAR_ID=primary
+SPOTIFY_ACCESS_TOKEN=
+COOLIFY_URL=
+COOLIFY_TOKEN=
+```
+
+OAuth/token acquisition is intentionally not included yet. Never prefix these values with `NEXT_PUBLIC_`.
+
+## Production path
+
+1. Put token acquisition and refresh in a server-side auth layer.
+2. Move widget configuration from localStorage to a small database or device configuration API.
+3. Add request timeouts, provider-specific retry/backoff, and integration health details before enabling live services broadly.
+4. Deploy the Next.js app to a reachable host and point the Waveshare display client at `/preview`.
+5. Validate touch targets and the exact 1024×600 viewport on the physical display.

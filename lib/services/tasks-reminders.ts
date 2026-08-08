@@ -1,0 +1,3 @@
+import type { Task } from "@/lib/dashboard/types";
+export interface TasksRemindersService { getTasks(): Promise<Task[]>; }
+export class MockTasksRemindersService implements TasksRemindersService { async getTasks(): Promise<Task[]> { return [{ id: "task-dashboard-api", title: "Build dashboard API", status: "in_progress", priority: "high", dueAt: new Date(Date.now() + 14400000).toISOString(), project: "Desk Dashboard" }, { id: "task-review-prototype", title: "Review dashboard prototype", status: "todo", priority: "medium", dueAt: new Date(Date.now() + 86400000).toISOString(), project: "Desk Dashboard" }, { id: "task-submit-expenses", title: "Submit monthly expenses", status: "todo", priority: "low", dueAt: null, project: "Admin" }]; } }
