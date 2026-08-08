@@ -13,8 +13,10 @@ export class GoogleCalendarApiService implements GoogleCalendarService {
 
   async getTodayCalendar(): Promise<TodayCalendar> {
     const start = new Date(); start.setHours(0, 0, 0, 0);
-    const end = new Date(start); end.setDate(end.getDate() + 1);
-    const params = new URLSearchParams({ calendarId: this.calendarId, timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "20" });
+    // Load the upcoming week so the dashboard can show the next meeting even
+    // when there is nothing scheduled today.
+    const end = new Date(start); end.setDate(end.getDate() + 7);
+    const params = new URLSearchParams({ calendarId: this.calendarId, timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "50" });
     const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`, { headers: { Authorization: `Bearer ${this.accessToken}` }, cache: "no-store" });
     if (!response.ok) throw new Error(`Google Calendar request failed (${response.status})`);
     const payload = await response.json() as GoogleCalendarResponse;
