@@ -1,13 +1,24 @@
-import { CoolifyApiService, GoogleCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenWeatherApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
+import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenWeatherApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
 import type { DashboardData } from "./types";
 
 export type DashboardServices = { weather: WeatherService; googleCalendar: GoogleCalendarService; appleCalendar: AppleCalendarService; spotify: SpotifyService; tasks: TasksRemindersService; codexUsage: CodexUsageService; claudeCodeUsage: ClaudeCodeUsageService; coolify: CoolifyService };
 
-export const mockDashboardServices = (): DashboardServices => ({ weather: process.env.OPENWEATHER_API_KEY ? new OpenWeatherApiService(process.env.OPENWEATHER_API_KEY, process.env.WEATHER_LOCATION ?? "Lisbon") : new MockWeatherService(), googleCalendar: process.env.GOOGLE_CALENDAR_ACCESS_TOKEN ? new GoogleCalendarApiService(process.env.GOOGLE_CALENDAR_ACCESS_TOKEN, process.env.GOOGLE_CALENDAR_ID ?? "primary") : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), spotify: process.env.SPOTIFY_ACCESS_TOKEN ? new SpotifyApiService(process.env.SPOTIFY_ACCESS_TOKEN) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), coolify: process.env.COOLIFY_URL ? new CoolifyApiService(process.env.COOLIFY_URL, process.env.COOLIFY_TOKEN) : new MockCoolifyService() });
+async function withFallback<T>(operation: Promise<T>, fallback: T, timeoutMs = 6000): Promise<T> {
+  try { return await Promise.race([operation, new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Service timeout")), timeoutMs))]); } catch { return fallback; }
+}
+
+export const mockDashboardServices = (): DashboardServices => { const configuration = getServiceConfiguration(); return { weather: configuration.weather.apiKey ? new OpenWeatherApiService(configuration.weather.apiKey, configuration.weather.location) : new MockWeatherService(), googleCalendar: configuration.googleCalendar.accessToken ? new GoogleCalendarApiService(configuration.googleCalendar.accessToken, configuration.googleCalendar.calendarId) : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), spotify: configuration.spotify.accessToken ? new SpotifyApiService(configuration.spotify.accessToken) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService() }; };
 
 export async function getDashboard(services: DashboardServices = mockDashboardServices()): Promise<DashboardData> {
   const [weather, googleCalendar, appleCalendar, spotifyNowPlaying, tasks, codexUsage, claudeCodeUsage, coolify] = await Promise.all([
-    services.weather.getCurrentWeather(), services.googleCalendar.getTodayCalendar(), services.appleCalendar.getTodayCalendar(), services.spotify.getNowPlaying(), services.tasks.getTasks(), services.codexUsage.getUsage(), services.claudeCodeUsage.getUsage(), services.coolify.getStatus(),
+    withFallback(services.weather.getCurrentWeather(), await new MockWeatherService().getCurrentWeather()),
+    withFallback(services.googleCalendar.getTodayCalendar(), await new MockGoogleCalendarService().getTodayCalendar()),
+    withFallback(services.appleCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }),
+    withFallback(services.spotify.getNowPlaying(), null),
+    withFallback(services.tasks.getTasks(), []),
+    withFallback(services.codexUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
+    withFallback(services.claudeCodeUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
+    withFallback(services.coolify.getStatus(), { status: "unknown", version: null, checkedAt: new Date().toISOString() }),
   ]);
   const events = [...googleCalendar.events, ...appleCalendar.events].sort((a, b) => a.startAt.localeCompare(b.startAt));
   const todaysCalendar = { date: googleCalendar.date, events };

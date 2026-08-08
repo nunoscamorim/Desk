@@ -1,0 +1,5 @@
+import { isAdminAuthenticated } from "@/lib/auth";
+import { readServiceCredentials, writeServiceCredentials, type ServiceCredentials } from "@/lib/services/credential-store";
+
+export async function GET() { if (!(await isAdminAuthenticated())) return Response.json({ error: "Authentication required" }, { status: 401 }); const credentials = await readServiceCredentials(); return Response.json({ google: Boolean(credentials.googleClientId && credentials.googleClientSecret), spotify: Boolean(credentials.spotifyClientId && credentials.spotifyClientSecret) }); }
+export async function PUT(request: Request) { if (!(await isAdminAuthenticated())) return Response.json({ error: "Authentication required" }, { status: 401 }); const body = await request.json() as ServiceCredentials; await writeServiceCredentials({ googleClientId: body.googleClientId?.trim(), googleClientSecret: body.googleClientSecret?.trim(), spotifyClientId: body.spotifyClientId?.trim(), spotifyClientSecret: body.spotifyClientSecret?.trim() }); return Response.json({ saved: true }); }
