@@ -30,7 +30,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   return <main className="admin-shell auth-shell"><form className="admin-login" onSubmit={submit}><span className="brand-mark">D</span><p className="admin-eyebrow">Desk dashboard</p><h1>Admin access</h1><p>Enter the admin password to configure the display.</p><input autoFocus type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" aria-label="Admin password" /><button type="submit">Continue</button>{error && <span className="login-error">{error}</span>}</form></main>;
 }
 
-function Preview({ data, config, onChange, accentColor }: { data: DashboardData; config: WidgetConfig[]; onChange: (config: WidgetConfig[]) => void; accentColor: string }) {
+function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: { data: DashboardData; config: WidgetConfig[]; onChange: (config: WidgetConfig[]) => void; accentColor: string; fontFamily?: string }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [scale, setScale] = useState(0.78);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -68,7 +68,8 @@ function Preview({ data, config, onChange, accentColor }: { data: DashboardData;
     return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); };
   }, [config, interaction, onChange]);
   const begin = (event: ReactPointerEvent<HTMLDivElement>, widget: WidgetConfig, resize = false) => { event.preventDefault(); event.stopPropagation(); setSelected(widget.id); setInteraction({ id: widget.id, resize, x: event.clientX, y: event.clientY, widget }); };
-  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section></main></div><span className="preview-caption">1024 × 600 · drag to move · corner handle to resize</span></div>;
+  useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
+  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section></main></div><span className="preview-caption">1024 × 600 · drag to move · corner handle to resize</span></div>;
 }
 
 export default function AdminPage() {
@@ -76,12 +77,14 @@ export default function AdminPage() {
   const [config, setConfig] = useState<WidgetConfig[]>(defaultWidgetConfig);
   const [selected, setSelected] = useState<WidgetId>("meeting");
   const [accentColor, setAccentColor] = useState("#c9ff52");
+  const [fontFamily, setFontFamily] = useState("Arial");
   const [configLoaded, setConfigLoaded] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<Record<string, { configured: boolean }> | null>(null);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   useEffect(() => { queueMicrotask(() => setConfig(readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets")))); void fetch("/api/config").then((response) => response.json()).then((serverConfig: { widgets?: WidgetConfig[]; accentColor?: string }) => { queueMicrotask(() => { if (serverConfig.widgets) setConfig(serverConfig.widgets); if (serverConfig.accentColor) setAccentColor(serverConfig.accentColor); setConfigLoaded(true); }); }).catch(() => setConfigLoaded(true)); void loadData().then(setData).catch(() => setData(null)); }, []);
   useEffect(() => { if (!configLoaded) return; window.localStorage.setItem("desk-dashboard-widgets", JSON.stringify(config)); void fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ widgets: config, accentColor }) }); }, [config, accentColor, configLoaded]);
-  useEffect(() => { queueMicrotask(() => setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52")); }, []);
+  useEffect(() => { queueMicrotask(() => { setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52"); setFontFamily(window.localStorage.getItem("desk-dashboard-font") || "Arial"); }); }, []);
+  useEffect(() => { const panel = document.querySelector(".widget-settings"); if (!panel || panel.querySelector(".font-setting")) return; const label = document.createElement("label"); label.className = "font-setting"; label.textContent = "Font"; const select = document.createElement("select"); ["Arial", "Inter", "Roboto", "Archivo", "DM Sans", "Space Grotesk", "Manrope"].forEach((font) => { const option = new Option(font, font); select.add(option); }); select.value = fontFamily; select.onchange = () => { setFontFamily(select.value); window.localStorage.setItem("desk-dashboard-font", select.value); }; label.appendChild(select); panel.appendChild(label); return () => label.remove(); }, [fontFamily]);
   useEffect(() => { void fetch("/api/config/services").then((response) => response.json()).then((payload: { services?: Record<string, { configured: boolean }> }) => setServiceStatus(payload.services ?? null)).catch(() => setServiceStatus(null)); }, []);
   useEffect(() => { void fetch("/api/auth/session").then((response) => response.json()).then((session: { authenticated: boolean; configured: boolean }) => queueMicrotask(() => setAuthenticated(session.configured ? session.authenticated : true))).catch(() => queueMicrotask(() => setAuthenticated(true))); }, []);
   const selectedWidget = useMemo(() => widgets.find((widget) => widget.id === selected) ?? widgets[0], [selected]);
