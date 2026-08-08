@@ -49,7 +49,6 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
     const grid = 16;
     const edge = 16;
     const snap = (value: number) => Math.round(value / grid) * grid;
-    const overlaps = (candidate: WidgetConfig) => config.some((other) => other.enabled && other.id !== candidate.id && candidate.x < other.x + other.width + grid && candidate.x + candidate.width + grid > other.x && candidate.y < other.y + other.height + grid && candidate.y + candidate.height + grid > other.y);
     const move = (event: PointerEvent) => {
       const element = document.querySelector(".admin-preview-canvas") as HTMLElement | null;
       if (!element) return;
@@ -65,7 +64,7 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
         const candidate = interaction.resize
           ? { ...widget, width: Math.max(minWidth, Math.min(948 - edge - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(414 - edge - widget.y, snap(interaction.widget.height + dy))) }
           : { ...widget, x: Math.max(edge, Math.min(948 - edge - widget.width, snap(interaction.widget.x + dx))), y: Math.max(edge, Math.min(414 - edge - widget.height, snap(interaction.widget.y + dy))) };
-        return overlaps(candidate) ? widget : candidate;
+        return candidate;
       });
       onChange(next);
     };
