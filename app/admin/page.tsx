@@ -41,12 +41,22 @@ function reflowBento(config: WidgetConfig[], anchorId: string): WidgetConfig[] {
   for (const widget of ordered) {
     const preferred = { ...widget, x: Math.max(0, Math.min(BENTO_WIDTH - widget.width, widget.x)), y: Math.max(0, Math.min(BENTO_HEIGHT - widget.height, widget.y)) };
     if (!placed.some((other) => widgetsOverlap(preferred, other))) { placed.push(preferred); continue; }
-    const candidates: Array<{ x: number; y: number; distance: number }> = [];
-    for (let y = 0; y <= BENTO_HEIGHT - widget.height; y += BENTO_GRID) for (let x = 0; x <= BENTO_WIDTH - widget.width; x += BENTO_GRID) candidates.push({ x, y, distance: Math.abs(x - widget.x) + Math.abs(y - widget.y) });
-    candidates.sort((a, b) => a.distance - b.distance || a.y - b.y || a.x - b.x);
-    const position = candidates.find(({ x, y }) => !placed.some((other) => widgetsOverlap({ ...widget, x, y }, other)));
+    const findPosition = (candidate: WidgetConfig) => {
+      const positions: Array<{ x: number; y: number; distance: number }> = [];
+      for (let y = 0; y <= BENTO_HEIGHT - candidate.height; y += BENTO_GRID) for (let x = 0; x <= BENTO_WIDTH - candidate.width; x += BENTO_GRID) positions.push({ x, y, distance: Math.abs(x - widget.x) + Math.abs(y - widget.y) });
+      positions.sort((a, b) => a.distance - b.distance || a.y - b.y || a.x - b.x);
+      return positions.find(({ x, y }) => !placed.some((other) => widgetsOverlap({ ...candidate, x, y }, other)));
+    };
+    let adapted = widget;
+    let position = findPosition(adapted);
+    if (!position && widget.id !== anchorId) {
+      const variants: WidgetConfig[] = [];
+      for (let width = widget.width; width >= 160; width -= BENTO_GRID) for (let height = widget.height; height >= 112; height -= BENTO_GRID) variants.push({ ...widget, width, height });
+      variants.sort((a, b) => (widget.width - a.width) + (widget.height - a.height) - ((widget.width - b.width) + (widget.height - b.height)));
+      for (const variant of variants) { const nextPosition = findPosition(variant); if (nextPosition) { adapted = variant; position = nextPosition; break; } }
+    }
     if (!position) return config;
-    placed.push({ ...widget, x: position.x, y: position.y });
+    placed.push({ ...adapted, x: position.x, y: position.y });
   }
   return normalized.map((widget) => placed.find((item) => item.id === widget.id) ?? widget);
 }
