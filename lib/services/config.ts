@@ -8,7 +8,7 @@ export type ServiceConfiguration = {
 /** Server-only integration configuration. Never expose this object to client components. */
 export function getServiceConfiguration(): ServiceConfiguration {
   return {
-    weather: { apiKey: process.env.OPENWEATHER_API_KEY, location: process.env.WEATHER_LOCATION ?? "Lisbon" },
+    weather: { apiKey: process.env.OPENWEATHER_API_KEY, location: process.env.WEATHER_LOCATION ?? "Leça do Balio" },
     googleCalendar: { accessToken: process.env.GOOGLE_CALENDAR_ACCESS_TOKEN, calendarId: process.env.GOOGLE_CALENDAR_ID ?? "primary" },
     spotify: { accessToken: process.env.SPOTIFY_ACCESS_TOKEN },
     coolify: { url: process.env.COOLIFY_URL, token: process.env.COOLIFY_TOKEN },

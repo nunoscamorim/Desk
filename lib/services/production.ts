@@ -4,7 +4,7 @@ import type { SpotifyService } from "./spotify";
 import type { WeatherService } from "./weather";
 
 export class OpenWeatherApiService implements WeatherService {
-  constructor(private readonly apiKey: string, private readonly location = "Lisbon") {}
+  constructor(private readonly apiKey: string, private readonly location = "Leça do Balio") {}
   async getCurrentWeather(): Promise<Weather> {
     const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(this.location)}&units=metric&appid=${this.apiKey}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`Weather request failed (${response.status})`);
