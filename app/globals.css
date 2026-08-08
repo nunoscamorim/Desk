@@ -76,11 +76,11 @@ button { font: inherit; }
 .task-item div span { color: var(--muted); font-size: 9px; }
 .priority { font-size: 8px; text-transform: uppercase; color: var(--muted); }
 .priority-high { color: #ff936f; }
-.usage-card { grid-column: 3; grid-row: 2; }
-.usage-row { margin-top: 23px; }
-.usage-heading { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+.usage-card { grid-column: 3; grid-row: 2; padding: 16px; background: linear-gradient(145deg, #252522, #1e1e1b); }
+.usage-row { margin-top: 14px; }
+.usage-heading { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
 .usage-heading strong { font-size: 13px; }
-.usage-caption { display: block; margin-top: 6px; color: var(--muted); font-size: 9px; text-transform: capitalize; }
+.usage-caption { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; text-transform: capitalize; }
 .empty-state { margin-top: 26px; color: var(--muted); font-size: 13px; }
 .next-card .empty-state { color: #4c562e; }
 .state-dashboard { display: grid; place-items: center; }
