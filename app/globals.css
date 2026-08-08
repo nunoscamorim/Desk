@@ -24,6 +24,8 @@ button { font: inherit; }
 .editable-widget { cursor: move; touch-action: none; }.editable-widget.selected-widget { outline: 2px solid var(--lime); outline-offset: 3px; }.resize-handle { position: absolute; right: 5px; bottom: 5px; z-index: 4; width: 28px; height: 28px; border: 0; border-radius: 7px; background: rgba(13,13,12,.78); cursor: nwse-resize; touch-action: none; }.resize-handle span, .resize-handle::after { content: ""; position: absolute; right: 7px; bottom: 8px; width: 10px; height: 2px; background: var(--lime); transform: rotate(-45deg); }.resize-handle::after { right: 7px; bottom: 13px; width: 7px; }
 .screen-grid { display: grid; height: 400px; grid-template-columns: 1.5fr 1fr; gap: 16px; }
 .screen-grid.single-screen { grid-template-columns: 1fr; }
+.calendar-days-screen { display: grid; height: 400px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.calendar-days-screen .calendar-card { grid-column: auto; grid-row: auto; min-width: 0; }
 .screen-grid .calendar-card { grid-column: auto; grid-row: auto; }
 .screen-grid .next-card { grid-column: auto; grid-row: auto; }
 .screen-grid .music-card, .screen-grid .tasks-card, .screen-grid .usage-card { grid-column: auto; grid-row: auto; }
