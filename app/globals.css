@@ -29,7 +29,7 @@ button { font: inherit; }
 .screen-grid.single-screen .music-card, .screen-grid.single-screen .tasks-card { max-width: 560px; }
 .more-card h2 { margin-top: 22px; font-size: 28px; }
 .more-card p { max-width: 280px; margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.card { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 17px; background: var(--panel); padding: 20px; }
+.card { position: relative; overflow: hidden; border: 0; border-radius: 17px; background: var(--panel); padding: 20px; }
 .card h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
 .next-card { grid-column: 1; grid-row: 1; background: var(--lime); color: #10110d; border: none; }
 .next-card .card-label { color: #4c5d29; }
