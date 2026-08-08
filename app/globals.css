@@ -44,11 +44,13 @@ button { font: inherit; }
 .card-title-row h2 { font-size: 19px; }
 .card-title-row > span { color: var(--muted); font-size: 11px; }
 .calendar-list, .task-list { margin: 12px 0 0; padding: 0; list-style: none; }
-.calendar-item { display: grid; grid-template-columns: 38px 3px 1fr; gap: 9px; min-height: 48px; }
+.calendar-item { display: grid; grid-template-columns: 38px 3px 1fr; gap: 9px; min-height: 48px; padding: 5px 7px; border-radius: 8px; background: color-mix(in srgb, var(--event-color) 15%, transparent); }
 .calendar-item time { color: var(--muted); font-size: 11px; padding-top: 3px; }
 .event-line { width: 3px; height: 50px; border-radius: 3px; background: var(--lime); }
 .calendar-item:nth-child(2) .event-line { background: #c4a9ff; }
 .calendar-item:nth-child(3) .event-line { background: #ff9b64; }
+.calendar-item:nth-child(2) { --event-color: #c4a9ff; }
+.calendar-item:nth-child(3) { --event-color: #ff9b64; }
 .calendar-item div { display: flex; flex-direction: column; gap: 1px; }
 .calendar-item strong { font-size: 14px; }
 .calendar-item div span { color: var(--muted); font-size: 11px; }

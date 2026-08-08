@@ -1,8 +1,9 @@
 import type { CalendarEvent, TodayCalendar } from "@/lib/dashboard/types";
+import type { CSSProperties } from "react";
 import { formatTime } from "./utils";
 
 function CalendarItem({ event, showLocations }: { event: CalendarEvent; showLocations: boolean }) {
-  return <li className="calendar-item"><time dateTime={event.startAt}>{formatTime(event.startAt)}</time><span className="event-line" /><div><strong>{event.title}</strong>{showLocations && <span>{event.location ?? `${formatTime(event.startAt)}–${formatTime(event.endAt)}`}</span>}</div></li>;
+  return <li className="calendar-item" style={{ "--event-color": "#b8d86b" } as CSSProperties}><time dateTime={event.startAt}>{formatTime(event.startAt)}</time><span className="event-line" /><div><strong>{event.title}</strong>{showLocations && <span>{event.location ?? `${formatTime(event.startAt)}–${formatTime(event.endAt)}`}</span>}</div></li>;
 }
 
 export function CalendarWidget({ calendar, settings }: { calendar: TodayCalendar; settings?: { showLocations?: boolean } }) {
