@@ -62,13 +62,16 @@ button { font: inherit; }
 .calendar-item div { display: flex; flex-direction: column; gap: 1px; }
 .calendar-item strong { font-size: 13px; line-height: 1.1; }
 .calendar-item div span { color: var(--muted); font-size: 11px; }
-.music-card { grid-column: 3; grid-row: 1; padding: 16px; }
-.music-card .card-label { margin-bottom: 11px; }
-.album-art { float: left; width: 76px; height: 76px; margin-right: 13px; border-radius: 10px; display: grid; place-items: center; background: radial-gradient(circle at 70% 25%, #ef6e79, transparent 28%), linear-gradient(135deg, #5c2449, #261844 55%, #9a5e36); }
+.music-card { grid-column: 3; grid-row: 1; display: grid; grid-template-columns: minmax(96px, 44%) minmax(0, 1fr); grid-template-rows: auto 1fr auto auto; column-gap: 14px; padding: 14px; }
+.music-card .card-label { grid-column: 1 / -1; margin-bottom: 9px; }
+.album-art { grid-column: 1; grid-row: 2 / span 3; width: 100%; aspect-ratio: 1; align-self: center; border-radius: 12px; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 25%, #ef6e79, transparent 28%), linear-gradient(135deg, #5c2449, #261844 55%, #9a5e36); box-shadow: 0 8px 20px rgba(0,0,0,.22); }
+.album-art.has-artwork span { display: none; }
 .album-art span { font-size: 28px; }
-.track-copy { padding-top: 9px; min-height: 84px; }
+.track-copy { min-width: 0; align-self: end; padding-bottom: 10px; }
 .track-copy h2 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.track-copy p { margin: 6px 0; color: var(--muted); font-size: 11px; }
+.track-copy p { margin: 5px 0 0; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-copy small { display: block; margin-top: 4px; overflow: hidden; color: #74716a; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.music-card .track-progress, .music-card .track-times { grid-column: 2; }
 .track-progress, .meter { overflow: hidden; height: 4px; border-radius: 4px; background: #353431; }
 .track-progress span, .meter span { display: block; height: 100%; border-radius: inherit; background: var(--lime); }
 .track-times { display: flex; justify-content: space-between; margin-top: 5px; color: var(--muted); font-size: 9px; }
@@ -83,11 +86,12 @@ button { font: inherit; }
 .task-item div span { color: var(--muted); font-size: 9px; }
 .priority { font-size: 8px; text-transform: uppercase; color: var(--muted); }
 .priority-high { color: #ff936f; }
-.usage-card { grid-column: 3; grid-row: 2; padding: 16px; background: linear-gradient(145deg, #252522, #1e1e1b); }
-.usage-row { margin-top: 14px; }
-.usage-heading { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
-.usage-heading strong { font-size: 13px; }
-.usage-caption { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; text-transform: capitalize; }
+.usage-card { grid-column: 3; grid-row: 2; padding: 12px 14px; background: #20201e; }
+.usage-card .card-title-row h2 { font-size: 13px; }
+.usage-row { display: grid; grid-template-columns: 72px minmax(40px, 1fr) 34px; gap: 8px; align-items: center; margin-top: 10px; }
+.usage-row > span { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.usage-row > strong { font-size: 10px; text-align: right; font-variant-numeric: tabular-nums; }
+.usage-row .meter { height: 3px; }
 .empty-state { margin-top: 26px; color: var(--muted); font-size: 13px; }
 .next-card .empty-state { color: #4c562e; }
 .state-dashboard { display: grid; place-items: center; }
