@@ -107,7 +107,7 @@ button { font: inherit; }
 .state-card button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
 .bottom-navigation { position: absolute; right: 32px; bottom: 24px; left: 32px; z-index: 9; display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 36px; }
 .bottom-navigation button { min-width: 76px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 999px; padding: 0 13px; background: #252522; color: #aaa79e; font-size: 11px; font-weight: 600; cursor: pointer; touch-action: manipulation; }
-.bottom-navigation button span { font-size: 15px; line-height: 1; }
+.bottom-navigation button svg { width: 16px; height: 16px; flex: 0 0 auto; }
 .bottom-navigation button.active { background: var(--lime); color: #11120e; }
 .bottom-navigation button:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; border-radius: 3px; }
 .skeleton { display: block; background: #272725; border-radius: 6px; animation: pulse 1.4s ease-in-out infinite; }
