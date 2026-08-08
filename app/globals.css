@@ -73,13 +73,11 @@ button { font: inherit; }
 .track-copy h2 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-copy p { margin: 5px 0 0; color: #d3d0c8; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-copy small { display: block; margin-top: 4px; overflow: hidden; color: #aaa69d; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.spotify-playback { margin-top: auto; }
+.spotify-playback { margin-top: 0; }
 .track-progress, .meter { overflow: hidden; height: 4px; border-radius: 4px; background: #353431; }
-.track-progress { position: relative; height: 16px; border-radius: 6px; background: rgba(8,8,7,.62); }
+.track-progress { position: relative; height: 3px; border-radius: 3px; background: rgba(8,8,7,.62); }
 .track-progress-fill, .meter span { display: block; height: 100%; border-radius: inherit; background: var(--lime); }
 .track-progress-fill { position: absolute; inset: 0 auto 0 0; z-index: 1; }
-.track-times { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 0 3px; font-size: 8px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.track-times span { border-radius: 3px; padding: 1px 3px; background: rgba(8,8,7,.72); color: #fff; line-height: 1; }
 .tasks-card { grid-column: 1; grid-row: 2; padding: 18px 20px; }
 .task-list { margin-top: 12px; }
 .task-item { display: grid; grid-template-columns: 20px 1fr auto; gap: 9px; align-items: center; min-height: 45px; border-top: 1px solid var(--line); }
