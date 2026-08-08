@@ -8,6 +8,7 @@ import { CalendarWidget } from "./CalendarWidget";
 import { Header } from "./Header";
 import { SpotifyWidget } from "./SpotifyWidget";
 import { TasksWidget } from "./TasksWidget";
+import { PomodoroWidget } from "./PomodoroWidget";
 import { WidgetRenderer } from "./WidgetRenderer";
 import { defaultWidgetConfig, type WidgetConfig } from "@/lib/dashboard/config";
 import type { DashboardData } from "@/lib/dashboard/types";
@@ -20,6 +21,7 @@ export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColo
     : screen === "calendar" ? <section className="calendar-days-screen">{calendarDays.map((day) => <CalendarWidget key={day.key} calendar={{ date: day.key, events: day.events }} settings={{ strictDate: true, dateLabel: day.label }} />)}</section>
     : screen === "music" ? <section className="screen-grid single-screen"><SpotifyWidget nowPlaying={data.spotifyNowPlaying} expanded /></section>
     : screen === "tasks" ? <section className="screen-grid single-screen"><TasksWidget tasks={data.tasks} /></section>
+    : screen === "focus" ? <PomodoroWidget />
     : <section className="screen-grid"><AiUsageWidget codex={data.codexUsage} claudeCode={data.claudeCodeUsage} /><article className="card more-card"><span className="card-label">Desk status</span><h2>Everything is in sync.</h2><p>Last updated from your dashboard sources just now.</p></article></section>;
   return <main className="dashboard" aria-label="Desk dashboard" style={{ "--lime": accentColor, fontFamily } as CSSProperties}><Header data={data} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main>;
 }
