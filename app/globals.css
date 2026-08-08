@@ -38,18 +38,18 @@ button { font: inherit; }
 .meeting-time span { font-size: 13px; font-weight: 700; }
 .next-card h2 { max-width: 210px; font-size: 19px; }
 .next-card p { position: absolute; bottom: 18px; margin: 0; color: #4c562e; font-size: 12px; font-weight: 700; }
-.calendar-card { grid-column: 2; grid-row: 1 / 3; padding: 22px; background: #242321; }
+.calendar-card { grid-column: 2; grid-row: 1 / 3; padding: 16px; background: #242321; }
 .calendar-heading { display: flex; align-items: center; justify-content: space-between; }.calendar-heading .card-label { margin-bottom: 5px; color: #8f8b83; }.calendar-heading h2 { font-size: 22px; }.event-count { display: flex; align-items: baseline; gap: 5px; color: var(--ink); font-size: 22px; font-weight: 700; }.event-count small { color: var(--muted); font-size: 10px; font-weight: 400; }
 .card-title-row { display: flex; align-items: baseline; justify-content: space-between; }
 .card-title-row h2 { font-size: 19px; }
 .card-title-row > span { color: var(--muted); font-size: 11px; }
-.calendar-list, .task-list { margin: 20px 0 0; padding: 0; list-style: none; }
-.calendar-item { display: grid; grid-template-columns: 40px 3px 1fr; gap: 13px; min-height: 92px; }
+.calendar-list, .task-list { margin: 12px 0 0; padding: 0; list-style: none; }
+.calendar-item { display: grid; grid-template-columns: 38px 3px 1fr; gap: 9px; min-height: 58px; }
 .calendar-item time { color: var(--muted); font-size: 11px; padding-top: 3px; }
 .event-line { width: 3px; height: 62px; border-radius: 3px; background: var(--lime); }
 .calendar-item:nth-child(2) .event-line { background: #c4a9ff; }
 .calendar-item:nth-child(3) .event-line { background: #ff9b64; }
-.calendar-item div { display: flex; flex-direction: column; gap: 7px; }
+.calendar-item div { display: flex; flex-direction: column; gap: 3px; }
 .calendar-item strong { font-size: 14px; }
 .calendar-item div span { color: var(--muted); font-size: 11px; }
 .music-card { grid-column: 3; grid-row: 1; padding: 16px; }
