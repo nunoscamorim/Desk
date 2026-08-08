@@ -7,7 +7,7 @@ export function NextMeetingWidget({ meeting }: { meeting: DashboardData["nextMee
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const minutesUntil = meeting ? Math.max(0, Math.ceil((new Date(meeting.startAt).getTime() - now) / 60000)) : 0;
   return <article className="card next-card"><span className="card-label">Next meeting</span>{meeting ? <>
-    <div className="meeting-time"><span>in</span><strong>{minutesUntil}</strong><span>min</span></div>
-    <h2>{meeting.title}</h2><p>{formatTime(meeting.startAt)} · {meeting.location ?? "No location"}</p>
+    <div className="meeting-time"><span>STARTS IN</span><strong>{minutesUntil}</strong><span>MIN</span></div>
+    <h2>{meeting.title}</h2><p className="meeting-meta"><span className="meeting-dot" />{formatTime(meeting.startAt)} · {meeting.location ?? "No location"}</p>
   </> : <div className="empty-state">Your calendar is clear.</div>}</article>;
 }
