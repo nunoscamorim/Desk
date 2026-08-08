@@ -6,8 +6,11 @@ export function NextMeetingWidget({ meeting }: { meeting: DashboardData["nextMee
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const minutesUntil = meeting ? Math.max(0, Math.ceil((new Date(meeting.startAt).getTime() - now) / 60000)) : 0;
-  return <article className="card next-card"><span className="card-label">Next meeting</span>{meeting ? <>
-    <div className="meeting-time"><span>STARTS IN</span><strong>{minutesUntil}</strong><span>MIN</span></div>
-    <h2>{meeting.title}</h2><p className="meeting-meta"><span className="meeting-dot" />{formatTime(meeting.startAt)} · {meeting.location ?? "No location"}</p>
-  </> : <div className="empty-state">Your calendar is clear.</div>}</article>;
+  const meetingDay = meeting ? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(meeting.startAt)) : "";
+  return <article className="card next-card">{meeting ? <>
+    <header className="meeting-header"><span className="meeting-kicker"><span className="meeting-live-dot" />Up next</span><time dateTime={meeting.startAt}>{formatTime(meeting.startAt)}</time></header>
+    <div className="meeting-countdown"><strong>{minutesUntil}</strong><span>{minutesUntil === 1 ? "minute" : "minutes"}<small>until start</small></span></div>
+    <div className="meeting-copy"><h2>{meeting.title}</h2><p>{meeting.location ?? "No location"}</p></div>
+    <footer className="meeting-footer"><span className="meeting-rail"><i /></span><span>{meetingDay}</span></footer>
+  </> : <><span className="meeting-kicker">Up next</span><div className="meeting-empty"><strong>Clear runway</strong><span>No upcoming meetings</span></div></>}</article>;
 }
