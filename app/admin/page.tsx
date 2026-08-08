@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { Header } from "@/app/components/dashboard/Header";
+import { BottomNavigation, type DashboardScreen } from "@/app/components/dashboard/BottomNavigation";
 import { WidgetRenderer } from "@/app/components/dashboard/WidgetRenderer";
 import { defaultWidgetConfig, readWidgetConfig, type WidgetConfig, type WidgetType } from "@/lib/dashboard/config";
 import type { DashboardData } from "@/lib/dashboard/types";
@@ -79,6 +80,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 
 function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: { data: DashboardData; config: WidgetConfig[]; onChange: (config: WidgetConfig[]) => void; accentColor: string; fontFamily?: string }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [screen, setScreen] = useState<DashboardScreen>("home");
   const [scale, setScale] = useState(0.78);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [interaction, setInteraction] = useState<{ id: string; resize: boolean; x: number; y: number; widget: WidgetConfig } | null>(null);
@@ -120,7 +122,7 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
   }, [config, interaction, onChange]);
   const begin = (event: ReactPointerEvent<HTMLDivElement>, widget: WidgetConfig, resize = false) => { event.preventDefault(); event.stopPropagation(); setSelected(widget.id); setInteraction({ id: widget.id, resize, x: event.clientX, y: event.clientY, widget }); };
   useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
-  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section></main></div><span className="preview-caption">1024 × 600 · 32px screen safe area · 16px snap grid · drag to move · corner handle to resize</span></div>;
+  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section><BottomNavigation screen={screen} onChange={setScreen} /></main></div><span className="preview-caption">1024 × 600 · 32px screen safe area · 16px snap grid · drag to move · corner handle to resize</span></div>;
 }
 
 export default function AdminPage() {
