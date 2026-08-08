@@ -34,7 +34,6 @@ button { font: inherit; }
 .card h2, .card strong, .card p, .card span { overflow-wrap: anywhere; }
 .card h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
 .next-card { grid-column: 1; grid-row: 1; container-type: size; display: flex; flex-direction: column; padding: 16px; color: #11120e; background: var(--lime); box-shadow: inset 0 1px rgba(255,255,255,.3); }
-.next-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: rgba(17,18,14,.72); }
 .meeting-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .meeting-kicker { display: inline-flex; align-items: center; gap: 7px; color: rgba(17,18,14,.7); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .meeting-live-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #11120e; box-shadow: 0 0 0 4px rgba(17,18,14,.12); }
