@@ -1,7 +1,20 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { defaultWidgetConfig, type WidgetConfig } from "./config";
 
 export type DashboardConfig = { widgets: WidgetConfig[]; accentColor: string };
-let config: DashboardConfig = { widgets: defaultWidgetConfig, accentColor: "#c9ff52" };
+const defaultConfig: DashboardConfig = { widgets: defaultWidgetConfig, accentColor: "#c9ff52" };
+const configPath = path.join(process.cwd(), "data", "dashboard-config.json");
 
-export function getDashboardConfig() { return config; }
-export function setDashboardConfig(next: DashboardConfig) { config = next; return config; }
+export async function getDashboardConfig(): Promise<DashboardConfig> {
+  try {
+    const parsed = JSON.parse(await readFile(configPath, "utf8")) as Partial<DashboardConfig>;
+    return { widgets: Array.isArray(parsed.widgets) ? parsed.widgets : defaultConfig.widgets, accentColor: typeof parsed.accentColor === "string" ? parsed.accentColor : defaultConfig.accentColor };
+  } catch { return defaultConfig; }
+}
+
+export async function setDashboardConfig(next: DashboardConfig): Promise<DashboardConfig> {
+  await mkdir(path.dirname(configPath), { recursive: true });
+  await writeFile(configPath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+  return next;
+}
