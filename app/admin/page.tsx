@@ -46,6 +46,9 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
   }, []);
   useEffect(() => {
     if (!interaction) return;
+    const grid = 16;
+    const snap = (value: number) => Math.round(value / grid) * grid;
+    const overlaps = (candidate: WidgetConfig) => config.some((other) => other.enabled && other.id !== candidate.id && candidate.x < other.x + other.width + grid && candidate.x + candidate.width + grid > other.x && candidate.y < other.y + other.height + grid && candidate.y + candidate.height + grid > other.y);
     const move = (event: PointerEvent) => {
       const element = document.querySelector(".admin-preview-canvas") as HTMLElement | null;
       if (!element) return;
@@ -56,10 +59,12 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
       const dy = (event.clientY - interaction.y) / scale;
       const next = config.map((widget) => {
         if (widget.id !== interaction.id) return widget;
-        const minWidth = 150;
-        const minHeight = 100;
-        if (interaction.resize) return { ...widget, width: Math.max(minWidth, Math.min(948 - widget.x, interaction.widget.width + dx)), height: Math.max(minHeight, Math.min(414 - widget.y, interaction.widget.height + dy)) };
-        return { ...widget, x: Math.max(0, Math.min(948 - widget.width, interaction.widget.x + dx)), y: Math.max(0, Math.min(414 - widget.height, interaction.widget.y + dy)) };
+        const minWidth = 160;
+        const minHeight = 112;
+        const candidate = interaction.resize
+          ? { ...widget, width: Math.max(minWidth, Math.min(948 - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(414 - widget.y, snap(interaction.widget.height + dy))) }
+          : { ...widget, x: Math.max(0, Math.min(948 - widget.width, snap(interaction.widget.x + dx))), y: Math.max(0, Math.min(414 - widget.height, snap(interaction.widget.y + dy))) };
+        return overlaps(candidate) ? widget : candidate;
       });
       onChange(next);
     };
@@ -69,7 +74,7 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
   }, [config, interaction, onChange]);
   const begin = (event: ReactPointerEvent<HTMLDivElement>, widget: WidgetConfig, resize = false) => { event.preventDefault(); event.stopPropagation(); setSelected(widget.id); setInteraction({ id: widget.id, resize, x: event.clientX, y: event.clientY, widget }); };
   useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
-  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section></main></div><span className="preview-caption">1024 × 600 · drag to move · corner handle to resize</span></div>;
+  return <div className="admin-preview"><div className="admin-preview-canvas" ref={canvasRef}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section></main></div><span className="preview-caption">1024 × 600 · 16px snap grid · drag to move · corner handle to resize</span></div>;
 }
 
 export default function AdminPage() {
