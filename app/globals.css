@@ -6,7 +6,7 @@ html, body { margin: 0; min-height: 100%; background: #151412; }
 body { color: var(--ink); font-family: Arial, Helvetica, sans-serif; display: flex; align-items: center; justify-content: center; }
 button { font: inherit; }
 .dashboard { position: relative; width: 1024px; height: 600px; overflow: hidden; padding: 32px; background: #151412; }
-.topbar { height: 90px; display: flex; align-items: flex-start; justify-content: space-between; }
+.topbar { height: 90px; display: flex; align-items: flex-end; justify-content: space-between; }
 .date-label, .card-label { margin: 0 0 7px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .topbar h1 { max-width: 720px; margin: 0; font-size: 28px; line-height: 1.08; letter-spacing: -.04em; }
 .quote-source { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
