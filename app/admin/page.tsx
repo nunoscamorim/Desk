@@ -23,6 +23,34 @@ async function loadData(): Promise<DashboardData> {
   return response.json() as Promise<DashboardData>;
 }
 
+const BENTO_GRID = 16;
+const BENTO_WIDTH = 960;
+const BENTO_HEIGHT = 414;
+
+function widgetsOverlap(a: WidgetConfig, b: WidgetConfig) {
+  return a.x < b.x + b.width + BENTO_GRID && a.x + a.width + BENTO_GRID > b.x && a.y < b.y + b.height + BENTO_GRID && a.y + a.height + BENTO_GRID > b.y;
+}
+
+function reflowBento(config: WidgetConfig[], anchorId: string): WidgetConfig[] {
+  const normalized = config.map((widget) => widget.enabled ? { ...widget, width: Math.min(BENTO_WIDTH, Math.max(160, Math.floor(widget.width / BENTO_GRID) * BENTO_GRID)), height: Math.min(400, Math.max(112, Math.floor(widget.height / BENTO_GRID) * BENTO_GRID)), x: Math.max(0, Math.min(BENTO_WIDTH - widget.width, Math.round(widget.x / BENTO_GRID) * BENTO_GRID)), y: Math.max(0, Math.min(BENTO_HEIGHT - widget.height, Math.round(widget.y / BENTO_GRID) * BENTO_GRID)) } : widget);
+  const enabled = normalized.filter((widget) => widget.enabled);
+  const anchor = enabled.find((widget) => widget.id === anchorId);
+  if (!anchor) return normalized;
+  const ordered = [anchor, ...enabled.filter((widget) => widget.id !== anchorId).sort((a, b) => a.y - b.y || a.x - b.x)];
+  const placed: WidgetConfig[] = [];
+  for (const widget of ordered) {
+    const preferred = { ...widget, x: Math.max(0, Math.min(BENTO_WIDTH - widget.width, widget.x)), y: Math.max(0, Math.min(BENTO_HEIGHT - widget.height, widget.y)) };
+    if (!placed.some((other) => widgetsOverlap(preferred, other))) { placed.push(preferred); continue; }
+    const candidates: Array<{ x: number; y: number; distance: number }> = [];
+    for (let y = 0; y <= BENTO_HEIGHT - widget.height; y += BENTO_GRID) for (let x = 0; x <= BENTO_WIDTH - widget.width; x += BENTO_GRID) candidates.push({ x, y, distance: Math.abs(x - widget.x) + Math.abs(y - widget.y) });
+    candidates.sort((a, b) => a.distance - b.distance || a.y - b.y || a.x - b.x);
+    const position = candidates.find(({ x, y }) => !placed.some((other) => widgetsOverlap({ ...widget, x, y }, other)));
+    if (!position) return config;
+    placed.push({ ...widget, x: position.x, y: position.y });
+  }
+  return normalized.map((widget) => placed.find((item) => item.id === widget.id) ?? widget);
+}
+
 function AdminLogin({ onLogin }: { onLogin: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -46,10 +74,7 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
   }, []);
   useEffect(() => {
     if (!interaction) return;
-    const grid = 16;
-    const canvasWidth = 960;
-    const canvasHeight = 414;
-    const snap = (value: number) => Math.round(value / grid) * grid;
+    const snap = (value: number) => Math.round(value / BENTO_GRID) * BENTO_GRID;
     const move = (event: PointerEvent) => {
       const element = document.querySelector(".admin-preview-canvas") as HTMLElement | null;
       if (!element) return;
@@ -63,11 +88,11 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial" }: 
         const minWidth = 160;
         const minHeight = 112;
         const candidate = interaction.resize
-          ? { ...widget, width: Math.max(minWidth, Math.min(canvasWidth - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(canvasHeight - widget.y, snap(interaction.widget.height + dy))) }
-          : { ...widget, x: Math.max(0, Math.min(canvasWidth - widget.width, snap(interaction.widget.x + dx))), y: Math.max(0, Math.min(canvasHeight - widget.height, snap(interaction.widget.y + dy))) };
+          ? { ...widget, width: Math.max(minWidth, Math.min(BENTO_WIDTH - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minHeight, Math.min(BENTO_HEIGHT - widget.y, snap(interaction.widget.height + dy))) }
+          : { ...widget, x: Math.max(0, Math.min(BENTO_WIDTH - widget.width, snap(interaction.widget.x + dx))), y: Math.max(0, Math.min(BENTO_HEIGHT - widget.height, snap(interaction.widget.y + dy))) };
         return candidate;
       });
-      onChange(next);
+      onChange(reflowBento(next, interaction.id));
     };
     const end = () => setInteraction(null);
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", end);
