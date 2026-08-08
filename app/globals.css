@@ -29,7 +29,7 @@ button { font: inherit; }
 .screen-grid .calendar-card { grid-column: auto; grid-row: auto; }
 .screen-grid .next-card { grid-column: auto; grid-row: auto; }
 .screen-grid .music-card, .screen-grid .tasks-card, .screen-grid .usage-card { grid-column: auto; grid-row: auto; }
-.screen-grid.single-screen .music-card, .screen-grid.single-screen .tasks-card { max-width: 560px; }
+.screen-grid.single-screen .tasks-card { max-width: 560px; }
 .more-card h2 { margin-top: 22px; font-size: 28px; }
 .more-card p { max-width: 280px; margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .card { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 0; border-radius: 17px; background: var(--panel); padding: 20px; }
@@ -77,6 +77,15 @@ button { font: inherit; }
 .track-copy p { margin: 5px 0 0; color: #d3d0c8; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-copy small { display: block; margin-top: 4px; overflow: hidden; color: #aaa69d; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .spotify-playback { margin-top: 0; }
+.music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: #20201e; }
+.music-screen-card .album-art { position: relative; inset: auto; width: 400px; height: 400px; border-radius: 17px 0 0 17px; }
+.music-screen-card .spotify-info { position: relative; height: 400px; padding: 30px 34px; background: none; }
+.music-screen-card .track-copy { margin-top: auto; padding-bottom: 16px; }
+.music-screen-card .track-copy h2 { font-size: 30px; line-height: 1; }
+.music-screen-card .track-copy p { margin-top: 9px; font-size: 16px; }
+.music-screen-details { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; color: var(--muted); font-size: 11px; }
+.music-screen-times { display: flex; justify-content: space-between; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.music-screen-card .track-progress { height: 5px; }
 .track-progress, .meter { overflow: hidden; height: 4px; border-radius: 4px; background: #353431; }
 .track-progress { position: relative; height: 3px; border-radius: 3px; background: rgba(8,8,7,.62); }
 .track-progress-fill, .meter span { display: block; height: 100%; border-radius: inherit; background: var(--lime); }
