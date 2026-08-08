@@ -45,9 +45,9 @@ button { font: inherit; }
 .card-title-row > span { color: var(--muted); font-size: 11px; }
 .calendar-list, .task-list { margin: 12px 0 0; padding: 0; list-style: none; }
 .calendar-list { display: grid; gap: 4px; }
-.calendar-item { display: grid; grid-template-columns: 38px 3px 1fr; gap: 8px; min-height: 40px; padding: 3px 6px; border-radius: 8px; background: color-mix(in srgb, var(--event-color) 15%, transparent); }
+.calendar-item { display: grid; grid-template-columns: 38px 3px 1fr; gap: 8px; min-height: 34px; padding: 2px 6px; border-radius: 8px; background: color-mix(in srgb, var(--event-color) 15%, transparent); }
 .calendar-item time { color: var(--muted); font-size: 11px; padding-top: 3px; }
-.event-line { width: 3px; height: 42px; border-radius: 3px; background: var(--event-color); }
+.event-line { width: 3px; height: 36px; border-radius: 3px; background: var(--event-color); }
 .calendar-item div { display: flex; flex-direction: column; gap: 1px; }
 .calendar-item strong { font-size: 13px; line-height: 1.1; }
 .calendar-item div span { color: var(--muted); font-size: 11px; }
