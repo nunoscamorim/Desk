@@ -6,8 +6,8 @@
       "enabled": true,
       "x": 0,
       "y": 0,
-      "width": 295,
-      "height": 200,
+      "width": 288,
+      "height": 192,
       "settings": {
         "label": "Next meeting"
       }
@@ -16,10 +16,10 @@
       "id": "today-calendar",
       "type": "calendar",
       "enabled": true,
-      "x": 309,
+      "x": 304,
       "y": 0,
-      "width": 357,
-      "height": 414,
+      "width": 352,
+      "height": 400,
       "settings": {
         "label": "Today",
         "showLocations": true
@@ -29,10 +29,10 @@
       "id": "spotify",
       "type": "music",
       "enabled": true,
-      "x": 680,
+      "x": 672,
       "y": 0,
-      "width": 268,
-      "height": 200,
+      "width": 288,
+      "height": 192,
       "settings": {
         "label": "Now playing"
       }
@@ -42,9 +42,9 @@
       "type": "tasks",
       "enabled": true,
       "x": 0,
-      "y": 214,
-      "width": 295,
-      "height": 200,
+      "y": 208,
+      "width": 288,
+      "height": 192,
       "settings": {
         "label": "Tasks"
       }
@@ -53,10 +53,10 @@
       "id": "ai-usage",
       "type": "usage",
       "enabled": true,
-      "x": 680,
-      "y": 214,
-      "width": 268,
-      "height": 200,
+      "x": 672,
+      "y": 208,
+      "width": 288,
+      "height": 192,
       "settings": {
         "label": "AI usage"
       }
