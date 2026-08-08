@@ -110,6 +110,7 @@ button { font: inherit; }
 .bottom-navigation button svg { width: 16px; height: 16px; flex: 0 0 auto; }
 .bottom-navigation button:first-child { margin-right: auto; }
 .bottom-navigation button.active { background: var(--lime); color: #11120e; }
+.bottom-navigation button:first-child.active { background: color-mix(in srgb, var(--lime) 24%, #252522); color: var(--lime); }
 .bottom-navigation button:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; border-radius: 3px; }
 .skeleton { display: block; background: #272725; border-radius: 6px; animation: pulse 1.4s ease-in-out infinite; }
 .skeleton.line { width: 75%; height: 13px; margin-top: 16px; }
