@@ -47,7 +47,7 @@ export function Header({ data }: { data: DashboardData }) {
   }, []);
   const greeting = getGreeting(now);
   return <header className="topbar">
-    <div className="greeting-copy"><p className="date-label">{dayFormatter.format(now)} · <time dateTime={now.toISOString()}>{now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</time></p><h1>{greeting.message}</h1><p className="quote-source">{greeting.source}</p></div>
+    <div className="greeting-copy"><p className="date-label">{dayFormatter.format(now)} · <time dateTime={now.toISOString()}>{now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</time></p><div className="greeting-quote"><h1>{greeting.message}</h1><p className="quote-source">{greeting.source}</p></div></div>
     <WeatherWidget weather={data.weather} />
   </header>;
 }
