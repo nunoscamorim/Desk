@@ -7,8 +7,14 @@ export type ServiceConfiguration = {
   coolify: { url?: string; token?: string };
 };
 
+const commaSeparated = (value: string | undefined) => (value ?? "").split(/[\n,]/).map((entry) => entry.trim()).filter(Boolean);
+
 /** Server-only integration configuration. Never expose this object to client components. */
 export function getServiceConfiguration(): ServiceConfiguration {
+  // "*" selects every reminder list, for hosts whose environment editor will not
+  // accept an empty value — leaving the variable unset means the same thing.
+  const reminderLists = commaSeparated(process.env.APPLE_REMINDERS_LISTS);
+
   return {
     weather: {
       location: process.env.WEATHER_LOCATION ?? "Leça do Balio",
@@ -18,14 +24,15 @@ export function getServiceConfiguration(): ServiceConfiguration {
     googleCalendar: { accessToken: process.env.GOOGLE_CALENDAR_ACCESS_TOKEN, calendarId: process.env.GOOGLE_CALENDAR_ID ?? "primary" },
     // Comma or newline separated so several published calendars — work and
     // personal, from any provider — can be merged onto one display.
-    icalCalendar: { feedUrls: (process.env.CALENDAR_ICS_URLS ?? "").split(/[\n,]/).map((url) => url.trim()).filter(Boolean) },
+    icalCalendar: { feedUrls: commaSeparated(process.env.CALENDAR_ICS_URLS) },
     // An app-specific password, not the Apple ID password — iCloud rejects the
-    // account password outright once two-factor auth is on. An empty list means
-    // every reminder list.
+    // account password outright once two-factor auth is on. Whitespace is
+    // stripped because the password is displayed in groups and often arrives
+    // pasted with spaces; the hyphens Apple issues it with are left alone.
     appleReminders: {
-      appleId: process.env.APPLE_REMINDERS_ID,
+      appleId: process.env.APPLE_REMINDERS_ID?.trim(),
       appPassword: process.env.APPLE_REMINDERS_APP_PASSWORD?.replace(/\s/g, ""),
-      lists: (process.env.APPLE_REMINDERS_LISTS ?? "").split(/[\n,]/).map((name) => name.trim()).filter(Boolean),
+      lists: reminderLists.includes("*") ? [] : reminderLists,
     },
     spotify: { accessToken: process.env.SPOTIFY_ACCESS_TOKEN },
     coolify: { url: process.env.COOLIFY_URL, token: process.env.COOLIFY_TOKEN },
