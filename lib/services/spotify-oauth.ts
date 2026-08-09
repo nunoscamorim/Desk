@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import { readServiceCredentials, writeServiceCredentials } from "./credential-store";
 
 export const SPOTIFY_OAUTH_STATE_COOKIE = "spotify_oauth_state";
@@ -33,7 +34,7 @@ async function postToken(
   params: Record<string, string>,
 ): Promise<TokenResponse> {
   const authorization = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const response = await fetch(TOKEN_ENDPOINT, {
+  const response = await fetchWithRetry(TOKEN_ENDPOINT, {
     method: "POST",
     headers: {
       Authorization: `Basic ${authorization}`,
@@ -41,7 +42,7 @@ async function postToken(
     },
     body: new URLSearchParams(params).toString(),
     cache: "no-store",
-  });
+  }, { label: "spotify-token" });
   const data = await response.json() as TokenResponse & { error?: string; error_description?: string };
   if (!response.ok) {
     throw new Error(`Spotify token request failed (${response.status}): ${data.error_description ?? data.error ?? "unknown error"}`);

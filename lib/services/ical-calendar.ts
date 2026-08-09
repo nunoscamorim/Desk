@@ -1,4 +1,5 @@
 import ical, { type CalendarComponent, type VEvent } from "node-ical";
+import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import type { CalendarEvent, TodayCalendar } from "@/lib/dashboard/types";
 
 export interface IcalCalendarService { getTodayCalendar(): Promise<TodayCalendar>; }
@@ -19,6 +20,8 @@ export interface IcalCalendarService { getTodayCalendar(): Promise<TodayCalendar
  */
 
 const FEED_TIMEOUT_MS = 5000;
+// Feeds are fetched in parallel, so one slow feed does not extend the others.
+const FEED_BUDGET_MS = 10000;
 // Feeds are re-fetched no more than once a minute. Upstream providers cache
 // these aggressively anyway, so polling harder costs bandwidth and parse time
 // without buying fresher data.
@@ -111,7 +114,7 @@ async function loadFeed(url: string, windowStart: Date, windowEnd: Date): Promis
   const cached = cache.get(url);
   if (cached && cached.expiresAt > Date.now()) return cached.events;
 
-  const response = await fetch(url.replace(/^webcal:\/\//i, "https://"), { signal: AbortSignal.timeout(FEED_TIMEOUT_MS), cache: "no-store" });
+  const response = await fetchWithRetry(url.replace(/^webcal:\/\//i, "https://"), { cache: "no-store" }, { label: "ical-feed", timeoutMs: FEED_TIMEOUT_MS, budgetMs: FEED_BUDGET_MS });
   if (!response.ok) throw new Error(`Calendar feed request failed (${response.status})`);
   const parsed = ical.sync.parseICS(await response.text());
   const events = Object.values(parsed).filter(isVEvent).flatMap((event) => expandEvent(event, windowStart, windowEnd));

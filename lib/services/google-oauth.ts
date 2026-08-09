@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import { readServiceCredentials } from "./credential-store";
 
 /**
@@ -18,7 +19,8 @@ import { readServiceCredentials } from "./credential-store";
 // else fails the build.
 export const GOOGLE_OAUTH_STATE_COOKIE = "google_oauth_state";
 
-const TOKEN_TIMEOUT_MS = 8000;
+const TOKEN_TIMEOUT_MS = 5000;
+const TOKEN_BUDGET_MS = 6000;
 const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 const AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -51,12 +53,13 @@ export class GoogleReauthRequiredError extends Error {
 }
 
 async function postToken(params: Record<string, string>): Promise<TokenResponse> {
-  const response = await fetch(TOKEN_ENDPOINT, {
+  // Safe to retry: the refresh_token grant is idempotent, and a code exchange
+  // that never reached Google has nothing to double-spend.
+  const response = await fetchWithRetry(TOKEN_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(params).toString(),
-    signal: AbortSignal.timeout(TOKEN_TIMEOUT_MS),
-  });
+  }, { label: "google-token", timeoutMs: TOKEN_TIMEOUT_MS, budgetMs: TOKEN_BUDGET_MS });
   const data = await response.json() as TokenResponse & { error?: string; error_description?: string };
   if (!response.ok) {
     const detail = data.error_description ?? data.error ?? "unknown error";

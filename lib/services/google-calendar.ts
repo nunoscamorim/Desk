@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import type { CalendarEvent, TodayCalendar } from "@/lib/dashboard/types";
 export interface GoogleCalendarService { getTodayCalendar(): Promise<TodayCalendar>; }
 export class MockGoogleCalendarService implements GoogleCalendarService {
@@ -7,7 +8,10 @@ export class MockGoogleCalendarService implements GoogleCalendarService {
 
 type GoogleCalendarResponse = { items?: Array<{ id?: string; summary?: string; start?: { dateTime?: string; date?: string }; end?: { dateTime?: string; date?: string }; location?: string }> };
 
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 6000;
+// Two calendar fetches can happen in one call when a 401 forces a token
+// re-mint, so each gets half of the wider budget the caller allows.
+const REQUEST_BUDGET_MS = 9000;
 
 /**
  * Token acquisition lives in google-oauth.ts, not here: `getAccessToken` is called
@@ -27,7 +31,7 @@ export class GoogleCalendarApiService implements GoogleCalendarService {
     // when there is nothing scheduled today.
     const end = new Date(start); end.setDate(end.getDate() + 7);
     const params = new URLSearchParams({ calendarId: this.calendarId, timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "50" });
-    const request = (token: string) => fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    const request = (token: string) => fetchWithRetry(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }, { label: "google-calendar", timeoutMs: REQUEST_TIMEOUT_MS, budgetMs: REQUEST_BUDGET_MS });
 
     let response = await request(accessToken);
     // A 401 means the token is dead regardless of what its cached expiry says.

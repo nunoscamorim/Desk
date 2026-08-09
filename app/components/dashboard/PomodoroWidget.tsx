@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const durations = { focus: 25 * 60, break: 5 * 60 } as const;
 
@@ -9,19 +9,25 @@ export function PomodoroWidget() {
   const [remaining, setRemaining] = useState(durations.focus);
   const [running, setRunning] = useState(false);
 
-  useEffect(() => {
-    if (!running) return;
-    const timer = window.setInterval(() => setRemaining((value) => Math.max(0, value - 1)), 1000);
-    return () => window.clearInterval(timer);
-  }, [running]);
+  // The tick reads the live values through a ref so the interval does not have
+  // to be town down and rebuilt every second, and so the rollover can happen in
+  // the tick itself. Reacting to `remaining === 0` from a separate effect would
+  // mean setting state in response to state, which costs an extra render and
+  // briefly publishes a 00:00 timer that still reads as running.
+  const latest = useRef({ mode, remaining });
+  useEffect(() => { latest.current = { mode, remaining }; }, [mode, remaining]);
 
   useEffect(() => {
-    if (remaining !== 0) return;
-    const nextMode = mode === "focus" ? "break" : "focus";
-    setMode(nextMode);
-    setRemaining(durations[nextMode]);
-    setRunning(false);
-  }, [remaining, mode]);
+    if (!running) return;
+    const timer = window.setInterval(() => {
+      if (latest.current.remaining > 1) { setRemaining((value) => value - 1); return; }
+      const nextMode = latest.current.mode === "focus" ? "break" : "focus";
+      setMode(nextMode);
+      setRemaining(durations[nextMode]);
+      setRunning(false);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
 
   const reset = () => { setRunning(false); setRemaining(durations[mode]); };
   const switchMode = () => { const nextMode = mode === "focus" ? "break" : "focus"; setMode(nextMode); setRemaining(durations[nextMode]); setRunning(false); };
