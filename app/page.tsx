@@ -28,9 +28,9 @@ export default function Home() {
   const [state, setState] = useState<LoadState>({ status: "loading", data: null, message: null });
   const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgetConfig);
   const [accentColor, setAccentColor] = useState("#c9ff52");
+  const [fontFamily, setFontFamily] = useState("Arial");
 
-  useEffect(() => { queueMicrotask(() => setWidgets(readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets")))); }, []);
-  useEffect(() => { queueMicrotask(() => setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52")); }, []);
+  useEffect(() => { queueMicrotask(() => { setWidgets(readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets"))); setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52"); setFontFamily(window.localStorage.getItem("desk-dashboard-font") || "Arial"); }); void fetch("/api/config").then((response) => response.json() as Promise<{ widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string }>).then((config) => { if (config.widgets) setWidgets(config.widgets); if (config.accentColor) setAccentColor(config.accentColor); const locallySelectedFont = window.localStorage.getItem("desk-dashboard-font"); setFontFamily(config.fontFamily && (config.fontFamily !== "Arial" || !locallySelectedFont) ? config.fontFamily : locallySelectedFont || "Arial"); }).catch(() => undefined); }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,5 +48,5 @@ export default function Home() {
 
   if (state.status === "loading") return <LoadingDashboard />;
   if (state.status === "error") return <ErrorDashboard message={state.message} retry={retry} />;
-  return <DashboardShell data={state.data} widgets={widgets} accentColor={accentColor} />;
+  return <DashboardShell data={state.data} widgets={widgets} accentColor={accentColor} fontFamily={fontFamily} />;
 }
