@@ -1,0 +1,18 @@
+{
+  "settings": {
+    "brightness": 100,
+    "nightMode": "off",
+    "nightStart": "22:00",
+    "nightEnd": "07:00",
+    "nightBrightness": 25,
+    "refreshSeconds": 60
+  },
+  "status": {
+    "reportedAt": null,
+    "firmware": null,
+    "uptimeSeconds": null,
+    "freeHeapBytes": null,
+    "wifi": null
+  },
+  "rebootRequestedAt": null
+}

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { AiUsageWidget } from "./AiUsageWidget";
 import { BottomNavigation, type DashboardScreen } from "./BottomNavigation";
 import { CalendarWidget } from "./CalendarWidget";
+import { DeviceSettingsWidget } from "./DeviceSettingsWidget";
 import { Header } from "./Header";
 import { SpotifyWidget } from "./SpotifyWidget";
 import { TasksWidget } from "./TasksWidget";
@@ -22,6 +22,6 @@ export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColo
     : screen === "music" ? <section className="screen-grid single-screen"><SpotifyWidget nowPlaying={data.spotifyNowPlaying} expanded /></section>
     : screen === "tasks" ? <section className="screen-grid single-screen"><TasksWidget tasks={data.tasks} /></section>
     : screen === "focus" ? <PomodoroWidget />
-    : <section className="screen-grid"><AiUsageWidget codex={data.codexUsage} claudeCode={data.claudeCodeUsage} /><article className="card more-card"><span className="card-label">Desk status</span><h2>Everything is in sync.</h2><p>Last updated from your dashboard sources just now.</p></article></section>;
+    : <DeviceSettingsWidget />;
   return <main className="dashboard" aria-label="Desk dashboard" style={{ "--lime": accentColor, fontFamily } as CSSProperties}><Header data={data} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main>;
 }
