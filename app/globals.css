@@ -13,16 +13,14 @@ button { font: inherit; }
 .quote-source { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
 .weather { width: 252px; height: 68px; flex: 0 0 auto; padding-top: 4px; text-align: right; }
 .weather-reading { min-width: 0; flex: 1; }
-.weather-primary { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.weather-primary { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .weather-primary strong { color: #faf8f1; font-size: 31px; font-weight: 750; line-height: .9; letter-spacing: -.055em; font-variant-numeric: tabular-nums; }
-.weather-condition { overflow: hidden; color: #d7d3ca; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.weather-meta { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 7px; color: #aaa79e; font-size: 11px; font-weight: 550; white-space: nowrap; }
+.weather-condition { overflow: hidden; color: var(--lime); font-size: 13px; font-weight: 700; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.weather-meta { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 5px; color: #aaa79e; font-size: 11px; font-weight: 550; white-space: nowrap; }
 .weather-meta > span + span { padding-left: 6px; border-left: 1px solid #46443f; }
 .weather-location { min-width: 0; overflow: hidden; color: #d0ccc3; text-overflow: ellipsis; }
 .weather-range { color: #bbb7ae; font-variant-numeric: tabular-nums; }
 .weather-range i { color: #78a8c8; font-style: normal; }.weather-range i:last-of-type { margin-left: 4px; color: #e3a45b; }
-.weather-icon { width: 26px; height: 26px; flex: 0 0 auto; display: grid; place-items: center; color: var(--lime); }
-.weather-icon svg { width: 26px; height: 26px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .dashboard-grid { display: grid; height: 414px; grid-template-columns: 1.03fr 1.22fr .9fr; grid-template-rows: 200px 200px; gap: 14px; }
 .dashboard-grid { position: relative; }
 .admin-preview-canvas .dashboard::after { content: ""; position: absolute; inset: 32px; z-index: 8; border: 1px dashed rgba(255,255,255,.08); border-radius: 8px; pointer-events: none; }
