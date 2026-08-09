@@ -21,11 +21,18 @@ export const defaultWidgetConfig: WidgetConfig[] = [
   { id: "ai-usage", type: "usage", enabled: true, x: 672, y: 208, width: 288, height: 112, settings: { label: "AI usage" } },
 ];
 
+export function withDefaultWidgetGeometry(config: WidgetConfig[]): WidgetConfig[] {
+  return defaultWidgetConfig.map((fallback) => {
+    const saved = config.find((widget) => widget.id === fallback.id);
+    return { ...fallback, enabled: saved?.enabled ?? fallback.enabled, settings: { ...fallback.settings, ...(saved?.settings ?? {}) } };
+  });
+}
+
 export function readWidgetConfig(value: string | null): WidgetConfig[] {
   if (!value) return defaultWidgetConfig;
   try {
     const parsed = JSON.parse(value) as WidgetConfig[];
     if (!Array.isArray(parsed)) return defaultWidgetConfig;
-    return defaultWidgetConfig.map((fallback) => ({ ...fallback, ...(parsed.find((item) => item.id === fallback.id) ?? {}), settings: { ...fallback.settings, ...(parsed.find((item) => item.id === fallback.id)?.settings ?? {}) } }));
+    return withDefaultWidgetGeometry(parsed);
   } catch { return defaultWidgetConfig; }
 }
