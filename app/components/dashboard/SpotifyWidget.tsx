@@ -68,7 +68,7 @@ export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: Sp
           buckets.set(key, bucket);
         }
         const dominant = [...buckets.values()].sort((left, right) => right.count - left.count)[0];
-        if (dominant) setAlbumTint(`rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.1)`);
+        if (dominant) setAlbumTint(`rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.2)`);
       } catch {
         setAlbumTint("rgba(255, 255, 255, 0.03)");
       }
