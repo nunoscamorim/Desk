@@ -145,8 +145,8 @@ button { font: inherit; }
 .track-copy p { margin: 5px 0 0; color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-copy small { display: block; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .spotify-playback { margin-top: 0; }
-.music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: var(--spotify-black); }
-.music-artwork-frame { width: 400px; height: 400px; padding: 16px; background: linear-gradient(var(--album-tint), var(--album-tint)), var(--spotify-black); }
+.music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: linear-gradient(var(--album-tint), var(--album-tint)), var(--spotify-black); }
+.music-artwork-frame { width: 400px; height: 400px; padding: 16px; }
 .music-screen-card .album-art { position: relative; inset: auto; width: 100%; height: 100%; border-radius: 10px; }
 .music-screen-card .spotify-info { position: relative; height: 400px; padding: 30px 34px; background: none; }
 .music-screen-card .spotify-empty { grid-column: 1 / -1; height: 400px; padding: 30px 34px; }

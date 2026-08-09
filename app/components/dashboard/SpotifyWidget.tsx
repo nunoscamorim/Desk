@@ -38,6 +38,7 @@ function TrackProgress({ progressMs, durationMs, isPlaying, expanded }: { progre
 export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: SpotifyNowPlaying | null; expanded?: boolean }) {
   const [albumTint, setAlbumTint] = useState("rgba(255, 255, 255, 0.03)");
   useEffect(() => {
+    setAlbumTint("rgba(255, 255, 255, 0.03)");
     if (!expanded || !nowPlaying?.artworkUrl) return;
     const image = new Image();
     image.crossOrigin = "anonymous";
@@ -73,8 +74,8 @@ export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: Sp
       }
     };
   }, [expanded, nowPlaying?.artworkUrl]);
-  return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`}>{nowPlaying ? <>
-    {expanded ? <div className="music-artwork-frame" style={{ "--album-tint": albumTint } as CSSProperties}><div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div></div> : <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div>}<div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
+  return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`} style={expanded ? { "--album-tint": albumTint } as CSSProperties : undefined}>{nowPlaying ? <>
+    {expanded ? <div className="music-artwork-frame"><div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div></div> : <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div>}<div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
     {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Playing" : "Paused"}</span></div>}<TrackProgress key={`${nowPlaying.track}|${nowPlaying.progressMs}|${nowPlaying.isPlaying}`} progressMs={nowPlaying.progressMs} durationMs={nowPlaying.durationMs} isPlaying={nowPlaying.isPlaying} expanded={expanded} /></div>
   </> : <div className="spotify-empty"><SpotifyLabel /><div className="spotify-empty-copy"><SpotifyMark className="spotify-empty-mark" /><strong>Nothing playing</strong><span>Spotify is quiet right now.</span></div></div>}</article>;
 }
