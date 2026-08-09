@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   const redirectUri = `${publicOrigin(request)}/api/auth/spotify/callback`;
   const state = randomUUID();
-  const response = NextResponse.redirect(buildSpotifyAuthorizeUrl(credentials.spotifyClientId, redirectUri, state), 302);
+  const response = NextResponse.redirect(new URL(buildSpotifyAuthorizeUrl(credentials.spotifyClientId, redirectUri, state)), 302);
   response.cookies.set(SPOTIFY_OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
     maxAge: 600,

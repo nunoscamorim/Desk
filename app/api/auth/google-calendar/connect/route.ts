@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const state = randomUUID();
   const authorizeUrl = buildGoogleAuthorizeUrl(credentials.googleClientId, redirectUri, state);
 
-  const response = NextResponse.redirect(authorizeUrl, 302);
+  const response = NextResponse.redirect(new URL(authorizeUrl), 302);
   // 10 minutes is generous for a consent screen click-through; short-lived on purpose
   // since this cookie only exists to prove the callback belongs to this connect attempt.
   response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, {

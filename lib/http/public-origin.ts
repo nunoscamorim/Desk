@@ -9,7 +9,10 @@
  */
 export function publicOrigin(request: Request) {
   const headers = request.headers;
-  const proto = (headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.replace(":", "")).split(",")[0].trim();
-  const host = headers.get("x-forwarded-host") ?? headers.get("host") ?? new URL(request.url).host;
-  return `${proto}://${host}`;
+  const requestUrl = new URL(request.url);
+  const proto = (headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "")).split(",")[0].trim();
+  const host = (headers.get("x-forwarded-host") ?? headers.get("host") ?? requestUrl.host).split(",")[0].trim();
+
+  if (proto !== "http" && proto !== "https") throw new Error("Invalid forwarded protocol");
+  return new URL(`${proto}://${host}`).origin;
 }
