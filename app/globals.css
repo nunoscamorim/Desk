@@ -76,15 +76,26 @@ button { font: inherit; }
 .device-actions button:disabled { opacity: .45; cursor: default; }
 .more-card h2 { margin-top: 22px; font-size: 28px; }
 .more-card p { max-width: 280px; margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.pomodoro-screen { height: 400px; display: grid; grid-template-columns: minmax(0, .8fr) minmax(460px, 1.2fr); gap: 16px; }
-.pomodoro-copy, .pomodoro-clock { border-radius: 17px; background: #20201e; }
-.pomodoro-copy { display: flex; flex-direction: column; justify-content: center; padding: 34px; }
-.pomodoro-mode { display: inline-flex; align-items: center; gap: 8px; color: var(--lime); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }.pomodoro-mode i { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lime) 14%, transparent); }
-.pomodoro-copy h2 { max-width: 330px; margin: 24px 0 10px; font-size: 34px; line-height: 1; letter-spacing: -.05em; }.pomodoro-copy p { margin: 0; color: var(--muted); font-size: 13px; }
-.pomodoro-clock { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 28px 34px; }
-.pomodoro-dial { width: 260px; height: 260px; flex: 0 0 auto; display: grid; place-content: center; border-radius: 50%; text-align: center; background: radial-gradient(circle at center, #20201e 63%, transparent 64%), conic-gradient(var(--lime) var(--timer-progress), #363633 0); }
-.pomodoro-dial time { color: var(--ink); font-size: 54px; font-weight: 750; line-height: 1; letter-spacing: -.07em; font-variant-numeric: tabular-nums; }.pomodoro-dial time span { color: var(--lime); }.pomodoro-dial small { margin-top: 10px; color: var(--muted); font-size: 10px; }
-.pomodoro-actions { width: 142px; display: grid; gap: 9px; }.pomodoro-actions button { min-height: 44px; border: 1px solid #3b3b36; border-radius: 10px; background: transparent; color: var(--ink); font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; }.pomodoro-actions button.primary { border-color: var(--lime); background: var(--lime); color: #11120e; }
+.pomodoro-screen { position: relative; height: 400px; overflow: hidden; padding: 22px 28px 24px; border-radius: 17px; background: radial-gradient(circle at 76% 54%, color-mix(in srgb, var(--lime) 7%, transparent), transparent 29%), #20201e; }
+.pomodoro-screen::before { content: ""; position: absolute; inset: 0; pointer-events: none; border: 1px solid rgba(255,255,255,.035); border-radius: inherit; }
+.pomodoro-header { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; }
+.pomodoro-tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: #171715; }
+.pomodoro-tabs button { min-width: 92px; min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 750; cursor: pointer; touch-action: manipulation; }
+.pomodoro-tabs button[aria-pressed="true"] { background: var(--lime); color: #11120e; box-shadow: inset 0 1px rgba(255,255,255,.32); }
+.pomodoro-rhythm { display: inline-flex; align-items: baseline; gap: 6px; color: var(--muted); font-size: 10px; }.pomodoro-rhythm strong { color: var(--ink); font-size: 15px; }.pomodoro-rhythm i { width: 3px; height: 3px; margin: 0 3px; border-radius: 50%; background: #5c5a54; }
+.pomodoro-layout { position: relative; z-index: 1; height: 300px; display: grid; grid-template-columns: minmax(0, 1fr) 330px; align-items: center; gap: 42px; }
+.pomodoro-copy { min-width: 0; padding-left: 10px; }
+.pomodoro-mode { display: inline-flex; align-items: center; gap: 8px; color: var(--lime); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }.pomodoro-mode i { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lime) 14%, transparent); }.pomodoro-screen.is-running .pomodoro-mode i { animation: pomodoro-pulse 1.8s ease-in-out infinite; }
+.pomodoro-copy h2 { max-width: 430px; margin: 18px 0 10px; font-size: 42px; line-height: .96; letter-spacing: -.055em; }.pomodoro-copy p { max-width: 380px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.pomodoro-clock { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pomodoro-dial { width: 252px; height: 252px; padding: 10px; border-radius: 50%; background: conic-gradient(var(--lime) var(--timer-progress), #363633 0); transform: rotate(-90deg); }
+.pomodoro-dial-inner { width: 100%; height: 100%; display: grid; place-content: center; border-radius: 50%; text-align: center; background: #20201e; transform: rotate(90deg); box-shadow: inset 0 0 0 1px rgba(255,255,255,.025); }
+.pomodoro-dial time { color: var(--ink); font-size: 62px; font-weight: 780; line-height: .9; letter-spacing: -.075em; font-variant-numeric: tabular-nums; }.pomodoro-dial time span { color: var(--lime); }.pomodoro-dial small { margin-top: 12px; color: var(--muted); font-size: 10px; font-weight: 650; }
+.pomodoro-progress-label { margin-top: 8px; color: #77746d; font-size: 9px; font-variant-numeric: tabular-nums; }
+.pomodoro-actions { display: flex; gap: 10px; margin-top: 28px; }.pomodoro-actions button { min-width: 118px; min-height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid #45443f; border-radius: 12px; background: transparent; color: var(--ink); font-size: 12px; font-weight: 750; cursor: pointer; touch-action: manipulation; }.pomodoro-actions button span { font-size: 13px; }.pomodoro-actions button.primary { min-width: 174px; border-color: var(--lime); background: var(--lime); color: #11120e; box-shadow: inset 0 1px rgba(255,255,255,.35); }
+.pomodoro-actions button:focus-visible, .pomodoro-tabs button:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
+@keyframes pomodoro-pulse { 50% { opacity: .45; transform: scale(.72); } }
+@media (prefers-reduced-motion: reduce) { .pomodoro-screen.is-running .pomodoro-mode i { animation: none; } }
 .card { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 0; border-radius: 17px; background: var(--panel); padding: 20px; }
 .card h2, .card strong, .card p, .card span { overflow-wrap: anywhere; }
 .card h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
