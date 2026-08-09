@@ -14,9 +14,11 @@ export class OpenWeatherApiService implements WeatherService {
 }
 
 export class SpotifyApiService implements SpotifyService {
-  constructor(private readonly accessToken: string) {}
+  constructor(private readonly getAccessToken: () => Promise<string | null>) {}
   async getNowPlaying(): Promise<SpotifyNowPlaying | null> {
-    const response = await fetch("https://api.spotify.com/v1/me/player", { headers: { Authorization: `Bearer ${this.accessToken}` }, cache: "no-store" });
+    const accessToken = await this.getAccessToken();
+    if (!accessToken) return null;
+    const response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" });
     if (response.status === 204) return null;
     if (!response.ok) throw new Error(`Spotify request failed (${response.status})`);
     const data = await response.json() as { is_playing: boolean; progress_ms: number; item?: { name: string; duration_ms: number; artists?: Array<{ name: string }>; album?: { name: string; images?: Array<{ url: string }> } } };

@@ -7,17 +7,25 @@ export class MockGoogleCalendarService implements GoogleCalendarService {
 
 type GoogleCalendarResponse = { items?: Array<{ id?: string; summary?: string; start?: { dateTime?: string; date?: string }; end?: { dateTime?: string; date?: string }; location?: string }> };
 
-/** OAuth-ready adapter. Token acquisition is intentionally outside this module. */
+/**
+ * Token acquisition lives in google-oauth.ts, not here: `getAccessToken` is called
+ * fresh on every request rather than holding a single token, since access tokens
+ * expire in about an hour and the caller (get-dashboard.ts) may run this minutes
+ * or hours apart. Returning null from the provider (OAuth not configured yet)
+ * is treated the same as any other failure — the caller falls back to the mock.
+ */
 export class GoogleCalendarApiService implements GoogleCalendarService {
-  constructor(private readonly accessToken: string, private readonly calendarId = "primary") {}
+  constructor(private readonly getAccessToken: () => Promise<string | null>, private readonly calendarId = "primary") {}
 
   async getTodayCalendar(): Promise<TodayCalendar> {
+    const accessToken = await this.getAccessToken();
+    if (!accessToken) throw new Error("Google Calendar is not connected");
     const start = new Date(); start.setHours(0, 0, 0, 0);
     // Load the upcoming week so the dashboard can show the next meeting even
     // when there is nothing scheduled today.
     const end = new Date(start); end.setDate(end.getDate() + 7);
     const params = new URLSearchParams({ calendarId: this.calendarId, timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "50" });
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`, { headers: { Authorization: `Bearer ${this.accessToken}` }, cache: "no-store" });
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" });
     if (!response.ok) throw new Error(`Google Calendar request failed (${response.status})`);
     const payload = await response.json() as GoogleCalendarResponse;
     const events: CalendarEvent[] = (payload.items ?? []).flatMap((event) => {

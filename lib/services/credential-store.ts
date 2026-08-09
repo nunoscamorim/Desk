@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export type ServiceCredentials = { googleClientId?: string; googleClientSecret?: string; spotifyClientId?: string; spotifyClientSecret?: string };
+export type ServiceCredentials = { googleClientId?: string; googleClientSecret?: string; googleRefreshToken?: string; googleCalendarId?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyRefreshToken?: string };
 const filePath = path.join(process.cwd(), "data", "service-credentials.enc");
 const key = () => { const secret = process.env.AUTH_SECRET; if (!secret) throw new Error("AUTH_SECRET is required"); return createHash("sha256").update(secret).digest(); };
 

@@ -65,18 +65,37 @@ The dashboard uses mocks when credentials are absent. Add these server-only vari
 ```env
 OPENWEATHER_API_KEY=
 WEATHER_LOCATION=Lisbon
-GOOGLE_CALENDAR_ACCESS_TOKEN=
 GOOGLE_CALENDAR_ID=primary
 SPOTIFY_ACCESS_TOKEN=
 COOLIFY_URL=
 COOLIFY_TOKEN=
 ```
 
-OAuth/token acquisition is intentionally not included yet. Never prefix these values with `NEXT_PUBLIC_`.
+Never prefix these values with `NEXT_PUBLIC_`.
+
+### Google Calendar (permanent access)
+
+Google access tokens expire in about an hour, so the dashboard doesn't use one directly. Instead:
+
+1. In `/admin/credentials`, save the Google **client ID** and **client secret** from a project in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (enable the Calendar API, add `<your-domain>/api/auth/google-calendar/callback` as a redirect URI).
+2. Click **Connect Google Calendar** on that same page and approve access once.
+3. The server stores the refresh token it gets back (encrypted, alongside the client id/secret) and mints a new access token from it on every dashboard request — no more manual token pasting, and it survives redeploys as long as `/app/data` is a persistent volume.
+
+One catch: if the Google Cloud project's OAuth consent screen is still in "Testing" status, Google force-expires the connection after **7 days** no matter what. Move it to "In production" (or "Internal" for a personal Workspace account) under OAuth consent screen settings for the connection to actually be permanent. A refresh token also expires after 6 months of the dashboard never calling the API — not a concern here since the widget polls regularly.
+
+`GOOGLE_CALENDAR_ACCESS_TOKEN` is still read as a legacy fallback if set directly, but it is not refreshed and will stop working after about an hour — useful only for a quick manual test, not the real integration.
+
+### Spotify (permanent access)
+
+1. In `/admin/credentials`, save the Spotify client ID and client secret.
+2. Register `<your-domain>/api/auth/spotify/callback` as an exact redirect URI in the Spotify Developer Dashboard.
+3. Click **Connect Spotify** and approve access once.
+
+The encrypted refresh token is stored alongside the other service credentials. The server uses it to mint short-lived access tokens automatically. `SPOTIFY_ACCESS_TOKEN` remains available as a temporary fallback for local testing.
 
 ## Production path
 
-1. Put token acquisition and refresh in a server-side auth layer.
+1. ~~Put token acquisition and refresh in a server-side auth layer.~~ Done for Google Calendar and Spotify (OAuth + refresh tokens, see above).
 2. Move widget configuration from localStorage to a small database or device configuration API.
 3. Add request timeouts, provider-specific retry/backoff, and integration health details before enabling live services broadly.
 4. Deploy the Next.js app to a reachable host and point the Waveshare display client at `/preview`.
