@@ -13,10 +13,10 @@ button { font: inherit; }
 .quote-source { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
 .weather { width: 252px; height: 68px; flex: 0 0 auto; padding-top: 4px; text-align: right; }
 .weather-reading { min-width: 0; flex: 1; }
-.weather-primary { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.weather-primary { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .weather-primary strong { color: #faf8f1; font-size: 31px; font-weight: 750; line-height: .9; letter-spacing: -.055em; font-variant-numeric: tabular-nums; }
-.weather-condition { overflow: hidden; color: var(--lime); font-size: 13px; font-weight: 700; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
-.weather-meta { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 5px; color: #aaa79e; font-size: 11px; font-weight: 550; white-space: nowrap; }
+.weather-heroicon { width: 28px; height: 28px; flex: 0 0 auto; color: var(--lime); stroke-width: 1.7; }
+.weather-meta { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 8px; color: #aaa79e; font-size: 11px; font-weight: 550; white-space: nowrap; }
 .weather-meta > span + span { padding-left: 6px; border-left: 1px solid #46443f; }
 .weather-location { min-width: 0; overflow: hidden; color: #d0ccc3; text-overflow: ellipsis; }
 .weather-range { color: #bbb7ae; font-variant-numeric: tabular-nums; }
