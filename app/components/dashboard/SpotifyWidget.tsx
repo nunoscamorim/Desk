@@ -11,17 +11,33 @@ function SpotifyLabel() {
   return <span className="card-label"><SpotifyMark /><span>Now playing</span></span>;
 }
 
-export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: SpotifyNowPlaying | null; expanded?: boolean }) {
+/**
+ * Advances the bar between polls.
+ *
+ * The caller keys this on the reading it came from, so every new poll remounts
+ * it and the count restarts from the server's own figure. That is what keeps
+ * the bar honest: without it the locally counted seconds would be added on top
+ * of each fresh reading and the position would run away from the real track.
+ */
+function TrackProgress({ progressMs, durationMs, isPlaying, expanded }: { progressMs: number; durationMs: number; isPlaying: boolean; expanded: boolean }) {
   const [elapsedMs, setElapsedMs] = useState(0);
   useEffect(() => {
-    if (!nowPlaying?.isPlaying) return;
-    const timer = window.setInterval(() => setElapsedMs((value) => Math.min(value + 1000, nowPlaying.durationMs - nowPlaying.progressMs)), 1000);
+    if (!isPlaying) return;
+    const timer = window.setInterval(() => setElapsedMs((value) => value + 1000), 1000);
     return () => window.clearInterval(timer);
-  }, [nowPlaying?.isPlaying, nowPlaying?.durationMs, nowPlaying?.progressMs]);
-  const progressMs = nowPlaying ? Math.min(nowPlaying.progressMs + elapsedMs, nowPlaying.durationMs) : 0;
-  const progress = nowPlaying ? (progressMs / nowPlaying.durationMs) * 100 : 0;
+  }, [isPlaying]);
+
+  const current = Math.min(progressMs + elapsedMs, durationMs);
+  const percent = durationMs > 0 ? (current / durationMs) * 100 : 0;
+  return <div className="spotify-playback">
+    {expanded && <div className="music-screen-times"><span>{formatDuration(current)}</span><span>{formatDuration(durationMs)}</span></div>}
+    <div className="track-progress" aria-label="Spotify progress" role="progressbar" aria-valuemin={0} aria-valuemax={durationMs} aria-valuenow={current}><span className="track-progress-fill" style={{ width: `${percent}%` }} /></div>
+  </div>;
+}
+
+export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: SpotifyNowPlaying | null; expanded?: boolean }) {
   return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`}>{nowPlaying ? <>
     <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div><div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
-    {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Playing" : "Paused"}</span></div>}<div className="spotify-playback">{expanded && <div className="music-screen-times"><span>{formatDuration(progressMs)}</span><span>{formatDuration(nowPlaying.durationMs)}</span></div>}<div className="track-progress" aria-label="Spotify progress" role="progressbar" aria-valuemin={0} aria-valuemax={nowPlaying.durationMs} aria-valuenow={progressMs}><span className="track-progress-fill" style={{ width: `${progress}%` }} /></div></div></div>
+    {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Playing" : "Paused"}</span></div>}<TrackProgress key={`${nowPlaying.track}|${nowPlaying.progressMs}|${nowPlaying.isPlaying}`} progressMs={nowPlaying.progressMs} durationMs={nowPlaying.durationMs} isPlaying={nowPlaying.isPlaying} expanded={expanded} /></div>
   </> : <div className="spotify-empty"><SpotifyLabel /><div className="spotify-empty-copy"><SpotifyMark className="spotify-empty-mark" /><strong>Nothing playing</strong><span>Spotify is quiet right now.</span></div></div>}</article>;
 }

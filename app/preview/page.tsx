@@ -4,10 +4,14 @@ import { useEffect, useState } from "react";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { defaultWidgetConfig, readWidgetConfig, type WidgetConfig } from "@/lib/dashboard/config";
 import { useDeviceSettings } from "@/lib/device/use-device-settings";
+import { useNowPlaying } from "@/lib/device/use-now-playing";
 import type { DashboardData } from "@/lib/dashboard/types";
 
 export default function PreviewPage() {
   const { settings, brightness } = useDeviceSettings();
+  // Now playing polls on its own fast interval so a track change shows up in
+  // seconds, whatever the display's dashboard refresh is set to.
+  const nowPlaying = useNowPlaying();
   const [data, setData] = useState<DashboardData | null>(null);
   const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgetConfig);
   const [accentColor, setAccentColor] = useState("#c9ff52");
@@ -25,5 +29,5 @@ export default function PreviewPage() {
     return () => { active = false; window.clearInterval(timer); };
   }, [settings.refreshSeconds]);
   if (!data) return <main className="dashboard loading-dashboard" aria-busy="true"><span className="sr-only">Loading preview…</span></main>;
-  return <div className="display-surface" style={{ filter: brightness < 100 ? `brightness(${Math.max(brightness, 0) / 100})` : undefined }} data-screen-off={brightness === 0 ? "true" : undefined}><DashboardShell data={data} widgets={widgets} accentColor={accentColor} fontFamily={fontFamily} /></div>;
+  return <div className="display-surface" style={{ filter: brightness < 100 ? `brightness(${Math.max(brightness, 0) / 100})` : undefined }} data-screen-off={brightness === 0 ? "true" : undefined}><DashboardShell data={nowPlaying === undefined ? data : { ...data, spotifyNowPlaying: nowPlaying }} widgets={widgets} accentColor={accentColor} fontFamily={fontFamily} /></div>;
 }

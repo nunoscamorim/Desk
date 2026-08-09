@@ -94,6 +94,8 @@ This is an unofficial protocol surface — Apple documents CalDAV for calendars,
 2. Register `<your-domain>/api/auth/spotify/callback` as an exact redirect URI in the Spotify Developer Dashboard.
 3. Click **Connect Spotify** and approve access once.
 
+Now playing is fetched from its own `/api/spotify` endpoint every 5 seconds, independently of the display's dashboard refresh interval — a track changes far too often to wait on the cadence that suits weather and a calendar. The endpoint caches the upstream reading for a few seconds, so the number of calls to Spotify stays flat regardless of how many viewers are watching, and the progress bar advances locally between polls.
+
 The encrypted refresh token is stored alongside the other service credentials. The server uses it to mint short-lived access tokens automatically. `SPOTIFY_ACCESS_TOKEN` remains available as a temporary fallback for local testing.
 
 ## Troubleshooting

@@ -53,7 +53,7 @@ async function buildGoogleCalendarService(configuration: ReturnType<typeof getSe
   return new MockGoogleCalendarService();
 }
 
-async function buildSpotifyService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<SpotifyService> {
+export async function buildSpotifyService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<SpotifyService> {
   const credentials = await readServiceCredentials();
   if (credentials.spotifyClientId && credentials.spotifyClientSecret && credentials.spotifyRefreshToken) {
     return new SpotifyApiService(() => getSpotifyAccessToken());
