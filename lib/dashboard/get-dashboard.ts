@@ -1,4 +1,4 @@
-import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, AppleRemindersService, EmptyCalendarService, ICLOUD_CALDAV_URL, IcalCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type IcalCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
+import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, EmptyCalendarService, GoogleTasksApiService, IcalCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type IcalCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
 import { readServiceCredentials } from "@/lib/services/credential-store";
 import { getGoogleAccessToken } from "@/lib/services/google-oauth";
 import { getSpotifyAccessToken } from "@/lib/services/spotify-oauth";
@@ -66,14 +66,14 @@ export async function buildSpotifyService(configuration: ReturnType<typeof getSe
 }
 
 /**
- * Apple Reminders needs no OAuth — an app-specific password is a long-lived
- * credential iCloud accepts directly — so an environment variable pair is the
- * whole setup, and its absence simply leaves the mock in place.
+ * Tasks reuse the calendar's Google connection rather than carrying credentials
+ * of their own, so connecting the account once covers both. Without that
+ * connection there is nothing to read and the mock stays in place.
  */
-function buildTasksService(configuration: ReturnType<typeof getServiceConfiguration>): TasksRemindersService {
-  const { appleId, appPassword, lists } = configuration.appleReminders;
-  if (!appleId || !appPassword) return new MockTasksRemindersService();
-  return new AppleRemindersService({ username: appleId, password: appPassword, baseUrl: ICLOUD_CALDAV_URL }, lists);
+async function buildTasksService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<TasksRemindersService> {
+  const credentials = await readServiceCredentials();
+  if (!credentials.googleRefreshToken) return new MockTasksRemindersService();
+  return new GoogleTasksApiService((options) => getGoogleAccessToken(options), configuration.googleTasks.lists);
 }
 
 export const buildDashboardServices = async (): Promise<DashboardServices> => {
@@ -88,7 +88,7 @@ export const buildDashboardServices = async (): Promise<DashboardServices> => {
     icalCalendar: usingIcalFeeds ? new IcalCalendarApiService(configuration.icalCalendar.feedUrls) : new EmptyCalendarService(),
     appleCalendar: new MockAppleCalendarService(),
     spotify: await buildSpotifyService(configuration),
-    tasks: buildTasksService(configuration),
+    tasks: await buildTasksService(configuration),
     codexUsage: new MockCodexUsageService(),
     claudeCodeUsage: new MockClaudeCodeUsageService(),
     coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService(),

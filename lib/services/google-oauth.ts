@@ -21,7 +21,11 @@ export const GOOGLE_OAUTH_STATE_COOKIE = "google_oauth_state";
 
 const TOKEN_TIMEOUT_MS = 5000;
 const TOKEN_BUDGET_MS = 6000;
-const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+// Calendar and Tasks are separate grants. An account connected before Tasks was
+// added holds a calendar-only refresh token and Google will refuse tasks reads
+// with 403 until the connect flow is run again — adding a scope does not widen
+// a grant that already exists.
+const GOOGLE_SCOPE = ["https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/tasks.readonly"].join(" ");
 const AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 

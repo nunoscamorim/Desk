@@ -38,7 +38,8 @@ export type Task = {
   id: string;
   title: string;
   status: "todo" | "in_progress" | "done";
-  priority: "low" | "medium" | "high";
+  /** Omitted by sources that have no concept of priority, such as Google Tasks. */
+  priority?: "low" | "medium" | "high";
   dueAt: string | null;
   project: string | null;
 };
