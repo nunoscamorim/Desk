@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { publicOrigin } from "@/lib/http/public-origin";
 import { readServiceCredentials } from "@/lib/services/credential-store";
@@ -16,9 +17,15 @@ export async function GET(request: Request) {
   const state = randomUUID();
   const authorizeUrl = buildGoogleAuthorizeUrl(credentials.googleClientId, redirectUri, state);
 
-  const response = Response.redirect(authorizeUrl, 302);
+  const response = NextResponse.redirect(authorizeUrl, 302);
   // 10 minutes is generous for a consent screen click-through; short-lived on purpose
   // since this cookie only exists to prove the callback belongs to this connect attempt.
-  response.headers.append("Set-Cookie", `${GOOGLE_OAUTH_STATE_COOKIE}=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+  response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    maxAge: 600,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
   return response;
 }
