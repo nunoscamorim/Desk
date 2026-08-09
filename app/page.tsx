@@ -17,7 +17,7 @@ async function fetchDashboard(signal?: AbortSignal): Promise<DashboardData> {
 }
 
 function LoadingDashboard() {
-  return <main className="dashboard loading-dashboard" aria-busy="true" aria-label="Loading dashboard"><header className="topbar"><div><span className="skeleton line small" /><span className="skeleton line heading" /></div><span className="skeleton weather-skeleton" /></header><section className="dashboard-grid">{["next-card", "calendar-card", "music-card", "tasks-card", "usage-card"].map((name) => <article className={`card ${name} skeleton-card`} key={name}><span className="skeleton line small" /><span className="skeleton block" /><span className="skeleton line" /></article>)}</section><span className="sr-only">Loading dashboard data…</span></main>;
+  return <main className="dashboard loading-dashboard" aria-busy="true" aria-label="Loading dashboard"><header className="topbar"><div><span className="skeleton line small" /><span className="skeleton line heading" /></div><span className="skeleton weather-skeleton" /></header><section className="dashboard-grid">{defaultWidgetConfig.filter((widget) => widget.enabled).map((widget) => <div className={`configured-widget configured-${widget.type}`} style={{ left: widget.x, top: widget.y, width: widget.width, height: widget.height }} key={widget.id}><article className="card skeleton-card"><span className="skeleton line small" /><span className="skeleton block" /><span className="skeleton line" /></article></div>)}</section><span className="sr-only">Loading dashboard data…</span></main>;
 }
 
 function ErrorDashboard({ message, retry }: { message: string; retry: () => void }) {
@@ -30,7 +30,9 @@ export default function Home() {
   const [accentColor, setAccentColor] = useState("#c9ff52");
   const [fontFamily, setFontFamily] = useState("Arial");
 
-  useEffect(() => { queueMicrotask(() => { setWidgets(readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets"))); setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52"); setFontFamily(window.localStorage.getItem("desk-dashboard-font") || "Arial"); }); void fetch("/api/config").then((response) => response.json() as Promise<{ widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string }>).then((config) => { if (config.widgets) setWidgets(config.widgets); if (config.accentColor) setAccentColor(config.accentColor); const locallySelectedFont = window.localStorage.getItem("desk-dashboard-font"); setFontFamily(config.fontFamily && (config.fontFamily !== "Arial" || !locallySelectedFont) ? config.fontFamily : locallySelectedFont || "Arial"); }).catch(() => undefined); }, []);
+  // Render the saved server config verbatim so this dashboard shows exactly what
+  // the live display shows. localStorage is only an offline fallback.
+  useEffect(() => { void fetch("/api/config").then((response) => response.json() as Promise<{ widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string }>).then((config) => { setWidgets(config.widgets ?? defaultWidgetConfig); setAccentColor(config.accentColor ?? "#c9ff52"); setFontFamily(config.fontFamily ?? "Arial"); }).catch(() => { setWidgets(readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets"))); setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52"); setFontFamily(window.localStorage.getItem("desk-dashboard-font") || "Arial"); }); }, []);
 
   useEffect(() => {
     const controller = new AbortController();
