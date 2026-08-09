@@ -17,7 +17,7 @@ async function fetchDashboard(signal?: AbortSignal): Promise<DashboardData> {
 }
 
 function LoadingDashboard() {
-  return <main className="dashboard loading-dashboard" aria-busy="true" aria-label="Loading dashboard"><header className="topbar"><div><span className="skeleton line small" /><span className="skeleton line heading" /></div><span className="skeleton weather-skeleton" /></header><section className="dashboard-grid">{["next-card", "calendar-card", "music-card", "tasks-card", "usage-card"].map((name) => <article className={`card ${name} skeleton-card`} key={name}><span className="skeleton line small" /><span className="skeleton block" /><span className="skeleton line" /></article>)}</section><span className="sr-only">Loading dashboard data…</span></main>;
+  return <main className="dashboard loading-dashboard" aria-busy="true" aria-label="Loading dashboard"><header className="topbar"><div><span className="skeleton line small" /><span className="skeleton line heading" /></div><span className="skeleton weather-skeleton" /></header><section className="dashboard-grid">{defaultWidgetConfig.filter((widget) => widget.enabled).map((widget) => <div className={`configured-widget configured-${widget.type}`} style={{ left: widget.x, top: widget.y, width: widget.width, height: widget.height }} key={widget.id}><article className="card skeleton-card"><span className="skeleton line small" /><span className="skeleton block" /><span className="skeleton line" /></article></div>)}</section><span className="sr-only">Loading dashboard data…</span></main>;
 }
 
 function ErrorDashboard({ message, retry }: { message: string; retry: () => void }) {
