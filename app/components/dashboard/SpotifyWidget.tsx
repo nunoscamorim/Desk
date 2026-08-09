@@ -36,8 +36,45 @@ function TrackProgress({ progressMs, durationMs, isPlaying, expanded }: { progre
 }
 
 export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: SpotifyNowPlaying | null; expanded?: boolean }) {
+  const [albumTint, setAlbumTint] = useState("rgba(255, 255, 255, 0.03)");
+  useEffect(() => {
+    if (!expanded || !nowPlaying?.artworkUrl) return;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.src = nowPlaying.artworkUrl;
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 32;
+      canvas.height = 32;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return;
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      try {
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        const buckets = new Map<string, { count: number; red: number; green: number; blue: number }>();
+        for (let index = 0; index < pixels.length; index += 16) {
+          const alpha = pixels[index + 3];
+          if (alpha < 128) continue;
+          const red = pixels[index];
+          const green = pixels[index + 1];
+          const blue = pixels[index + 2];
+          const key = `${red >> 5}-${green >> 5}-${blue >> 5}`;
+          const bucket = buckets.get(key) ?? { count: 0, red: 0, green: 0, blue: 0 };
+          bucket.count += 1;
+          bucket.red += red;
+          bucket.green += green;
+          bucket.blue += blue;
+          buckets.set(key, bucket);
+        }
+        const dominant = [...buckets.values()].sort((left, right) => right.count - left.count)[0];
+        if (dominant) setAlbumTint(`rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.1)`);
+      } catch {
+        setAlbumTint("rgba(255, 255, 255, 0.03)");
+      }
+    };
+  }, [expanded, nowPlaying?.artworkUrl]);
   return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`}>{nowPlaying ? <>
-    <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div><div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
+    {expanded ? <div className="music-artwork-frame" style={{ "--album-tint": albumTint } as CSSProperties}><div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div></div> : <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div>}<div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
     {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Playing" : "Paused"}</span></div>}<TrackProgress key={`${nowPlaying.track}|${nowPlaying.progressMs}|${nowPlaying.isPlaying}`} progressMs={nowPlaying.progressMs} durationMs={nowPlaying.durationMs} isPlaying={nowPlaying.isPlaying} expanded={expanded} /></div>
   </> : <div className="spotify-empty"><SpotifyLabel /><div className="spotify-empty-copy"><SpotifyMark className="spotify-empty-mark" /><strong>Nothing playing</strong><span>Spotify is quiet right now.</span></div></div>}</article>;
 }
