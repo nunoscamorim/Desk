@@ -82,7 +82,10 @@ GOOGLE_TASKS_LISTS=*
 
 `*` means every task list; name the ones you want instead (`My Tasks,Work`) and matching ignores case. Leaving the variable unset means every list too — `*` is there for hosts like Coolify that will not store an empty value.
 
-**Reading tasks needs its own OAuth scope.** An account connected before this existed holds a calendar-only grant, and adding the scope here does not widen a grant that already exists — Google refuses those reads with 403 until you **reconnect the account** in `/admin/credentials`. The log says exactly that when it happens.
+Two things have to be in place first, and both surface as a 403 with Google's own explanation in the log:
+
+1. **Enable the Google Tasks API** on the same Cloud project as the Calendar API — they are separate APIs and enabling one does not enable the other.
+2. **Reconnect the account** in `/admin/credentials`. Reading tasks needs its own OAuth scope, and adding it here does not widen a grant that already exists, so a connection made before this existed stays calendar-only until it is re-consented.
 
 Completed, hidden and untitled tasks are dropped, and what is left sorts by due date with undated items last, so the few rows the widget shows are the ones that matter. A list that fails is logged and skipped rather than blanking the widget. Google Tasks has no notion of priority, so the widget simply omits that label rather than inventing a level.
 
@@ -107,7 +110,7 @@ Every integration degrades into plausible-looking data, so a broken service is i
 | `[credentials] … could not be decrypted` | `AUTH_SECRET` no longer matches the one that encrypted the file | Restore the original secret, or reconnect each integration |
 | `[google-calendar] using GOOGLE_CALENDAR_ACCESS_TOKEN…` | The stored refresh token was unreadable and it fell back to the legacy token, which dies in ~1hr | Check the `/app/data` volume and `AUTH_SECRET`, then unset the variable |
 | `Google Calendar must be reconnected: …` | The refresh token itself was rejected (`invalid_grant`) — revoked, or force-expired by a consent screen still in "Testing" | Reconnect in `/admin/credentials`; move the consent screen to "In production" |
-| `Google Tasks access was refused …` | The Google grant predates the tasks scope | Reconnect the account in `/admin/credentials` |
+| `Google Tasks access refused: …` | Google's reason is quoted in the line — usually the Tasks API not enabled on the project, or a grant predating the tasks scope | Enable the Tasks API in the Cloud Console, or reconnect the account |
 | `[google-tasks] list failed: …` | One task list errored; the others still merged | Reason is appended to the line |
 | `[ical] feed failed: …` | One .ics feed is unreachable or malformed; the others still merged | Re-check that feed URL |
 | `[dashboard] <service> unavailable, using fallback` | That service timed out or errored | Reason is appended to the line |

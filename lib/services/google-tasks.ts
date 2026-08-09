@@ -23,6 +23,14 @@ type GoogleTask = { id?: string; title?: string; status?: string; due?: string; 
 
 let cachedLists: { expiresAt: number; key: string; lists: TaskList[] } | null = null;
 
+/** Google reports why it refused in the body; a bare status code hides it. */
+async function googleErrorMessage(response: Response): Promise<string | null> {
+  try {
+    const body = await response.json() as { error?: { message?: string } };
+    return body.error?.message ?? null;
+  } catch { return null; }
+}
+
 export class GoogleTasksApiService implements TasksRemindersService {
   constructor(private readonly getAccessToken: (options?: { forceRefresh?: boolean }) => Promise<string | null>, private readonly listNames: string[] = []) {}
 
@@ -38,8 +46,15 @@ export class GoogleTasksApiService implements TasksRemindersService {
       if (!refreshed) throw new Error("Google Tasks is not connected");
       response = await call(refreshed);
     }
-    if (response.status === 403) throw new Error("Google Tasks access was refused — reconnect the account in /admin/credentials to grant the tasks scope");
-    if (!response.ok) throw new Error(`Google Tasks request failed (${response.status})`);
+    if (!response.ok) {
+      const detail = await googleErrorMessage(response);
+      // 403 has two quite different causes and Google's own text is the only
+      // thing that separates them: the Tasks API not enabled on the Cloud
+      // project, or a grant that predates the tasks scope. Pass it through
+      // rather than asserting one and sending someone down the wrong path.
+      if (response.status === 403) throw new Error(`Google Tasks access refused${detail ? `: ${detail}` : ""} — enable the Tasks API in the Google Cloud project, and reconnect the account in /admin/credentials if the connection predates the tasks scope`);
+      throw new Error(`Google Tasks request failed (${response.status})${detail ? `: ${detail}` : ""}`);
+    }
     return response.json();
   }
 
