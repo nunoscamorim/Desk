@@ -2,6 +2,7 @@ export type ServiceConfiguration = {
   weather: { location: string; latitude: number; longitude: number };
   googleCalendar: { accessToken?: string; calendarId: string };
   icalCalendar: { feedUrls: string[] };
+  appleReminders: { appleId?: string; appPassword?: string; lists: string[] };
   spotify: { accessToken?: string };
   coolify: { url?: string; token?: string };
 };
@@ -18,6 +19,14 @@ export function getServiceConfiguration(): ServiceConfiguration {
     // Comma or newline separated so several published calendars — work and
     // personal, from any provider — can be merged onto one display.
     icalCalendar: { feedUrls: (process.env.CALENDAR_ICS_URLS ?? "").split(/[\n,]/).map((url) => url.trim()).filter(Boolean) },
+    // An app-specific password, not the Apple ID password — iCloud rejects the
+    // account password outright once two-factor auth is on. An empty list means
+    // every reminder list.
+    appleReminders: {
+      appleId: process.env.APPLE_REMINDERS_ID,
+      appPassword: process.env.APPLE_REMINDERS_APP_PASSWORD?.replace(/\s/g, ""),
+      lists: (process.env.APPLE_REMINDERS_LISTS ?? "").split(/[\n,]/).map((name) => name.trim()).filter(Boolean),
+    },
     spotify: { accessToken: process.env.SPOTIFY_ACCESS_TOKEN },
     coolify: { url: process.env.COOLIFY_URL, token: process.env.COOLIFY_TOKEN },
   };
@@ -31,7 +40,7 @@ export function getServiceConfigurationStatus() {
     icalCalendar: { configured: configuration.icalCalendar.feedUrls.length > 0, feedCount: configuration.icalCalendar.feedUrls.length },
     appleCalendar: { configured: false },
     spotify: { configured: Boolean(configuration.spotify.accessToken) },
-    tasksReminders: { configured: false },
+    tasksReminders: { configured: Boolean(configuration.appleReminders.appleId && configuration.appleReminders.appPassword) },
     codexUsage: { configured: false },
     claudeCodeUsage: { configured: false },
     coolify: { configured: Boolean(configuration.coolify.url), url: configuration.coolify.url ?? null },
