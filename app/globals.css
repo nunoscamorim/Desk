@@ -52,7 +52,7 @@ button { font: inherit; }
 .meeting-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .meeting-kicker { display: inline-flex; align-items: center; gap: 7px; color: rgba(17,18,14,.7); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .meeting-live-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #11120e; box-shadow: 0 0 0 4px rgba(17,18,14,.12); }
-.meeting-header time { color: #11120e; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.meeting-header time { color: #11120e; font-size: 19px; font-weight: 850; line-height: 1; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
 .meeting-countdown { display: flex; align-items: flex-end; gap: 9px; margin: 12px 0 10px; }
 .meeting-countdown strong { color: #11120e; font-size: clamp(42px, 22cqh, 62px); font-weight: 750; line-height: .78; letter-spacing: -.075em; font-variant-numeric: tabular-nums; }
 .meeting-countdown > span { display: flex; flex-direction: column; gap: 2px; padding-bottom: 1px; color: #11120e; font-size: 11px; font-weight: 800; }

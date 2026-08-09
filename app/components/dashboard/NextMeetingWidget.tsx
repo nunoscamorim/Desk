@@ -1,6 +1,6 @@
 import type { DashboardData } from "@/lib/dashboard/types";
 import { useEffect, useState } from "react";
-import { formatTime } from "./utils";
+import { formatTimeWithSeconds } from "./utils";
 
 export function NextMeetingWidget({ meeting }: { meeting: DashboardData["nextMeeting"] }) {
   const [now, setNow] = useState(() => Date.now());
@@ -8,7 +8,7 @@ export function NextMeetingWidget({ meeting }: { meeting: DashboardData["nextMee
   const minutesUntil = meeting ? Math.max(0, Math.ceil((new Date(meeting.startAt).getTime() - now) / 60000)) : 0;
   const meetingDay = meeting ? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(meeting.startAt)) : "";
   return <article className="card next-card">{meeting ? <>
-    <header className="meeting-header"><span className="meeting-kicker"><span className="meeting-live-dot" />Up next</span><time dateTime={meeting.startAt}>{formatTime(meeting.startAt)}</time></header>
+    <header className="meeting-header"><span className="meeting-kicker"><span className="meeting-live-dot" />Up next</span><time dateTime={meeting.startAt}>{formatTimeWithSeconds(meeting.startAt)}</time></header>
     <div className="meeting-countdown"><strong>{minutesUntil}</strong><span>{minutesUntil === 1 ? "minute" : "minutes"}<small>until start</small></span></div>
     <div className="meeting-copy"><h2>{meeting.title}</h2><p>{meeting.location ?? "No location"}</p></div>
     <footer className="meeting-footer"><span className="meeting-rail"><i /></span><span>{meetingDay}</span></footer>
