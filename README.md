@@ -78,11 +78,11 @@ Apple Reminders has no public API and cannot be published to a URL the way a cal
 
 ```env
 APPLE_REMINDERS_ID=you@icloud.com
-APPLE_REMINDERS_APP_PASSWORD=abcd-efgh-ijkl-mnop
+APPLE_REMINDERS_APP_PASSWORD=abcdefghijklmnop
 APPLE_REMINDERS_LISTS=*
 ```
 
-`APPLE_REMINDERS_APP_PASSWORD` must be an **app-specific password**, generated at [appleid.apple.com](https://appleid.apple.com) under Sign-In and Security — iCloud rejects the account password outright once two-factor auth is on. Paste the password exactly as Apple displays it — the hyphens are part of it. Set `APPLE_REMINDERS_LISTS` to `*` for every list, or name the ones you want (`Reminders,Groceries`); matching ignores case. Leaving the variable unset also means every list, but `*` is there for hosts like Coolify whose environment editor will not accept an empty value.
+`APPLE_REMINDERS_APP_PASSWORD` must be an **app-specific password**, generated at [appleid.apple.com](https://appleid.apple.com) under Sign-In and Security — iCloud rejects the account password outright once two-factor auth is on. Paste it exactly as Apple gave it to you — the format varies (some accounts show 16 plain characters, others four hyphenated groups) and either works as-is; only surrounding spaces are stripped. Set `APPLE_REMINDERS_LISTS` to `*` for every list, or name the ones you want (`Reminders,Groceries`); matching ignores case. Leaving the variable unset also means every list, but `*` is there for hosts like Coolify whose environment editor will not accept an empty value.
 
 Reminders map onto the widget as you would expect: the list name becomes the project, `PRIORITY` 1–4/5/6–9 becomes high/medium/low, and a reminder with no priority set reads as low so flagged ones still stand out. Completed and cancelled reminders are dropped, and what is left sorts by due date with undated items last, so the few rows the widget shows are the ones that matter. One unreachable list is logged and skipped rather than blanking the widget.
 
