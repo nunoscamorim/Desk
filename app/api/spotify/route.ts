@@ -12,10 +12,11 @@ import type { SpotifyNowPlaying } from "@/lib/dashboard/types";
  * dragging the rest of the dashboard — and its cost is one upstream request.
  */
 
-// Every viewer polls this, and the ESP display is rarely the only one. A short
-// server-side cache keeps the upstream call rate flat no matter how many are
-// watching, while staying well inside the client's polling interval.
-const CACHE_TTL_MS = 3000;
+// Collapses requests that arrive together — the ESP display is rarely the only
+// viewer — so the upstream call rate stays flat however many are watching.
+// Deliberately shorter than the client's polling interval: its job is to absorb
+// concurrent viewers, not to throttle a single one into reading stale data.
+const CACHE_TTL_MS = 1500;
 // A failed poll serves the last good reading briefly rather than blanking the
 // widget: a dropped request should not read as "nothing is playing".
 const STALE_GRACE_MS = 30000;

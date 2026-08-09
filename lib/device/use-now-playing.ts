@@ -13,7 +13,7 @@ import type { SpotifyNowPlaying } from "@/lib/dashboard/types";
  * own server rather than to Spotify.
  */
 
-const POLL_MS = 5000;
+const POLL_MS = 3000;
 
 export function useNowPlaying(enabled = true): SpotifyNowPlaying | null | undefined {
   // undefined means "not asked yet", so the caller can keep showing whatever the
