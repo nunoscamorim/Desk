@@ -63,8 +63,9 @@ Add provider variables from `.env.example` only when those integrations are conf
 The dashboard uses mocks when credentials are absent. Add these server-only variables to enable the available adapters:
 
 ```env
-OPENWEATHER_API_KEY=
 WEATHER_LOCATION=Lisbon
+WEATHER_LATITUDE=38.7223
+WEATHER_LONGITUDE=-9.1393
 GOOGLE_CALENDAR_ID=primary
 SPOTIFY_ACCESS_TOKEN=
 COOLIFY_URL=
@@ -72,6 +73,8 @@ COOLIFY_TOKEN=
 ```
 
 Never prefix these values with `NEXT_PUBLIC_`.
+
+Weather data comes from Open-Meteo and does not require an API key. Set the display name and coordinates with `WEATHER_LOCATION`, `WEATHER_LATITUDE`, and `WEATHER_LONGITUDE`.
 
 ### Google Calendar (permanent access)
 

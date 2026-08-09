@@ -3,13 +3,51 @@ import type { CoolifyService, CoolifyStatus } from "./coolify";
 import type { SpotifyService } from "./spotify";
 import type { WeatherService } from "./weather";
 
-export class OpenWeatherApiService implements WeatherService {
-  constructor(private readonly apiKey: string, private readonly location = "Leça do Balio") {}
+const weatherCondition = (code: number) => {
+  if (code === 0) return "Clear";
+  if (code <= 2) return "Partly cloudy";
+  if (code === 3) return "Overcast";
+  if (code === 45 || code === 48) return "Fog";
+  if (code >= 51 && code <= 57) return "Drizzle";
+  if (code >= 61 && code <= 67) return "Rain";
+  if (code >= 71 && code <= 77) return "Snow";
+  if (code >= 80 && code <= 82) return "Rain showers";
+  if (code === 85 || code === 86) return "Snow showers";
+  if (code >= 95) return "Thunderstorm";
+  return "Unknown";
+};
+
+export class OpenMeteoApiService implements WeatherService {
+  constructor(
+    private readonly location = "Leça do Balio",
+    private readonly latitude = 41.2077,
+    private readonly longitude = -8.6224,
+  ) {}
+
   async getCurrentWeather(): Promise<Weather> {
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(this.location)}&units=metric&appid=${this.apiKey}`, { cache: "no-store" });
+    const url = new URL("https://api.open-meteo.com/v1/forecast");
+    url.search = new URLSearchParams({
+      latitude: String(this.latitude),
+      longitude: String(this.longitude),
+      current: "temperature_2m,apparent_temperature,weather_code",
+      daily: "temperature_2m_max,temperature_2m_min",
+      forecast_days: "1",
+      timezone: "auto",
+    }).toString();
+    const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error(`Weather request failed (${response.status})`);
-    const data = await response.json() as { name: string; main: { temp: number; feels_like: number; temp_max: number; temp_min: number }; weather?: Array<{ main?: string }> };
-    return { location: data.name, temperatureC: Math.round(data.main.temp), feelsLikeC: Math.round(data.main.feels_like), condition: data.weather?.[0]?.main ?? "Unknown", highC: Math.round(data.main.temp_max), lowC: Math.round(data.main.temp_min) };
+    const data = await response.json() as {
+      current: { temperature_2m: number; apparent_temperature: number; weather_code: number };
+      daily: { temperature_2m_max: number[]; temperature_2m_min: number[] };
+    };
+    return {
+      location: this.location,
+      temperatureC: Math.round(data.current.temperature_2m),
+      feelsLikeC: Math.round(data.current.apparent_temperature),
+      condition: weatherCondition(data.current.weather_code),
+      highC: Math.round(data.daily.temperature_2m_max[0]),
+      lowC: Math.round(data.daily.temperature_2m_min[0]),
+    };
   }
 }
 

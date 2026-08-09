@@ -1,4 +1,4 @@
-import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenWeatherApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
+import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
 import { readServiceCredentials } from "@/lib/services/credential-store";
 import { getGoogleAccessToken } from "@/lib/services/google-oauth";
 import { getSpotifyAccessToken } from "@/lib/services/spotify-oauth";
@@ -44,7 +44,7 @@ async function buildSpotifyService(configuration: ReturnType<typeof getServiceCo
 export const buildDashboardServices = async (): Promise<DashboardServices> => {
   const configuration = getServiceConfiguration();
   return {
-    weather: configuration.weather.apiKey ? new OpenWeatherApiService(configuration.weather.apiKey, configuration.weather.location) : new MockWeatherService(),
+    weather: new OpenMeteoApiService(configuration.weather.location, configuration.weather.latitude, configuration.weather.longitude),
     googleCalendar: await buildGoogleCalendarService(configuration),
     appleCalendar: new MockAppleCalendarService(),
     spotify: await buildSpotifyService(configuration),
@@ -58,7 +58,7 @@ export const buildDashboardServices = async (): Promise<DashboardServices> => {
 // Kept for anything still constructing services synchronously (e.g. ad hoc scripts);
 // the real dashboard route always awaits buildDashboardServices() instead so the
 // OAuth-backed calendar is available.
-export const mockDashboardServices = (): DashboardServices => { const configuration = getServiceConfiguration(); return { weather: configuration.weather.apiKey ? new OpenWeatherApiService(configuration.weather.apiKey, configuration.weather.location) : new MockWeatherService(), googleCalendar: configuration.googleCalendar.accessToken ? new GoogleCalendarApiService(async () => configuration.googleCalendar.accessToken ?? null, configuration.googleCalendar.calendarId) : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), spotify: configuration.spotify.accessToken ? new SpotifyApiService(async () => configuration.spotify.accessToken ?? null) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService() }; };
+export const mockDashboardServices = (): DashboardServices => { const configuration = getServiceConfiguration(); return { weather: new OpenMeteoApiService(configuration.weather.location, configuration.weather.latitude, configuration.weather.longitude), googleCalendar: configuration.googleCalendar.accessToken ? new GoogleCalendarApiService(async () => configuration.googleCalendar.accessToken ?? null, configuration.googleCalendar.calendarId) : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), spotify: configuration.spotify.accessToken ? new SpotifyApiService(async () => configuration.spotify.accessToken ?? null) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService() }; };
 
 export async function getDashboard(services?: DashboardServices): Promise<DashboardData> {
   const resolvedServices = services ?? (await buildDashboardServices());
