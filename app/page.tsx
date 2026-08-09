@@ -30,7 +30,9 @@ export default function Home() {
   const [accentColor, setAccentColor] = useState("#c9ff52");
   const [fontFamily, setFontFamily] = useState("Arial");
 
-  useEffect(() => { queueMicrotask(() => { setWidgets(readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets"))); setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52"); setFontFamily(window.localStorage.getItem("desk-dashboard-font") || "Arial"); }); void fetch("/api/config").then((response) => response.json() as Promise<{ widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string }>).then((config) => { if (config.widgets) setWidgets(config.widgets); if (config.accentColor) setAccentColor(config.accentColor); const locallySelectedFont = window.localStorage.getItem("desk-dashboard-font"); setFontFamily(config.fontFamily && (config.fontFamily !== "Arial" || !locallySelectedFont) ? config.fontFamily : locallySelectedFont || "Arial"); }).catch(() => undefined); }, []);
+  // Render the saved server config verbatim so this dashboard shows exactly what
+  // the live display shows. localStorage is only an offline fallback.
+  useEffect(() => { void fetch("/api/config").then((response) => response.json() as Promise<{ widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string }>).then((config) => { setWidgets(config.widgets ?? defaultWidgetConfig); setAccentColor(config.accentColor ?? "#c9ff52"); setFontFamily(config.fontFamily ?? "Arial"); }).catch(() => { setWidgets(readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets"))); setAccentColor(window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52"); setFontFamily(window.localStorage.getItem("desk-dashboard-font") || "Arial"); }); }, []);
 
   useEffect(() => {
     const controller = new AbortController();
