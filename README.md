@@ -72,11 +72,29 @@ Get the URLs from iCloud (Calendar.app → Share Calendar → Public Calendar), 
 
 When `CALENDAR_ICS_URLS` is set it replaces the Google backend rather than running alongside it — provider ids differ, so the same meeting would otherwise appear twice.
 
+### Apple Reminders (tasks widget)
+
+Apple Reminders has no public API and cannot be published to a URL the way a calendar can, but iCloud exposes reminder lists over CalDAV as `VTODO` collections. The server reads them directly:
+
+```env
+APPLE_REMINDERS_ID=you@icloud.com
+APPLE_REMINDERS_APP_PASSWORD=abcd-efgh-ijkl-mnop
+APPLE_REMINDERS_LISTS=Reminders,Groceries
+```
+
+`APPLE_REMINDERS_APP_PASSWORD` must be an **app-specific password**, generated at [appleid.apple.com](https://appleid.apple.com) under Sign-In and Security — iCloud rejects the account password outright once two-factor auth is on. Leave `APPLE_REMINDERS_LISTS` empty to read every list, or name the ones you want; matching ignores case.
+
+Reminders map onto the widget as you would expect: the list name becomes the project, `PRIORITY` 1–4/5/6–9 becomes high/medium/low, and a reminder with no priority set reads as low so flagged ones still stand out. Completed and cancelled reminders are dropped, and what is left sorts by due date with undated items last, so the few rows the widget shows are the ones that matter. One unreachable list is logged and skipped rather than blanking the widget.
+
+This is an unofficial protocol surface — Apple documents CalDAV for calendars, not Reminders — so it could change without notice. It has been stable for years and is what third-party task clients use.
+
 ### Spotify (permanent access)
 
 1. In `/admin/credentials`, save the Spotify client ID and client secret.
 2. Register `<your-domain>/api/auth/spotify/callback` as an exact redirect URI in the Spotify Developer Dashboard.
 3. Click **Connect Spotify** and approve access once.
+
+Now playing is fetched from its own `/api/spotify` endpoint every 3 seconds, independently of the display's dashboard refresh interval — a track changes far too often to wait on the cadence that suits weather and a calendar. The endpoint caches the upstream reading for a few seconds, so the number of calls to Spotify stays flat regardless of how many viewers are watching, and the progress bar advances locally between polls.
 
 The encrypted refresh token is stored alongside the other service credentials. The server uses it to mint short-lived access tokens automatically. `SPOTIFY_ACCESS_TOKEN` remains available as a temporary fallback for local testing.
 

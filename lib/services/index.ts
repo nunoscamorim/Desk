@@ -2,6 +2,7 @@ export * from "./weather";
 export * from "./google-calendar";
 export * from "./apple-calendar";
 export * from "./ical-calendar";
+export * from "./apple-reminders";
 export * from "./spotify";
 export * from "./tasks-reminders";
 export * from "./codex-usage";

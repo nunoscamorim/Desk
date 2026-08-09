@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { defaultWidgetConfig, readWidgetConfig, type WidgetConfig } from "@/lib/dashboard/config";
+import { useNowPlaying } from "@/lib/device/use-now-playing";
 import type { DashboardData } from "@/lib/dashboard/types";
 
 type LoadState =
@@ -29,6 +30,8 @@ export default function Home() {
   const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgetConfig);
   const [accentColor, setAccentColor] = useState("#c9ff52");
   const [fontFamily, setFontFamily] = useState("Arial");
+  // Polls independently of the dashboard payload so the music widget stays live.
+  const nowPlaying = useNowPlaying();
 
   // Render the saved server config verbatim so this dashboard shows exactly what
   // the live display shows. localStorage is only an offline fallback.
@@ -50,5 +53,5 @@ export default function Home() {
 
   if (state.status === "loading") return <LoadingDashboard />;
   if (state.status === "error") return <ErrorDashboard message={state.message} retry={retry} />;
-  return <DashboardShell data={state.data} widgets={widgets} accentColor={accentColor} fontFamily={fontFamily} />;
+  return <DashboardShell data={nowPlaying === undefined ? state.data : { ...state.data, spotifyNowPlaying: nowPlaying }} widgets={widgets} accentColor={accentColor} fontFamily={fontFamily} />;
 }

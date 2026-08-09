@@ -1,4 +1,4 @@
-import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, EmptyCalendarService, IcalCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type IcalCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
+import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, AppleRemindersService, EmptyCalendarService, ICLOUD_CALDAV_URL, IcalCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type IcalCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
 import { readServiceCredentials } from "@/lib/services/credential-store";
 import { getGoogleAccessToken } from "@/lib/services/google-oauth";
 import { getSpotifyAccessToken } from "@/lib/services/spotify-oauth";
@@ -53,7 +53,7 @@ async function buildGoogleCalendarService(configuration: ReturnType<typeof getSe
   return new MockGoogleCalendarService();
 }
 
-async function buildSpotifyService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<SpotifyService> {
+export async function buildSpotifyService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<SpotifyService> {
   const credentials = await readServiceCredentials();
   if (credentials.spotifyClientId && credentials.spotifyClientSecret && credentials.spotifyRefreshToken) {
     return new SpotifyApiService(() => getSpotifyAccessToken());
@@ -63,6 +63,17 @@ async function buildSpotifyService(configuration: ReturnType<typeof getServiceCo
     return new SpotifyApiService(async () => token);
   }
   return new MockSpotifyService();
+}
+
+/**
+ * Apple Reminders needs no OAuth — an app-specific password is a long-lived
+ * credential iCloud accepts directly — so an environment variable pair is the
+ * whole setup, and its absence simply leaves the mock in place.
+ */
+function buildTasksService(configuration: ReturnType<typeof getServiceConfiguration>): TasksRemindersService {
+  const { appleId, appPassword, lists } = configuration.appleReminders;
+  if (!appleId || !appPassword) return new MockTasksRemindersService();
+  return new AppleRemindersService({ username: appleId, password: appPassword, baseUrl: ICLOUD_CALDAV_URL }, lists);
 }
 
 export const buildDashboardServices = async (): Promise<DashboardServices> => {
@@ -77,7 +88,7 @@ export const buildDashboardServices = async (): Promise<DashboardServices> => {
     icalCalendar: usingIcalFeeds ? new IcalCalendarApiService(configuration.icalCalendar.feedUrls) : new EmptyCalendarService(),
     appleCalendar: new MockAppleCalendarService(),
     spotify: await buildSpotifyService(configuration),
-    tasks: new MockTasksRemindersService(),
+    tasks: buildTasksService(configuration),
     codexUsage: new MockCodexUsageService(),
     claudeCodeUsage: new MockClaudeCodeUsageService(),
     coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService(),
@@ -104,7 +115,9 @@ async function getDashboardWithServices(services: DashboardServices): Promise<Da
     withFallback("apple-calendar", services.appleCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }),
     withFallback("ical-calendar", services.icalCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }, CALENDAR_TIMEOUT_MS),
     withFallback("spotify", services.spotify.getNowPlaying(), null),
-    withFallback("tasks", services.tasks.getTasks(), []),
+    // CalDAV walks three discovery hops before the first reminder is read, so
+    // this shares the calendar's wider budget rather than a single-call one.
+    withFallback("tasks", services.tasks.getTasks(), [], CALENDAR_TIMEOUT_MS),
     withFallback("codex-usage", services.codexUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
     withFallback("claude-code-usage", services.claudeCodeUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
     withFallback("coolify", services.coolify.getStatus(), { status: "unknown", version: null, checkedAt: new Date().toISOString() }),
