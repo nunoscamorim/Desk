@@ -1,6 +1,7 @@
 export type ServiceConfiguration = {
   weather: { location: string; latitude: number; longitude: number };
   googleCalendar: { accessToken?: string; calendarId: string };
+  icalCalendar: { feedUrls: string[] };
   spotify: { accessToken?: string };
   coolify: { url?: string; token?: string };
 };
@@ -14,6 +15,9 @@ export function getServiceConfiguration(): ServiceConfiguration {
       longitude: Number(process.env.WEATHER_LONGITUDE ?? -8.6224),
     },
     googleCalendar: { accessToken: process.env.GOOGLE_CALENDAR_ACCESS_TOKEN, calendarId: process.env.GOOGLE_CALENDAR_ID ?? "primary" },
+    // Comma or newline separated so several published calendars — work and
+    // personal, from any provider — can be merged onto one display.
+    icalCalendar: { feedUrls: (process.env.CALENDAR_ICS_URLS ?? "").split(/[\n,]/).map((url) => url.trim()).filter(Boolean) },
     spotify: { accessToken: process.env.SPOTIFY_ACCESS_TOKEN },
     coolify: { url: process.env.COOLIFY_URL, token: process.env.COOLIFY_TOKEN },
   };
@@ -24,6 +28,7 @@ export function getServiceConfigurationStatus() {
   return {
     weather: { configured: true, location: configuration.weather.location },
     googleCalendar: { configured: Boolean(configuration.googleCalendar.accessToken), calendarId: configuration.googleCalendar.calendarId },
+    icalCalendar: { configured: configuration.icalCalendar.feedUrls.length > 0, feedCount: configuration.icalCalendar.feedUrls.length },
     appleCalendar: { configured: false },
     spotify: { configured: Boolean(configuration.spotify.accessToken) },
     tasksReminders: { configured: false },

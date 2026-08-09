@@ -1,5 +1,5 @@
 import type { CalendarEvent, TodayCalendar } from "@/lib/dashboard/types";
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { formatTime } from "./utils";
 
 function CalendarItem({ event, showLocations, index }: { event: CalendarEvent; showLocations: boolean; index: number }) {
@@ -9,7 +9,12 @@ function CalendarItem({ event, showLocations, index }: { event: CalendarEvent; s
 
 export function CalendarWidget({ calendar, settings }: { calendar: TodayCalendar; settings?: { showLocations?: boolean; strictDate?: boolean; dateLabel?: string } }) {
   const showLocations = settings?.showLocations ?? true;
-  const now = Date.now();
+  // Ticking rather than reading the clock during render keeps the component
+  // deterministic, and means finished events drop out of the "next 8h" window on
+  // their own instead of lingering until the next dashboard refresh. Half a
+  // minute is granular enough for filtering by start and end time.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer); }, []);
   const horizon = now + 8 * 60 * 60 * 1000;
   const upcoming = calendar.events.filter((event) => new Date(event.endAt).getTime() > now && new Date(event.startAt).getTime() < horizon);
   const nextEvent = calendar.events.find((event) => new Date(event.endAt).getTime() > now);

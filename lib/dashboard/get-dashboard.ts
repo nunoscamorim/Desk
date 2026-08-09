@@ -1,13 +1,32 @@
-import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
+import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, EmptyCalendarService, IcalCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type IcalCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
 import { readServiceCredentials } from "@/lib/services/credential-store";
 import { getGoogleAccessToken } from "@/lib/services/google-oauth";
 import { getSpotifyAccessToken } from "@/lib/services/spotify-oauth";
 import type { DashboardData } from "./types";
 
-export type DashboardServices = { weather: WeatherService; googleCalendar: GoogleCalendarService; appleCalendar: AppleCalendarService; spotify: SpotifyService; tasks: TasksRemindersService; codexUsage: CodexUsageService; claudeCodeUsage: ClaudeCodeUsageService; coolify: CoolifyService };
+export type DashboardServices = { weather: WeatherService; googleCalendar: GoogleCalendarService; appleCalendar: AppleCalendarService; icalCalendar: IcalCalendarService; spotify: SpotifyService; tasks: TasksRemindersService; codexUsage: CodexUsageService; claudeCodeUsage: ClaudeCodeUsageService; coolify: CoolifyService };
 
-async function withFallback<T>(operation: Promise<T>, fallback: T, timeoutMs = 6000): Promise<T> {
-  try { return await Promise.race([operation, new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Service timeout")), timeoutMs))]); } catch { return fallback; }
+// A calendar call may have to mint a fresh access token before it can fetch, so
+// it gets a wider budget than a plain single-request service — otherwise the one
+// poll per hour that lands on a token refresh times out and shows nothing.
+const CALENDAR_TIMEOUT_MS = 15000;
+
+/**
+ * Runs a service call, substituting a fallback if it fails or overruns.
+ *
+ * The reason is always logged: every integration here degrades into plausible
+ * looking data, so a silent failure is indistinguishable from a working service
+ * on the display itself, and the server log is the only place the truth can
+ * surface.
+ */
+async function withFallback<T>(label: string, operation: Promise<T>, fallback: T, timeoutMs = 6000): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([operation, new Promise<T>((_, reject) => { timer = setTimeout(() => reject(new Error(`Service timeout after ${timeoutMs}ms`)), timeoutMs); })]);
+  } catch (error) {
+    console.error(`[dashboard] ${label} unavailable, using fallback:`, error instanceof Error ? error.message : error);
+    return fallback;
+  } finally { clearTimeout(timer); }
 }
 
 /**
@@ -21,9 +40,14 @@ async function withFallback<T>(operation: Promise<T>, fallback: T, timeoutMs = 6
 async function buildGoogleCalendarService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<GoogleCalendarService> {
   const credentials = await readServiceCredentials();
   const calendarId = credentials.googleCalendarId ?? configuration.googleCalendar.calendarId;
-  if (credentials.googleRefreshToken) return new GoogleCalendarApiService(() => getGoogleAccessToken(), calendarId);
+  if (credentials.googleRefreshToken) return new GoogleCalendarApiService((options) => getGoogleAccessToken(options), calendarId);
   if (configuration.googleCalendar.accessToken) {
     const token = configuration.googleCalendar.accessToken;
+    // This token cannot be re-minted, so the 401 retry has nothing to fall back
+    // on: once Google expires it (~1hr from issue) the calendar stays down until
+    // someone pastes a new one. Say so plainly — from the display alone this is
+    // indistinguishable from the self-healing OAuth path.
+    console.warn("[google-calendar] using GOOGLE_CALENDAR_ACCESS_TOKEN, which expires in ~1hr and is never refreshed. Connect the account in /admin/credentials for access that renews itself.");
     return new GoogleCalendarApiService(async () => token, calendarId);
   }
   return new MockGoogleCalendarService();
@@ -43,9 +67,14 @@ async function buildSpotifyService(configuration: ReturnType<typeof getServiceCo
 
 export const buildDashboardServices = async (): Promise<DashboardServices> => {
   const configuration = getServiceConfiguration();
+  // ICS feeds win when configured: they cover the same calendars without the
+  // OAuth token lifecycle, and running both backends at once would list the
+  // same meeting twice (provider ids differ, so they cannot be deduped).
+  const usingIcalFeeds = configuration.icalCalendar.feedUrls.length > 0;
   return {
     weather: new OpenMeteoApiService(configuration.weather.location, configuration.weather.latitude, configuration.weather.longitude),
-    googleCalendar: await buildGoogleCalendarService(configuration),
+    googleCalendar: usingIcalFeeds ? new EmptyCalendarService() : await buildGoogleCalendarService(configuration),
+    icalCalendar: usingIcalFeeds ? new IcalCalendarApiService(configuration.icalCalendar.feedUrls) : new EmptyCalendarService(),
     appleCalendar: new MockAppleCalendarService(),
     spotify: await buildSpotifyService(configuration),
     tasks: new MockTasksRemindersService(),
@@ -58,7 +87,7 @@ export const buildDashboardServices = async (): Promise<DashboardServices> => {
 // Kept for anything still constructing services synchronously (e.g. ad hoc scripts);
 // the real dashboard route always awaits buildDashboardServices() instead so the
 // OAuth-backed calendar is available.
-export const mockDashboardServices = (): DashboardServices => { const configuration = getServiceConfiguration(); return { weather: new OpenMeteoApiService(configuration.weather.location, configuration.weather.latitude, configuration.weather.longitude), googleCalendar: configuration.googleCalendar.accessToken ? new GoogleCalendarApiService(async () => configuration.googleCalendar.accessToken ?? null, configuration.googleCalendar.calendarId) : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), spotify: configuration.spotify.accessToken ? new SpotifyApiService(async () => configuration.spotify.accessToken ?? null) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService() }; };
+export const mockDashboardServices = (): DashboardServices => { const configuration = getServiceConfiguration(); return { weather: new OpenMeteoApiService(configuration.weather.location, configuration.weather.latitude, configuration.weather.longitude), googleCalendar: configuration.googleCalendar.accessToken ? new GoogleCalendarApiService(async () => configuration.googleCalendar.accessToken ?? null, configuration.googleCalendar.calendarId) : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), icalCalendar: configuration.icalCalendar.feedUrls.length > 0 ? new IcalCalendarApiService(configuration.icalCalendar.feedUrls) : new EmptyCalendarService(), spotify: configuration.spotify.accessToken ? new SpotifyApiService(async () => configuration.spotify.accessToken ?? null) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService() }; };
 
 export async function getDashboard(services?: DashboardServices): Promise<DashboardData> {
   const resolvedServices = services ?? (await buildDashboardServices());
@@ -66,17 +95,21 @@ export async function getDashboard(services?: DashboardServices): Promise<Dashbo
 }
 
 async function getDashboardWithServices(services: DashboardServices): Promise<DashboardData> {
-  const [weather, googleCalendar, appleCalendar, spotifyNowPlaying, tasks, codexUsage, claudeCodeUsage, coolify] = await Promise.all([
-    withFallback(services.weather.getCurrentWeather(), await new MockWeatherService().getCurrentWeather()),
-    withFallback(services.googleCalendar.getTodayCalendar(), await new MockGoogleCalendarService().getTodayCalendar()),
-    withFallback(services.appleCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }),
-    withFallback(services.spotify.getNowPlaying(), null),
-    withFallback(services.tasks.getTasks(), []),
-    withFallback(services.codexUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
-    withFallback(services.claudeCodeUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
-    withFallback(services.coolify.getStatus(), { status: "unknown", version: null, checkedAt: new Date().toISOString() }),
+  const [weather, googleCalendar, appleCalendar, icalCalendar, spotifyNowPlaying, tasks, codexUsage, claudeCodeUsage, coolify] = await Promise.all([
+    withFallback("weather", services.weather.getCurrentWeather(), await new MockWeatherService().getCurrentWeather()),
+    // Falls back to an empty schedule rather than mock events: a broken calendar
+    // should read as "nothing scheduled", never as invented meetings that look
+    // exactly like real ones on the display.
+    withFallback("google-calendar", services.googleCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }, CALENDAR_TIMEOUT_MS),
+    withFallback("apple-calendar", services.appleCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }),
+    withFallback("ical-calendar", services.icalCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }, CALENDAR_TIMEOUT_MS),
+    withFallback("spotify", services.spotify.getNowPlaying(), null),
+    withFallback("tasks", services.tasks.getTasks(), []),
+    withFallback("codex-usage", services.codexUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
+    withFallback("claude-code-usage", services.claudeCodeUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
+    withFallback("coolify", services.coolify.getStatus(), { status: "unknown", version: null, checkedAt: new Date().toISOString() }),
   ]);
-  const events = [...googleCalendar.events, ...appleCalendar.events].sort((a, b) => a.startAt.localeCompare(b.startAt));
+  const events = [...googleCalendar.events, ...appleCalendar.events, ...icalCalendar.events].sort((a, b) => a.startAt.localeCompare(b.startAt));
   const todaysCalendar = { date: googleCalendar.date, events };
   const now = Date.now();
   const nextEvent = events.find((event) => new Date(event.endAt).getTime() > now);

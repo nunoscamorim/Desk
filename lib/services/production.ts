@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import type { SpotifyNowPlaying, Weather } from "@/lib/dashboard/types";
 import type { CoolifyService, CoolifyStatus } from "./coolify";
 import type { SpotifyService } from "./spotify";
@@ -34,7 +35,7 @@ export class OpenMeteoApiService implements WeatherService {
       forecast_days: "1",
       timezone: "auto",
     }).toString();
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetchWithRetry(url, { cache: "no-store" }, { label: "open-meteo" });
     if (!response.ok) throw new Error(`Weather request failed (${response.status})`);
     const data = await response.json() as {
       current: { temperature_2m: number; apparent_temperature: number; weather_code: number };
@@ -56,7 +57,7 @@ export class SpotifyApiService implements SpotifyService {
   async getNowPlaying(): Promise<SpotifyNowPlaying | null> {
     const accessToken = await this.getAccessToken();
     if (!accessToken) return null;
-    const response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" });
+    const response = await fetchWithRetry("https://api.spotify.com/v1/me/player/currently-playing", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }, { label: "spotify-now-playing" });
     if (response.status === 204) return null;
     if (!response.ok) throw new Error(`Spotify request failed (${response.status})`);
     const data = await response.json() as { is_playing: boolean; progress_ms: number; item?: { name: string; duration_ms: number; artists?: Array<{ name: string }>; album?: { name: string; images?: Array<{ url: string }> } } };
@@ -68,6 +69,6 @@ export class SpotifyApiService implements SpotifyService {
 export class CoolifyApiService implements CoolifyService {
   constructor(private readonly baseUrl: string, private readonly token?: string) {}
   async getStatus(): Promise<CoolifyStatus> {
-    try { const response = await fetch(`${this.baseUrl.replace(/\/$/, "")}/api/v1/healthcheck`, { headers: this.token ? { Authorization: `Bearer ${this.token}` } : undefined, cache: "no-store" }); return { status: response.ok ? "online" : "offline", version: null, checkedAt: new Date().toISOString() }; } catch { return { status: "offline", version: null, checkedAt: new Date().toISOString() }; }
+    try { const response = await fetchWithRetry(`${this.baseUrl.replace(/\/$/, "")}/api/v1/healthcheck`, { headers: this.token ? { Authorization: `Bearer ${this.token}` } : undefined, cache: "no-store" }, { label: "coolify-healthcheck" }); return { status: response.ok ? "online" : "offline", version: null, checkedAt: new Date().toISOString() }; } catch { return { status: "offline", version: null, checkedAt: new Date().toISOString() }; }
   }
 }
