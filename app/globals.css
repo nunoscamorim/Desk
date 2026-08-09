@@ -22,7 +22,7 @@ button { font: inherit; }
 .weather-range { color: #aaa79e; font-variant-numeric: tabular-nums; }
 .weather-range i { color: #78a8c8; font-style: normal; }.weather-range i:last-of-type { margin-left: 4px; color: #e3a45b; }
 .weather-icon { width: 26px; height: 26px; flex: 0 0 auto; display: grid; place-items: center; color: var(--lime); }
-.weather-icon svg { width: 26px; height: 26px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.weather-icon svg { width: 26px; height: 26px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .dashboard-grid { display: grid; height: 414px; grid-template-columns: 1.03fr 1.22fr .9fr; grid-template-rows: 200px 200px; gap: 14px; }
 .dashboard-grid { position: relative; }
 .admin-preview-canvas .dashboard::after { content: ""; position: absolute; inset: 32px; z-index: 8; border: 1px dashed rgba(255,255,255,.08); border-radius: 8px; pointer-events: none; }
