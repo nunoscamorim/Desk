@@ -16,6 +16,12 @@ ENV PORT=3000
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+# Dashboard config and the encrypted service credentials live here. Mount a
+# persistent volume at this path — an explicit mount takes precedence over the
+# anonymous volume this declaration creates, which only survives restarts and
+# not a container recreate. Losing it silently disconnects every OAuth
+# integration, since the refresh tokens go with it.
 RUN mkdir -p /app/data
+VOLUME ["/app/data"]
 EXPOSE 3000
 CMD ["node", "server.js"]
