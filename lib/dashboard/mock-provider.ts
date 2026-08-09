@@ -19,7 +19,7 @@ export class MockDashboardProvider implements DashboardProvider {
 
   async getWeather(): Promise<Weather> {
     return {
-      location: "Lisbon",
+      location: "Leça do Balio",
       temperatureC: 24,
       feelsLikeC: 25,
       condition: "Sunny",
