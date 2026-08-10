@@ -15,7 +15,7 @@ button { font: inherit; }
    the unscaled canvas and pushing it off-screen whenever the canvas is wider
    than the viewport. */
 .canvas-scaler { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(var(--canvas-scale, 1)); }
-.dashboard { --canvas-w: 1024px; --canvas-h: 600px; --bento-h: calc(var(--canvas-h) - 186px); position: relative; width: var(--canvas-w); height: var(--canvas-h); overflow: hidden; padding: var(--page-margin); background: #151412; }
+.dashboard { --canvas-w: 1024px; --canvas-h: 600px; --bento-h: calc(var(--canvas-h) - 220px); position: relative; width: var(--canvas-w); height: var(--canvas-h); overflow: hidden; padding: var(--page-margin); background: #151412; }
 .topbar { height: 90px; display: flex; align-items: flex-start; justify-content: space-between; }
 .greeting-copy { min-width: 0; max-width: 720px; }
 .greeting-quote { transform: translateY(-10px); }
@@ -237,7 +237,7 @@ button { font: inherit; }
 .state-card p { margin: 0 auto 21px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .state-card button { border: 0; border-radius: 9px; background: var(--lime); color: #111; padding: 10px 18px; font-size: 12px; font-weight: 700; cursor: pointer; }
 .state-card button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
-.bottom-navigation { position: absolute; right: var(--page-margin); bottom: 24px; left: var(--page-margin); z-index: 9; display: flex; align-items: center; justify-content: flex-end; gap: 10px; height: 42px; }
+.bottom-navigation { position: absolute; right: var(--page-margin); bottom: 56px; left: var(--page-margin); z-index: 9; display: flex; align-items: center; justify-content: flex-end; gap: 10px; height: 42px; }
 .bottom-navigation button { min-width: 84px; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; padding: 0 16px; background: #252522; color: #aaa79e; font-size: 12px; font-weight: 600; cursor: pointer; touch-action: manipulation; }
 .bottom-navigation button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .bottom-navigation button:first-child { margin-right: auto; }
