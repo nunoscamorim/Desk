@@ -7,6 +7,12 @@ export type DeviceSettings = {
   nightEnd: string;
   nightBrightness: number;
   refreshSeconds: number;
+  /**
+   * Holds a screen Wake Lock so a display left on a desk does not sleep. iOS
+   * only grants one to a visible page after the user has interacted, so this is
+   * a request rather than a guarantee — the widget reports what actually took.
+   */
+  keepAwake: boolean;
 };
 
 export const defaultDeviceSettings: DeviceSettings = {
@@ -16,6 +22,7 @@ export const defaultDeviceSettings: DeviceSettings = {
   nightEnd: "07:00",
   nightBrightness: 25,
   refreshSeconds: 60,
+  keepAwake: true,
 };
 
 export const refreshOptions = [15, 30, 60, 300, 900] as const;
@@ -33,6 +40,7 @@ export function normalizeDeviceSettings(value: Partial<DeviceSettings> | null | 
     nightEnd: isTime(settings.nightEnd) ? settings.nightEnd : defaultDeviceSettings.nightEnd,
     nightBrightness: number(settings.nightBrightness, defaultDeviceSettings.nightBrightness, 5, 100),
     refreshSeconds: number(settings.refreshSeconds, defaultDeviceSettings.refreshSeconds, 15, 3600),
+    keepAwake: typeof settings.keepAwake === "boolean" ? settings.keepAwake : defaultDeviceSettings.keepAwake,
   };
 }
 

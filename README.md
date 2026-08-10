@@ -1,6 +1,8 @@
 # Desk Dashboard
 
-A 1024×600 desk display: calendar, weather, now playing, tasks and AI usage on a Waveshare ESP32-S3 panel, served by Next.js.
+A desk display: calendar, weather, now playing, tasks and AI usage on an iPad in kiosk mode, served by Next.js.
+
+The layout is arranged on a fixed design canvas — iPad Pro 10.5" landscape (1112 × 834 points) by default — and scaled to fit whatever screen it opens on, so the same saved layout is correct on the iPad, in a desktop browser, and in the admin preview. Canvas size is configurable in `/admin`; note it is measured in CSS points, which on a Retina iPad is half the advertised pixel resolution.
 
 ## Run locally
 
@@ -9,7 +11,15 @@ npm install
 npm run dev
 ```
 
-Open `/admin` to configure the 1024×600 layout and `/preview` for the clean display view.
+Open `/admin` to arrange the layout and `/preview` for the clean display view.
+
+## Kiosk setup on the iPad
+
+1. Open the deployed URL in Safari, then Share › **Add to Home Screen**. Launched from that icon the dashboard runs full screen with no browser chrome.
+2. Settings › Accessibility › **Guided Access**, switch it on and set a passcode. With Desk open, triple-click the top button to lock the iPad to it.
+3. Settings › Display & Brightness › **Auto-Lock** › Never. Desk also holds a screen Wake Lock, but iOS only grants one after the first touch, so Auto-Lock is the reliable backstop.
+
+The **More** screen reports whether it is running full screen and whether the wake lock was actually granted. Night-mode dimming there is applied to the page rather than the iPad backlight, which the web has no access to; touching the screen restores full brightness for a minute.
 
 ## Coolify deployment
 
@@ -122,5 +132,5 @@ Every integration degrades into plausible-looking data, so a broken service is i
 1. ~~Put token acquisition and refresh in a server-side auth layer.~~ Done for Google Calendar and Spotify (OAuth + refresh tokens, see above).
 2. Move widget configuration from localStorage to a small database or device configuration API.
 3. ~~Add request timeouts, provider-specific retry/backoff, and integration health details before enabling live services broadly.~~ Timeouts bound every outbound call, Google Calendar retries once on 401 with a forced token re-mint, and failures are logged with their reason (see Troubleshooting). Per-provider backoff is still outstanding.
-4. Deploy the Next.js app to a reachable host and point the Waveshare display client at `/preview`.
-5. Validate touch targets and the exact 1024×600 viewport on the physical display.
+4. Deploy the Next.js app to a reachable host and open it on the iPad (see Kiosk setup).
+5. Validate touch targets at the configured canvas size on the physical display.

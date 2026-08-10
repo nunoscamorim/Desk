@@ -77,6 +77,10 @@ button { font: inherit; }
 .device-state.online { color: #b8d977; } .device-state.online i { background: var(--lime); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lime) 16%, transparent); }
 .device-label-spaced { margin-top: 9px; }
 .device-note { margin: auto 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.device-card .toggle { flex: 0 0 auto; cursor: pointer; border: 0; }
+.kiosk-steps { margin: 4px 0 0; padding-left: 16px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.kiosk-steps li { margin-bottom: 5px; }
+.kiosk-steps strong { color: var(--ink); font-weight: 600; }
 .device-reboot { margin-top: 7px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: #171716; color: var(--ink); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
 .device-reboot.confirm { border-color: #5a2b2b; background: #241413; color: #e79191; }
 .device-reboot:disabled { opacity: .5; cursor: default; }

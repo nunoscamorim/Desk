@@ -2,42 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { defaultDeviceSettings, isNightTime, refreshOptions, resolveBrightness, type DeviceSettings, type NightMode } from "@/lib/device/settings";
-import type { DeviceStatus } from "@/lib/device/settings-store";
-
-function signalBars(dbm: number | null) {
-  if (dbm === null) return 0;
-  if (dbm >= -55) return 4;
-  if (dbm >= -65) return 3;
-  if (dbm >= -75) return 2;
-  return 1;
-}
-
-const signalLabel = (dbm: number | null) => (dbm === null ? "Unknown" : dbm >= -55 ? "Excellent" : dbm >= -65 ? "Good" : dbm >= -75 ? "Fair" : "Weak");
-
-function formatUptime(seconds: number | null) {
-  if (seconds === null) return "—";
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return days > 0 ? `${days}d ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}` : `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-}
-
-const formatHeap = (bytes: number | null) => (bytes === null ? "—" : `${Math.round(bytes / 1024)} KB free`);
+import { useWakeLock } from "@/lib/device/use-wake-lock";
 
 const refreshLabel = (seconds: number) => (seconds < 60 ? `${seconds}s` : `${seconds / 60}m`);
+
+const wakeLockCopy: Record<ReturnType<typeof useWakeLock>, string> = {
+  held: "Holding the screen awake.",
+  idle: "Not holding a wake lock right now.",
+  blocked: "Safari refused the wake lock — touch the display once to grant it.",
+  unsupported: "This browser has no Wake Lock API. Use Settings › Display & Brightness › Auto-Lock › Never instead.",
+};
 
 export function DeviceSettingsWidget() {
   const [settings, setSettings] = useState<DeviceSettings>(defaultDeviceSettings);
   const [saved, setSaved] = useState<DeviceSettings | null>(null);
-  const [status, setStatus] = useState<DeviceStatus | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [rebootState, setRebootState] = useState<"idle" | "confirm" | "sent">("idle");
+  const wakeLock = useWakeLock(settings.keepAwake);
+  const standalone = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || ("standalone" in window.navigator && Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)));
 
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/device", { signal: controller.signal, cache: "no-store" })
-      .then((response) => response.json() as Promise<{ settings: DeviceSettings; status: DeviceStatus }>)
-      .then((state) => { setSettings(state.settings); setSaved(state.settings); setStatus(state.status); })
+      .then((response) => response.json() as Promise<{ settings: DeviceSettings }>)
+      .then((state) => { setSettings(state.settings); setSaved(state.settings); })
       .catch(() => undefined);
     return () => controller.abort();
   }, []);
@@ -55,12 +42,6 @@ export function DeviceSettingsWidget() {
     } catch { setSaveState("error"); }
   };
 
-  const reboot = async () => {
-    if (rebootState !== "confirm") { setRebootState("confirm"); return; }
-    try { await fetch("/api/device", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reboot" }) }); setRebootState("sent"); } catch { setRebootState("idle"); }
-  };
-
-  const online = status?.reportedAt !== null && status?.reportedAt !== undefined;
   const effective = resolveBrightness(settings);
   const night = settings.nightMode !== "off" && isNightTime(settings, new Date());
 
@@ -94,7 +75,9 @@ export function DeviceSettingsWidget() {
           <strong>{settings.nightBrightness}%</strong>
         </label>}
       </>}
-      <p className="device-note">{night ? `Night mode is active now — showing ${effective === 0 ? "a blank screen" : `${effective}%`}.` : `Showing ${settings.brightness}% now.`}</p>
+      {/* iPadOS gives the web no control over the panel backlight, so this dims
+          the page itself. Touching the screen restores full brightness. */}
+      <p className="device-note">{night ? `Night mode is active now — showing ${effective === 0 ? "a blank screen" : `${effective}%`}.` : `Showing ${settings.brightness}% now.`} Dimming is applied to the page, not the iPad backlight.</p>
     </article>
 
     <article className="card device-card">
@@ -107,24 +90,24 @@ export function DeviceSettingsWidget() {
       </div>
       <p className="device-note">The display re-fetches calendar, weather, and music data on this interval.</p>
 
-      <span className="card-label device-label-spaced">Wi-Fi</span>
-      <div className="device-readout"><span>Network</span><strong>{status?.wifi?.ssid ?? "—"}</strong></div>
-      <div className="device-readout"><span>Signal</span><strong className="signal"><i className={`bars bars-${signalBars(status?.wifi?.signalDbm ?? null)}`} aria-hidden="true"><b /><b /><b /><b /></i>{status?.wifi?.signalDbm !== null && status?.wifi?.signalDbm !== undefined ? `${status.wifi.signalDbm} dBm · ${signalLabel(status.wifi.signalDbm)}` : "—"}</strong></div>
-      <div className="device-readout"><span>IP address</span><strong>{status?.wifi?.ipAddress ?? "—"}</strong></div>
-      <p className="device-note">To join a different network, use the setup portal on the device itself.</p>
+      <span className="card-label device-label-spaced">Screen</span>
+      <div className="device-row">
+        <span>Keep awake</span>
+        <button type="button" className={`toggle ${settings.keepAwake ? "on" : ""}`} role="switch" aria-checked={settings.keepAwake} aria-label="Keep the screen awake" onClick={() => update("keepAwake", !settings.keepAwake)}><span /></button>
+      </div>
+      <div className="device-readout"><span>Wake lock</span><strong className={`device-state ${wakeLock === "held" ? "online" : ""}`}><i />{wakeLock === "held" ? "Active" : wakeLock === "blocked" ? "Refused" : wakeLock === "unsupported" ? "Unavailable" : "Idle"}</strong></div>
+      <p className="device-note">{wakeLockCopy[wakeLock]}</p>
     </article>
 
     <article className="card device-card">
-      <span className="card-label">Device</span>
-      <div className="device-readout"><span>Status</span><strong className={`device-state ${online ? "online" : ""}`}><i />{online ? "Connected" : "Waiting for device"}</strong></div>
-      <div className="device-readout"><span>Model</span><strong>Waveshare ESP32-S3</strong></div>
-      <div className="device-readout"><span>Firmware</span><strong>{status?.firmware ?? "—"}</strong></div>
-      <div className="device-readout"><span>Uptime</span><strong>{formatUptime(status?.uptimeSeconds ?? null)}</strong></div>
-      <div className="device-readout"><span>Memory</span><strong>{formatHeap(status?.freeHeapBytes ?? null)}</strong></div>
-      <button type="button" className={`device-reboot ${rebootState === "confirm" ? "confirm" : ""}`} onClick={reboot} disabled={rebootState === "sent"}>
-        {rebootState === "sent" ? "Reboot queued" : rebootState === "confirm" ? "Tap again to confirm" : "Reboot display"}
-      </button>
-      <p className="device-note">{rebootState === "sent" ? "The display reboots on its next check-in." : "The display picks this up on its next check-in."}</p>
+      <span className="card-label">Kiosk setup</span>
+      <div className="device-readout"><span>Home-screen app</span><strong className={`device-state ${standalone ? "online" : ""}`}><i />{standalone ? "Running full screen" : "Running in Safari"}</strong></div>
+      <ol className="kiosk-steps">
+        <li>In Safari, tap Share › <strong>Add to Home Screen</strong>, then open Desk from the icon — it launches without browser chrome.</li>
+        <li>Settings › Accessibility › <strong>Guided Access</strong>, turn it on and set a passcode.</li>
+        <li>With Desk open, triple-click the top button to lock the iPad to this one app.</li>
+        <li>Settings › Display &amp; Brightness › <strong>Auto-Lock</strong> › Never, as a backstop for the wake lock.</li>
+      </ol>
     </article>
 
     <div className="device-actions">
