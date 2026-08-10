@@ -72,21 +72,24 @@ Get the URLs from iCloud (Calendar.app → Share Calendar → Public Calendar), 
 
 When `CALENDAR_ICS_URLS` is set it replaces the Google backend rather than running alongside it — provider ids differ, so the same meeting would otherwise appear twice.
 
-### Apple Reminders (tasks widget)
+### Google Tasks (tasks widget)
 
-Apple Reminders has no public API and cannot be published to a URL the way a calendar can, but iCloud exposes reminder lists over CalDAV as `VTODO` collections. The server reads them directly:
+Tasks use the same Google connection as the calendar, so once the account is connected in `/admin/credentials` there is no separate credential to set. The only option is which lists reach the display:
 
 ```env
-APPLE_REMINDERS_ID=you@icloud.com
-APPLE_REMINDERS_APP_PASSWORD=abcdefghijklmnop
-APPLE_REMINDERS_LISTS=*
+GOOGLE_TASKS_LISTS=*
 ```
 
-`APPLE_REMINDERS_APP_PASSWORD` must be an **app-specific password**, generated at [appleid.apple.com](https://appleid.apple.com) under Sign-In and Security — iCloud rejects the account password outright once two-factor auth is on. Paste it exactly as Apple gave it to you — the format varies (some accounts show 16 plain characters, others four hyphenated groups) and either works as-is; only surrounding spaces are stripped. Set `APPLE_REMINDERS_LISTS` to `*` for every list, or name the ones you want (`Reminders,Groceries`); matching ignores case. Leaving the variable unset also means every list, but `*` is there for hosts like Coolify whose environment editor will not accept an empty value.
+`*` means every task list; name the ones you want instead (`My Tasks,Work`) and matching ignores case. Leaving the variable unset means every list too — `*` is there for hosts like Coolify that will not store an empty value.
 
-Reminders map onto the widget as you would expect: the list name becomes the project, `PRIORITY` 1–4/5/6–9 becomes high/medium/low, and a reminder with no priority set reads as low so flagged ones still stand out. Completed and cancelled reminders are dropped, and what is left sorts by due date with undated items last, so the few rows the widget shows are the ones that matter. One unreachable list is logged and skipped rather than blanking the widget.
+Two things have to be in place first, and both surface as a 403 with Google's own explanation in the log:
 
-This is an unofficial protocol surface — Apple documents CalDAV for calendars, not Reminders — so it could change without notice. It has been stable for years and is what third-party task clients use.
+1. **Enable the Google Tasks API** on the same Cloud project as the Calendar API — they are separate APIs and enabling one does not enable the other.
+2. **Reconnect the account** in `/admin/credentials`. Reading tasks needs its own OAuth scope, and adding it here does not widen a grant that already exists, so a connection made before this existed stays calendar-only until it is re-consented.
+
+Completed, hidden and untitled tasks are dropped, and what is left sorts by due date with undated items last, so the few rows the widget shows are the ones that matter. A list that fails is logged and skipped rather than blanking the widget. Google Tasks has no notion of priority, so the widget simply omits that label rather than inventing a level.
+
+> Apple Reminders was tried first and does not work: iCloud's newer Reminders format is no longer exposed over CalDAV, and every reminder comes back as an Apple placeholder telling legacy clients to upgrade. Reading Reminders needs an on-device path such as a Shortcuts automation, not a server-side one.
 
 ### Spotify (permanent access)
 
@@ -107,6 +110,8 @@ Every integration degrades into plausible-looking data, so a broken service is i
 | `[credentials] … could not be decrypted` | `AUTH_SECRET` no longer matches the one that encrypted the file | Restore the original secret, or reconnect each integration |
 | `[google-calendar] using GOOGLE_CALENDAR_ACCESS_TOKEN…` | The stored refresh token was unreadable and it fell back to the legacy token, which dies in ~1hr | Check the `/app/data` volume and `AUTH_SECRET`, then unset the variable |
 | `Google Calendar must be reconnected: …` | The refresh token itself was rejected (`invalid_grant`) — revoked, or force-expired by a consent screen still in "Testing" | Reconnect in `/admin/credentials`; move the consent screen to "In production" |
+| `Google Tasks access refused: …` | Google's reason is quoted in the line — usually the Tasks API not enabled on the project, or a grant predating the tasks scope | Enable the Tasks API in the Cloud Console, or reconnect the account |
+| `[google-tasks] list failed: …` | One task list errored; the others still merged | Reason is appended to the line |
 | `[ical] feed failed: …` | One .ics feed is unreachable or malformed; the others still merged | Re-check that feed URL |
 | `[dashboard] <service> unavailable, using fallback` | That service timed out or errored | Reason is appended to the line |
 

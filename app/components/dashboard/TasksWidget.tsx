@@ -1,7 +1,10 @@
 import type { Task } from "@/lib/dashboard/types";
 
 function TaskItem({ task }: { task: Task }) {
-  return <li className="task-item"><span className={`task-check ${task.status}`} aria-hidden="true">{task.status === "done" ? "✓" : ""}</span><div><strong>{task.title}</strong><span>{task.project ?? task.priority}</span></div><span className={`priority priority-${task.priority}`}>{task.priority}</span></li>;
+  // The priority label is dropped entirely when the source has no such field,
+  // rather than inventing a level — a column reading "LOW" against every row
+  // says nothing and crowds out the title.
+  return <li className="task-item"><span className={`task-check ${task.status}`} aria-hidden="true">{task.status === "done" ? "✓" : ""}</span><div><strong>{task.title}</strong><span>{task.project ?? task.priority}</span></div>{task.priority && <span className={`priority priority-${task.priority}`}>{task.priority}</span>}</li>;
 }
 
 export function TasksWidget({ tasks }: { tasks: Task[] }) {

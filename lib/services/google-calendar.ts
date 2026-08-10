@@ -45,9 +45,11 @@ export class GoogleCalendarApiService implements GoogleCalendarService {
     if (!response.ok) throw new Error(`Google Calendar request failed (${response.status})`);
     const payload = await response.json() as GoogleCalendarResponse;
     const events: CalendarEvent[] = (payload.items ?? []).flatMap((event) => {
+      // Google signals an all-day event by sending `date` instead of `dateTime`.
+      const allDay = !event.start?.dateTime && Boolean(event.start?.date);
       const startAt = event.start?.dateTime ?? (event.start?.date ? `${event.start.date}T00:00:00.000Z` : null);
       const endAt = event.end?.dateTime ?? (event.end?.date ? `${event.end.date}T23:59:59.000Z` : null);
-      return startAt && endAt ? [{ id: event.id ?? crypto.randomUUID(), title: event.summary ?? "Untitled event", startAt, endAt, location: event.location ?? null }] : [];
+      return startAt && endAt ? [{ id: event.id ?? crypto.randomUUID(), title: event.summary ?? "Untitled event", startAt, endAt, location: event.location ?? null, allDay }] : [];
     });
     return { date: start.toISOString().slice(0, 10), events };
   }

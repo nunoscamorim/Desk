@@ -13,6 +13,12 @@ export type CalendarEvent = {
   startAt: string;
   endAt: string;
   location: string | null;
+  /**
+   * All-day and multi-day events. Flagged at the source, where the distinction
+   * is still visible, because both kinds are flattened to the same timestamps
+   * afterwards and a midnight-to-midnight span cannot be told apart by shape.
+   */
+  allDay?: boolean;
 };
 
 export type Meeting = CalendarEvent & {
@@ -38,7 +44,8 @@ export type Task = {
   id: string;
   title: string;
   status: "todo" | "in_progress" | "done";
-  priority: "low" | "medium" | "high";
+  /** Omitted by sources that have no concept of priority, such as Google Tasks. */
+  priority?: "low" | "medium" | "high";
   dueAt: string | null;
   project: string | null;
 };
