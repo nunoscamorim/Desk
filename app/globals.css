@@ -101,8 +101,9 @@ button { font: inherit; }
 .card h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
 /* iPad Landscape Kiosk Mode - Responsive */
 .ipad-dashboard { width: 100%; height: 100vh; max-width: 100%; padding: 24px; display: flex; flex-direction: column; }
-.ipad-dashboard .topbar { height: 80px; margin-bottom: 16px; }
-.ipad-dashboard .topbar h1 { font-size: 28px; }
+.ipad-dashboard .topbar { height: auto; min-height: 80px; flex: 0 0 auto; margin-bottom: 16px; }
+.ipad-dashboard .topbar h1 { max-width: none; font-size: 28px; }
+.ipad-dashboard .greeting-copy { max-width: 70%; }
 .ipad-dashboard-responsive-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 16px; min-height: 0; }
 .ipad-widget-wrapper { min-height: 0; display: flex; }
 .ipad-widget-wrapper .card { width: 100%; height: 100%; }
