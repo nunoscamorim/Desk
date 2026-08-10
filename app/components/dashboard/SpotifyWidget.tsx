@@ -35,15 +35,27 @@ function TrackProgress({ progressMs, durationMs, isPlaying, expanded }: { progre
   </div>;
 }
 
-export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: SpotifyNowPlaying | null; expanded?: boolean }) {
-  const [albumTint, setAlbumTint] = useState("rgba(255, 255, 255, 0.03)");
+const DEFAULT_ALBUM_TINT = "rgba(255, 255, 255, 0.03)";
+
+/**
+ * Samples the dominant color of the current artwork for the expanded screen's
+ * background wash, keyed to the artwork it was computed for rather than reset
+ * up front. Resetting synchronously at the top of the effect would mean every
+ * dependency change forces an extra render before the real state settles; here
+ * the render itself falls back to the default the moment the artwork no longer
+ * matches what the stored tint was computed for, and a `cancelled` guard stops
+ * a slow image load from overwriting a newer track's tint if it resolves late.
+ */
+function useAlbumTint(artworkUrl: string | null | undefined, expanded: boolean): string {
+  const [tint, setTint] = useState<{ artworkUrl: string; expanded: boolean; color: string } | null>(null);
   useEffect(() => {
-    setAlbumTint("rgba(255, 255, 255, 0.03)");
-    if (!expanded || !nowPlaying?.artworkUrl) return;
+    if (!expanded || !artworkUrl) return;
+    let cancelled = false;
     const image = new Image();
     image.crossOrigin = "anonymous";
-    image.src = nowPlaying.artworkUrl;
+    image.src = artworkUrl;
     image.onload = () => {
+      if (cancelled) return;
       const canvas = document.createElement("canvas");
       canvas.width = 32;
       canvas.height = 32;
@@ -68,12 +80,19 @@ export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: Sp
           buckets.set(key, bucket);
         }
         const dominant = [...buckets.values()].sort((left, right) => right.count - left.count)[0];
-        if (dominant) setAlbumTint(`rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.2)`);
+        const color = dominant ? `rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.2)` : DEFAULT_ALBUM_TINT;
+        if (!cancelled) setTint({ artworkUrl, expanded, color });
       } catch {
-        setAlbumTint("rgba(255, 255, 255, 0.03)");
+        if (!cancelled) setTint({ artworkUrl, expanded, color: DEFAULT_ALBUM_TINT });
       }
     };
-  }, [expanded, nowPlaying?.artworkUrl]);
+    return () => { cancelled = true; };
+  }, [artworkUrl, expanded]);
+  return tint && tint.artworkUrl === artworkUrl && tint.expanded === expanded ? tint.color : DEFAULT_ALBUM_TINT;
+}
+
+export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: SpotifyNowPlaying | null; expanded?: boolean }) {
+  const albumTint = useAlbumTint(nowPlaying?.artworkUrl, expanded);
   return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`} style={expanded ? { "--album-tint": albumTint } as CSSProperties : undefined}>{nowPlaying ? <>
     {expanded ? <div className="music-artwork-frame"><div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div></div> : <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div>}<div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
     {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Playing" : "Paused"}</span></div>}<TrackProgress key={`${nowPlaying.track}|${nowPlaying.progressMs}|${nowPlaying.isPlaying}`} progressMs={nowPlaying.progressMs} durationMs={nowPlaying.durationMs} isPlaying={nowPlaying.isPlaying} expanded={expanded} /></div>
