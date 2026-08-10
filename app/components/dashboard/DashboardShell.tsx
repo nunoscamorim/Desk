@@ -7,7 +7,7 @@ import { CalendarWidget } from "./CalendarWidget";
 import { DeviceSettingsWidget } from "./DeviceSettingsWidget";
 import { Header } from "./Header";
 import { SpotifyWidget } from "./SpotifyWidget";
-import { TasksWidget } from "./TasksWidget";
+import { TasksScreen } from "./TasksWidget";
 import { PomodoroWidget } from "./PomodoroWidget";
 import { WidgetRenderer } from "./WidgetRenderer";
 import { defaultWidgetConfig, type WidgetConfig } from "@/lib/dashboard/config";
@@ -20,7 +20,7 @@ export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColo
   const content = screen === "home" ? <section className="dashboard-grid">{widgets.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} />)}</section>
     : screen === "calendar" ? <section className="calendar-days-screen">{calendarDays.map((day) => <CalendarWidget key={day.key} calendar={{ date: day.key, events: day.events }} settings={{ strictDate: true, dateLabel: day.label }} />)}</section>
     : screen === "music" ? <section className="screen-grid single-screen"><SpotifyWidget nowPlaying={data.spotifyNowPlaying} expanded /></section>
-    : screen === "tasks" ? <section className="screen-grid single-screen"><TasksWidget tasks={data.tasks} /></section>
+    : screen === "tasks" ? <TasksScreen tasks={data.tasks} />
     : screen === "focus" ? <PomodoroWidget />
     : <DeviceSettingsWidget />;
   return <main className="dashboard" aria-label="Desk dashboard" style={{ "--lime": accentColor, fontFamily } as CSSProperties}><Header data={data} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main>;
