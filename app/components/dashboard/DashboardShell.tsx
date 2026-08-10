@@ -10,10 +10,11 @@ import { SpotifyWidget } from "./SpotifyWidget";
 import { TasksScreen } from "./TasksWidget";
 import { PomodoroWidget } from "./PomodoroWidget";
 import { WidgetRenderer } from "./WidgetRenderer";
-import { defaultWidgetConfig, type WidgetConfig } from "@/lib/dashboard/config";
+import { defaultCanvas, type CanvasSize, type WidgetConfig } from "@/lib/dashboard/config";
+import { defaultWidgetConfig } from "@/lib/dashboard/widget-registry";
 import type { DashboardData } from "@/lib/dashboard/types";
 
-export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColor = "#c9ff52", fontFamily = "Arial" }: { data: DashboardData; widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string }) {
+export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColor = "#c9ff52", fontFamily = "Arial", canvas = defaultCanvas }: { data: DashboardData; widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string; canvas?: CanvasSize }) {
   useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
   const [screen, setScreen] = useState<DashboardScreen>("home");
   const calendarDays = [0, 1, 2].map((offset) => { const date = new Date(); date.setDate(date.getDate() + offset); const key = date.toISOString().slice(0, 10); const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(date); return { key, label, events: data.todaysCalendar.events.filter((event) => event.startAt.slice(0, 10) === key) }; });
@@ -23,5 +24,5 @@ export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColo
     : screen === "tasks" ? <TasksScreen tasks={data.tasks} />
     : screen === "focus" ? <PomodoroWidget />
     : <DeviceSettingsWidget />;
-  return <main className="dashboard" aria-label="Desk dashboard" style={{ "--lime": accentColor, fontFamily } as CSSProperties}><Header data={data} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main>;
+  return <main className="dashboard" aria-label="Desk dashboard" style={{ "--lime": accentColor, "--canvas-w": `${canvas.width}px`, "--canvas-h": `${canvas.height}px`, fontFamily } as CSSProperties}><Header data={data} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main>;
 }
