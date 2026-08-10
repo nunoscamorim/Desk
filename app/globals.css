@@ -9,7 +9,7 @@ button { font: inherit; }
    coordinates — so it never reflows to the screen. .canvas-viewport scales the
    whole canvas to fit instead, which is what lets one saved layout stay true on
    an iPad, in a desktop browser, and in the admin preview. */
-.canvas-viewport { position: fixed; inset: 0; overflow: hidden; background: #151412; }
+.canvas-viewport, .dashboard-boot { position: fixed; inset: 0; overflow: hidden; background: #151412; }
 /* Centred by translate rather than by flex/grid alignment: a transform does not
    change layout size, so an alignment container would still be sizing itself to
    the unscaled canvas and pushing it off-screen whenever the canvas is wider
@@ -245,7 +245,18 @@ button { font: inherit; }
 .skeleton.line.heading { width: 230px; height: 25px; margin: 0; }
 .weather-skeleton { width: 125px; height: 40px; }
 .skeleton.block { width: 60%; height: 68px; margin-top: 24px; }
-.configured-meeting .skeleton-card { background: #1e2118; }
+/* A placeholder has to fit whatever size its widget has been dragged to, so the
+   block absorbs the leftover height rather than overflowing a short card. */
+.skeleton-card { display: flex; flex-direction: column; }
+.skeleton-card .skeleton.block { flex: 1 1 auto; height: auto; min-height: 10px; margin-top: 12px; }
+.skeleton-card .skeleton.line:last-child { flex: 0 0 auto; margin-top: 12px; }
+/* Placeholders carry the real card's class so they inherit its padding, display
+   mode and background. These two only damp what a bare placeholder should not
+   inherit: the meeting card's full-strength lime, and the music card's zero
+   padding, which the live card gets away with because .spotify-info lays out
+   its own inset over full-bleed artwork. */
+.configured-meeting .skeleton-card { background: #1e2118; box-shadow: none; }
+.skeleton-card.music-card { padding: 14px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @keyframes pulse { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
