@@ -4,7 +4,14 @@ import { formatTime } from "./utils";
 
 function CalendarItem({ event, showLocations, index }: { event: CalendarEvent; showLocations: boolean; index: number }) {
   const colors = ["#b8d86b", "#c4a9ff", "#ff9b64", "#7ed9e8"];
-  return <li className="calendar-item" style={{ "--event-color": colors[index % colors.length] } as CSSProperties}><time dateTime={event.startAt}>{formatTime(event.startAt)}</time><span className="event-line" /><div><strong>{event.title}</strong>{showLocations && <span>{event.location ?? `${formatTime(event.startAt)}–${formatTime(event.endAt)}`}</span>}</div></li>;
+  // An all-day event has no meaningful clock time. It is carried as a
+  // midnight-to-midnight UTC span, so formatting it would show the reader's
+  // offset from UTC — "01:00 – 00:59" for anyone an hour ahead — rather than
+  // anything about the event.
+  // Null for an all-day event with no location: the time column already says
+  // "All day", and repeating it underneath the title tells the reader nothing.
+  const detail = event.location ?? (event.allDay ? null : `${formatTime(event.startAt)}–${formatTime(event.endAt)}`);
+  return <li className={`calendar-item ${event.allDay ? "all-day-item" : ""}`} style={{ "--event-color": colors[index % colors.length] } as CSSProperties}><time dateTime={event.allDay ? event.startAt.slice(0, 10) : event.startAt}>{event.allDay ? "All day" : formatTime(event.startAt)}</time><span className="event-line" /><div><strong>{event.title}</strong>{showLocations && detail && <span>{detail}</span>}</div></li>;
 }
 
 export function CalendarWidget({ calendar, settings }: { calendar: TodayCalendar; settings?: { showLocations?: boolean; strictDate?: boolean; dateLabel?: string } }) {

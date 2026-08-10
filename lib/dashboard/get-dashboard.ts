@@ -125,7 +125,10 @@ async function getDashboardWithServices(services: DashboardServices): Promise<Da
   const events = [...googleCalendar.events, ...appleCalendar.events, ...icalCalendar.events].sort((a, b) => a.startAt.localeCompare(b.startAt));
   const todaysCalendar = { date: googleCalendar.date, events };
   const now = Date.now();
-  const nextEvent = events.find((event) => new Date(event.endAt).getTime() > now);
+  // All-day entries — holidays, birthdays, out-of-office — are not something to
+  // count down to, and one running for the whole day would otherwise sit in this
+  // slot and hide the actual next meeting. They still appear in the schedule.
+  const nextEvent = events.find((event) => !event.allDay && new Date(event.endAt).getTime() > now);
   const nextMeeting = nextEvent ? { ...nextEvent, minutesUntil: Math.max(0, Math.ceil((new Date(nextEvent.startAt).getTime() - now) / 60000)) } : null;
 
   return {

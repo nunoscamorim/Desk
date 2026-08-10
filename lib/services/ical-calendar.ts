@@ -57,13 +57,15 @@ function allDayBounds(start: Date, end: Date) {
 }
 
 function toCalendarEvent(source: Pick<VEvent, "uid" | "summary" | "location" | "datetype">, start: Date, end: Date, suffix = ""): CalendarEvent {
-  const bounds = isAllDay(source) ? allDayBounds(start, end) : { startAt: start.toISOString(), endAt: end.toISOString() };
+  const allDay = isAllDay(source);
+  const bounds = allDay ? allDayBounds(start, end) : { startAt: start.toISOString(), endAt: end.toISOString() };
   return {
     id: `${text(source.uid) ?? crypto.randomUUID()}${suffix}`,
     title: text(source.summary) ?? "Untitled event",
     startAt: bounds.startAt,
     endAt: bounds.endAt,
     location: text(source.location) ?? null,
+    allDay,
   };
 }
 

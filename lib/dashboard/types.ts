@@ -13,6 +13,12 @@ export type CalendarEvent = {
   startAt: string;
   endAt: string;
   location: string | null;
+  /**
+   * All-day and multi-day events. Flagged at the source, where the distinction
+   * is still visible, because both kinds are flattened to the same timestamps
+   * afterwards and a midnight-to-midnight span cannot be told apart by shape.
+   */
+  allDay?: boolean;
 };
 
 export type Meeting = CalendarEvent & {
