@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Header } from "./Header";
 import { WidgetRenderer } from "./WidgetRenderer";
+import { BottomNavigation, type DashboardScreen } from "./BottomNavigation";
+import { CalendarWidget } from "./CalendarWidget";
+import { DeviceSettingsWidget } from "./DeviceSettingsWidget";
+import { SpotifyWidget } from "./SpotifyWidget";
+import { TasksScreen } from "./TasksWidget";
+import { PomodoroWidget } from "./PomodoroWidget";
 import type { WidgetConfig } from "@/lib/dashboard/config";
 import type { DashboardData } from "@/lib/dashboard/types";
 
@@ -23,6 +29,7 @@ export function IpadDashboardShell({
   refreshInterval = 5 * 60 * 1000, // 5 minutes
 }: IpadDashboardShellProps) {
   const [currentData, setCurrentData] = useState(data);
+  const [screen, setScreen] = useState<DashboardScreen>("home");
 
   // Load Google Font if not Arial
   useEffect(() => {
@@ -36,10 +43,16 @@ export function IpadDashboardShell({
 
   // Lock screen orientation to landscape on iPad
   useEffect(() => {
-    if ("orientation" in screen && "lock" in screen.orientation) {
-      (screen.orientation as unknown as { lock(orientation: string): Promise<void> }).lock("landscape").catch(() => {
-        // Silently fail if lock isn't supported
-      });
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((window as any)?.screen?.orientation?.lock) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).screen.orientation.lock("landscape").catch(() => {
+          // Silently fail if lock isn't supported
+        });
+      }
+    } catch {
+      // Orientation lock not supported
     }
   }, []);
 
@@ -95,6 +108,41 @@ export function IpadDashboardShell({
     return () => clearInterval(interval);
   }, [refreshInterval]);
 
+  // Build calendar days like the desktop version
+  const calendarDays = [0, 1, 2].map((offset) => {
+    const date = new Date();
+    date.setDate(date.getDate() + offset);
+    const key = date.toISOString().slice(0, 10);
+    const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(date);
+    return { key, label, events: currentData.todaysCalendar.events.filter((event) => event.startAt.slice(0, 10) === key) };
+  });
+
+  // Render content based on current screen
+  const content =
+    screen === "home" ? (
+      <section className="ipad-dashboard-grid">
+        {widgets.map((widget) => (
+          <WidgetRenderer key={widget.id} widget={widget} data={currentData} />
+        ))}
+      </section>
+    ) : screen === "calendar" ? (
+      <section className="calendar-days-screen">
+        {calendarDays.map((day) => (
+          <CalendarWidget key={day.key} calendar={{ date: day.key, events: day.events }} settings={{ strictDate: true, dateLabel: day.label }} />
+        ))}
+      </section>
+    ) : screen === "music" ? (
+      <section className="screen-grid single-screen">
+        <SpotifyWidget nowPlaying={currentData.spotifyNowPlaying} expanded />
+      </section>
+    ) : screen === "tasks" ? (
+      <TasksScreen tasks={currentData.tasks} />
+    ) : screen === "focus" ? (
+      <PomodoroWidget />
+    ) : (
+      <DeviceSettingsWidget />
+    );
+
   return (
     <main
       className="dashboard ipad-dashboard"
@@ -102,11 +150,8 @@ export function IpadDashboardShell({
       style={{ "--lime": accentColor, fontFamily } as CSSProperties}
     >
       <Header data={currentData} />
-      <section className="ipad-dashboard-grid">
-        {widgets.map((widget) => (
-          <WidgetRenderer key={widget.id} widget={widget} data={currentData} />
-        ))}
-      </section>
+      {content}
+      <BottomNavigation screen={screen} onChange={setScreen} />
     </main>
   );
 }

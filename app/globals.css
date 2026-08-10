@@ -100,14 +100,16 @@ button { font: inherit; }
 .card h2, .card strong, .card p, .card span { overflow-wrap: anywhere; }
 .card h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
 /* iPad Landscape Kiosk Mode */
-.ipad-dashboard { width: 100%; height: 100vh; max-width: 100%; padding: 24px; display: flex; flex-direction: column; }
-.ipad-dashboard .topbar { height: 70px; margin-bottom: 16px; }
-.ipad-dashboard .topbar h1 { font-size: 24px; }
-.ipad-dashboard-grid { flex: 1; position: relative; width: 100%; height: calc(100% - 86px); }
+.ipad-dashboard { width: 100%; height: 100vh; max-width: 100%; padding: 24px 24px 88px 24px; display: flex; flex-direction: column; }
+.ipad-dashboard .topbar { height: 70px; margin-bottom: 12px; }
+.ipad-dashboard .topbar h1 { font-size: 22px; }
+.ipad-dashboard-grid { flex: 1; position: relative; width: 100%; }
 .ipad-dashboard .configured-widget { position: absolute; }
 .ipad-dashboard .configured-widget > .card { width: 100%; height: 100%; }
+.ipad-dashboard .screen-grid { height: auto; min-height: 400px; }
+.ipad-dashboard .calendar-days-screen { height: auto; min-height: 400px; }
 @supports (padding: max(0px)) {
-  .ipad-dashboard { padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); }
+  .ipad-dashboard { padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(88px, calc(64px + env(safe-area-inset-bottom))) max(24px, env(safe-area-inset-left)); }
 }
 .next-card { grid-column: 1; grid-row: 1; container-type: size; display: flex; flex-direction: column; padding: 16px; color: #11120e; background: var(--lime); box-shadow: inset 0 1px rgba(255,255,255,.3); }
 .meeting-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
