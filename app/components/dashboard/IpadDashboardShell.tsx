@@ -120,9 +120,11 @@ export function IpadDashboardShell({
   // Render content based on current screen
   const content =
     screen === "home" ? (
-      <section className="ipad-dashboard-grid">
+      <section className="ipad-dashboard-responsive-grid">
         {widgets.map((widget) => (
-          <WidgetRenderer key={widget.id} widget={widget} data={currentData} />
+          <div key={widget.id} className={`ipad-widget-wrapper ipad-widget-${widget.id}`}>
+            <WidgetRenderer widget={widget} data={currentData} />
+          </div>
         ))}
       </section>
     ) : screen === "calendar" ? (
