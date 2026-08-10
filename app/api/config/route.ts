@@ -10,6 +10,6 @@ export async function PUT(request: Request) {
   if (isPasswordConfigured() && !(await isAdminAuthenticated())) return Response.json({ error: "Authentication required" }, { status: 401 });
   const body = await request.json() as Partial<DashboardConfig>;
   const current = await getDashboardConfig();
-  const next = await setDashboardConfig({ widgets: Array.isArray(body.widgets) ? body.widgets : current.widgets, accentColor: typeof body.accentColor === "string" ? body.accentColor : current.accentColor, fontFamily: typeof body.fontFamily === "string" ? body.fontFamily : current.fontFamily });
+  const next = await setDashboardConfig({ widgets: Array.isArray(body.widgets) ? body.widgets : current.widgets, accentColor: typeof body.accentColor === "string" ? body.accentColor : current.accentColor, fontFamily: typeof body.fontFamily === "string" ? body.fontFamily : current.fontFamily, canvas: body.canvas ?? current.canvas });
   return Response.json(next);
 }
