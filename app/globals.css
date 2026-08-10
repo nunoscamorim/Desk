@@ -182,12 +182,13 @@ button { font: inherit; }
 .music-card .track-progress-fill { background: var(--spotify-green); }
 .tasks-card { grid-column: 1; grid-row: 2; padding: 18px 20px; }
 .task-list { margin-top: 12px; display: grid; align-content: start; gap: 8px; }
-/* Reuses the calendar's event-card look — a colored tint, an accent rail, a
-   compact leading column — rather than a checklist row, so a task and a
-   meeting read as the same kind of thing on the same display. */
-.task-item.calendar-item { grid-template-columns: 46px 3px minmax(0, 1fr); }
-.task-due { display: flex; align-items: center; justify-content: center; text-align: center; color: var(--ink); font-size: 10px; font-weight: 700; letter-spacing: -0.01em; text-transform: uppercase; }
-.task-overdue .task-due { color: #ff936f; }
+/* Reuses the calendar's event-card look — a colored tint, an accent rail —
+   rather than a checklist row, so a task and a meeting read as the same kind
+   of thing on the same display. No leading time column, unlike the calendar's:
+   a task's due date is a rough label, not a clock time, so it rides in the
+   subtitle instead of claiming its own fixed-width space. */
+.task-item.calendar-item { grid-template-columns: 3px minmax(0, 1fr); }
+.task-overdue .task-detail { color: #ff936f; }
 .task-item div span { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
 
 .tasks-screen { display: grid; grid-template-columns: 1fr 220px; gap: 16px; height: 400px; }

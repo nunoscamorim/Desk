@@ -35,11 +35,14 @@ function dueLabel(dueAt: string | null, now: number): string | null {
 
 function TaskItem({ task, index, now }: { task: Task; index: number; now: number }) {
   const due = dueLabel(task.dueAt, now);
-  const detail = task.project ?? task.priority;
+  // No dedicated due column — Schedule keeps its clock-time column since a
+  // meeting time is exact, but a task's due date is a rough label ("Tmrw",
+  // "Late") that doesn't earn the same fixed-width space. It rides in the
+  // subtitle instead, next to whichever list the task came from.
+  const detail = [due, task.project ?? task.priority].filter(Boolean).join(" · ");
   return <li className={`calendar-item task-item ${due === "Late" ? "task-overdue" : ""}`} style={{ "--event-color": colors[index % colors.length] } as CSSProperties}>
-    <span className="task-due">{due}</span>
     <span className="event-line" />
-    <div><strong>{task.title}</strong>{detail && <span>{detail}</span>}</div>
+    <div><strong>{task.title}</strong>{detail && <span className="task-detail">{detail}</span>}</div>
   </li>;
 }
 
