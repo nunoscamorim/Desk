@@ -30,7 +30,7 @@ export const CANVAS_PADDING = 32;
  * grid box, and the admin's drag limits all derive from this one number so they
  * cannot drift apart.
  */
-const CANVAS_CHROME = CANVAS_PADDING + 90 + 98;
+const CANVAS_CHROME = CANVAS_PADDING + 90 + 74;
 
 /** Region widgets may be positioned within, in canvas coordinates. */
 export function bentoArea(canvas: CanvasSize): CanvasSize {
