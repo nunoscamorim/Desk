@@ -92,7 +92,7 @@ button { font: inherit; }
 .meeting-live-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #11120e; box-shadow: 0 0 0 4px rgba(17,18,14,.12); }
 .meeting-header time { color: #11120e; font-size: 19px; font-weight: 850; line-height: 1; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
 .meeting-countdown { display: flex; align-items: flex-end; gap: 9px; margin: 12px 0 10px; }
-.meeting-countdown strong { color: #11120e; font-size: clamp(42px, 22cqh, 62px); font-weight: 750; line-height: .78; letter-spacing: -.075em; font-variant-numeric: tabular-nums; }
+.meeting-countdown strong { color: #11120e; font-size: clamp(46px, 24.2cqh, 68px); font-weight: 750; line-height: .78; letter-spacing: -.075em; font-variant-numeric: tabular-nums; }
 .meeting-countdown > span { display: flex; flex-direction: column; gap: 2px; padding-bottom: 1px; color: #11120e; font-size: 11px; font-weight: 800; }
 .meeting-countdown small { color: rgba(17,18,14,.58); font-size: 9px; font-weight: 600; }
 .meeting-copy { min-width: 0; }
