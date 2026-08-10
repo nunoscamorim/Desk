@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { CanvasViewport } from "@/app/components/dashboard/CanvasViewport";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
-import { defaultCanvas, defaultWidgetConfig, normalizeCanvas, readWidgetConfig, type CanvasSize, type WidgetConfig } from "@/lib/dashboard/config";
+import { defaultCanvas, normalizeCanvas, type CanvasSize, type WidgetConfig } from "@/lib/dashboard/config";
+import { defaultWidgetConfig, readWidgetConfig } from "@/lib/dashboard/widget-registry";
 import { useNowPlaying } from "@/lib/device/use-now-playing";
 import type { DashboardData } from "@/lib/dashboard/types";
 

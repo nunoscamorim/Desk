@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { defaultCanvas, defaultWidgetConfig, legacyCanvas, normalizeCanvas, normalizeWidgetConfig, rescaleWidgetGeometry, type CanvasSize, type WidgetConfig } from "./config";
+import { defaultCanvas, legacyCanvas, normalizeCanvas, rescaleWidgetGeometry, type CanvasSize, type WidgetConfig } from "./config";
+import { defaultWidgetConfig, normalizeWidgetConfig } from "./widget-registry";
 
 export type DashboardConfig = { widgets: WidgetConfig[]; accentColor: string; fontFamily: string; canvas: CanvasSize };
 const defaultConfig: DashboardConfig = { widgets: defaultWidgetConfig, accentColor: "#c9ff52", fontFamily: "Arial", canvas: defaultCanvas };

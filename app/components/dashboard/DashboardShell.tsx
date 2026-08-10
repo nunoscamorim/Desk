@@ -10,7 +10,8 @@ import { SpotifyWidget } from "./SpotifyWidget";
 import { TasksScreen } from "./TasksWidget";
 import { PomodoroWidget } from "./PomodoroWidget";
 import { WidgetRenderer } from "./WidgetRenderer";
-import { defaultCanvas, defaultWidgetConfig, type CanvasSize, type WidgetConfig } from "@/lib/dashboard/config";
+import { defaultCanvas, type CanvasSize, type WidgetConfig } from "@/lib/dashboard/config";
+import { defaultWidgetConfig } from "@/lib/dashboard/widget-registry";
 import type { DashboardData } from "@/lib/dashboard/types";
 
 export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColor = "#c9ff52", fontFamily = "Arial", canvas = defaultCanvas }: { data: DashboardData; widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string; canvas?: CanvasSize }) {
