@@ -357,3 +357,7 @@ button { font: inherit; }
 .tv-count { flex: 0 0 auto; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .tv-grid-empty { flex: 1 1 auto; display: grid; place-items: center; border-radius: 15px; background: var(--panel); color: var(--muted); font-size: 12px; }
 .tv-more { flex: 0 0 auto; margin: 0; color: #77746d; font-size: 10px; text-align: center; }
+.tv-panel-actions { display: inline-flex; align-items: center; gap: 10px; }
+.tv-panel-actions button { height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 0 11px; background: #171716; color: var(--ink); font: inherit; font-size: 10px; font-weight: 600; cursor: pointer; }
+.tv-panel-actions button:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
+.tv-panel-actions button:disabled { opacity: .5; cursor: default; }
