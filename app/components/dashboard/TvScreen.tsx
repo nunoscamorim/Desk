@@ -94,6 +94,25 @@ export function TvScreen() {
   const [preview, setPreview] = useState<Channel | null>(null);
   const [previewState, setPreviewState] = useState<TvStreamState>("connecting");
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
+  // The channel actually allowed to open a live connection, one step behind
+  // `preview`. Tapping a tile disconnects whatever was playing immediately —
+  // the render below only ever mounts one TvStream for the preview slot — but
+  // a single-connection IPTV line may not notice the old socket closed the
+  // instant the client aborts it. Waiting here before connecting the new one
+  // does two things: a fast run of taps through the list never opens more
+  // than one connection, for whichever tile the user actually settles on, and
+  // that connection gets a beat after the previous one closed before it tries
+  // to open.
+  const [liveChannel, setLiveChannel] = useState<Channel | null>(null);
+  useEffect(() => {
+    // No need to clear liveChannel here: isLive below compares ids against
+    // the *current* previewChannel, so a stale liveChannel left over from the
+    // previous tap already reads as not-live the instant preview changes —
+    // this only has to schedule the next connection, never unset the old one.
+    if (!preview) return;
+    const timer = window.setTimeout(() => setLiveChannel(preview), 500);
+    return () => window.clearTimeout(timer);
+  }, [preview]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -174,6 +193,10 @@ export function TvScreen() {
   // usually has branding too even when the playlist itself carries none.
   const resolveLogo = (channel: Channel): string | null => channel.logo || (channel.tvgId ? state.epgIcons[channel.tvgId] : undefined) || null;
   const channelSection = (title: string, channelsInSection: Channel[], tone: "general" | "sports") => channelsInSection.length > 0 && <section className={`tv-channel-section tv-channel-${tone}`} aria-label={`${title} channels`}><header><h3>{title}</h3><span>{channelsInSection.length} channels</span></header><div className="tv-grid">{channelsInSection.map((channel) => <ChannelTile key={channel.id} channel={channel} poster={resolveLogo(channel)} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />)}</div></section>;
+  // Only actually stream once liveChannel has caught up with the current
+  // selection — during the gap in between, the tapped tile is already
+  // highlighted and its name is already showing below, just not yet playing.
+  const isLive = liveChannel !== null && previewChannel !== null && liveChannel.id === previewChannel.id;
 
   return <section className="tv-screen">
     {(failed.length > 0 || truncated.length > 0) && <div className="tv-notices">
@@ -184,15 +207,17 @@ export function TvScreen() {
       <div className="tv-channel-list"><div className="tv-channel-groups">{channelSection("General", general, "general")}{channelSection("Sports", sports, "sports")}</div></div>
       {/* Kept in the layout whether or not a channel is selected, so the grid
           doesn't reflow to full width the moment something is picked — but the
-          stream itself only mounts once previewChannel is set by an explicit
+          stream itself only mounts once liveChannel has caught up with the
           tap, never before. */}
       <aside className="tv-preview" aria-label={previewChannel ? `Preview ${previewChannel.name}` : "Channel preview"}>
         <div className="tv-preview-art">
           {previewChannel
-            ? <>
-              <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls={false} className="tv-preview-stage" onStateChange={setPreviewState} />
-              {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
-            </>
+            ? isLive
+              ? <>
+                <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls={false} className="tv-preview-stage" onStateChange={setPreviewState} />
+                {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
+              </>
+              : <div className="tv-preview-idle"><span>Connecting to {previewChannel.name}…</span></div>
             : <div className="tv-preview-idle"><span>Tap a channel to preview it</span></div>}
         </div>
         <div className="tv-preview-copy">
