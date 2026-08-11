@@ -208,8 +208,8 @@ button { font: inherit; }
 .track-copy small { display: block; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .spotify-playback { margin-top: 0; }
 .music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: linear-gradient(var(--album-tint), var(--album-tint)), var(--spotify-black); }
-.music-artwork-frame { width: 400px; height: 400px; padding: 16px; align-self: center; }
-.music-screen-card .album-art { position: relative; inset: auto; width: 100%; height: 100%; border-radius: 10px; }
+.music-artwork-frame { width: 400px; height: 400px; padding: 0; align-self: center; }
+.music-screen-card .album-art { position: relative; inset: auto; width: 100%; height: 100%; border-radius: 0; }
 .music-screen-card .spotify-info { position: relative; height: var(--bento-h); padding: 16px; background: none; }
 .music-screen-card .spotify-empty { grid-column: 1 / -1; height: var(--bento-h); padding: 16px; }
 .music-screen-card .spotify-empty-copy { inset: 70px 34px 34px; }
@@ -273,6 +273,8 @@ button { font: inherit; }
 .bottom-navigation { position: absolute; right: var(--page-margin); bottom: var(--page-margin); left: var(--page-margin); z-index: 9; display: flex; align-items: center; justify-content: flex-end; gap: 10px; height: 42px; }
 .bottom-navigation button { min-width: 84px; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; padding: 0 16px; background: #252522; color: #aaa79e; font-size: 12px; font-weight: 600; cursor: pointer; touch-action: manipulation; }
 .bottom-navigation button svg { width: 18px; height: 18px; flex: 0 0 auto; }
+
+.bottom-navigation button.icon-only { min-width: 42px; padding: 0; }
 .bottom-navigation button:first-child { margin-right: auto; }
 .bottom-navigation button.active { background: color-mix(in srgb, var(--lime) 24%, #252522); color: var(--lime); }
 .bottom-navigation button:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; border-radius: 3px; }
