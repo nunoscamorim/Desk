@@ -210,8 +210,8 @@ button { font: inherit; }
 .music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: linear-gradient(var(--album-tint), var(--album-tint)), var(--spotify-black); }
 .music-artwork-frame { width: 400px; height: 400px; padding: 16px; align-self: center; }
 .music-screen-card .album-art { position: relative; inset: auto; width: 100%; height: 100%; border-radius: 10px; }
-.music-screen-card .spotify-info { position: relative; height: var(--bento-h); padding: 34px; background: none; }
-.music-screen-card .spotify-empty { grid-column: 1 / -1; height: var(--bento-h); padding: 34px; }
+.music-screen-card .spotify-info { position: relative; height: var(--bento-h); padding: 16px; background: none; }
+.music-screen-card .spotify-empty { grid-column: 1 / -1; height: var(--bento-h); padding: 16px; }
 .music-screen-card .spotify-empty-copy { inset: 70px 34px 34px; }
 .music-screen-card .track-copy { margin-top: auto; padding-bottom: 16px; }
 .music-screen-card .track-copy h2 { font-size: 30px; line-height: 1; }
