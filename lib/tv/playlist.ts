@@ -48,7 +48,10 @@ async function readBody(playlist: Playlist): Promise<string> {
     catch { throw new Error("Uploaded file is missing — re-upload it"); }
   }
 
-  const response = await fetchWithRetry(playlist.url, { cache: "no-store" }, { label: `tv:${playlist.name}`, timeoutMs: FETCH_TIMEOUT_MS, budgetMs: FETCH_BUDGET_MS });
+  // Without a User-Agent this goes out identifying itself as Node, and a fair
+  // number of public playlist hosts answer that with a 403 while serving the
+  // same URL to a player. The proxy route already had to do this.
+  const response = await fetchWithRetry(playlist.url, { cache: "no-store", redirect: "follow", headers: { "user-agent": "VLC/3.0.20 LibVLC/3.0.20", accept: "*/*" } }, { label: `tv:${playlist.name}`, timeoutMs: FETCH_TIMEOUT_MS, budgetMs: FETCH_BUDGET_MS });
   if (!response.ok) throw new Error(`Playlist request failed (${response.status})`);
 
   const declared = Number(response.headers.get("content-length"));

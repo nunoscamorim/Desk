@@ -67,7 +67,10 @@ export function parseM3u(body: string): ParseResult {
     if (isDirective(line)) continue;
     if (!pending) continue;
 
-    const url = line;
+    // Public lists commonly append Kodi-style playback options to the URL —
+    // `…/stream.m3u8|User-Agent=Mozilla&Referer=…`. That pipe and everything
+    // after it is not part of the URL, and left attached the stream simply 404s.
+    const url = line.split("|")[0].trim();
     if (!/^https?:\/\//i.test(url)) { pending = null; continue; }
 
     // Falls back to the position rather than to name+url: an aggregate playlist
