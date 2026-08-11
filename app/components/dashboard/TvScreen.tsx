@@ -189,8 +189,6 @@ export function TvScreen() {
   }
 
   const visible = matches.slice(0, VISIBLE_LIMIT);
-  const sports = visible.filter((channel) => /sport/i.test(`${channel.group ?? ""} ${channel.name}`));
-  const general = visible.filter((channel) => !sports.includes(channel));
   // Nothing is selected until the user taps a tile. Falling back to matches[0]
   // here used to mean the first channel in the list was always shown as
   // selected — and, worse, the preview pane below connects a live stream the
@@ -206,7 +204,7 @@ export function TvScreen() {
   // matching tvg-id is the fallback, since a channel that has a schedule
   // usually has branding too even when the playlist itself carries none.
   const resolveLogo = (channel: Channel): string | null => channel.logo || (channel.tvgId ? state.epgIcons[channel.tvgId] : undefined) || null;
-  const channelSection = (title: string, channelsInSection: Channel[], tone: "general" | "sports") => channelsInSection.length > 0 && <section className={`tv-channel-section tv-channel-${tone}`} aria-label={`${title} channels`}><header><h3>{title}</h3><span>{channelsInSection.length} channels</span></header><div className="tv-grid">{channelsInSection.map((channel) => <ChannelTile key={channel.id} channel={channel} poster={resolveLogo(channel)} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />)}</div></section>;
+  const channelTiles = visible.map((channel) => <ChannelTile key={channel.id} channel={channel} poster={resolveLogo(channel)} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />);
   // Only actually stream once liveChannel has caught up with the current
   // selection — during the gap in between, the tapped tile is already
   // highlighted and its name is already showing below, just not yet playing.
@@ -218,14 +216,14 @@ export function TvScreen() {
       {truncated.map((playlist) => <span key={playlist.id} className="tv-warning">{playlist.name}: showing the first {playlist.channelCount.toLocaleString()} channels only.</span>)}
     </div>}
     {matches.length === 0 ? <div className="tv-grid-empty">No channel matches that search.</div> : <div className="tv-content">
-      <div className="tv-channel-list"><div className="tv-channel-groups">{channelSection("General", general, "general")}{channelSection("Sports", sports, "sports")}</div></div>
+      <div className="tv-channel-list"><div className="tv-channel-groups"><div className="tv-grid" aria-label="TV channels">{channelTiles}</div></div></div>
       {/* Kept in the layout whether or not a channel is selected, so the grid
           doesn't reflow to full width the moment something is picked — but the
           stream itself only mounts once liveChannel has caught up with the
           tap, never before. */}
       <aside className="tv-preview" aria-label={previewChannel ? `Preview ${previewChannel.name}` : "Channel preview"}>
         <div className="tv-preview-head">
-          {previewChannel ? <h2>{previewChannel.name}</h2> : <p>Select a channel to preview it.</p>}
+          {previewChannel ? <h2>{previewChannel.name}</h2> : <><span className="tv-preview-skeleton tv-preview-skeleton-title" /><span className="tv-preview-skeleton tv-preview-skeleton-meta" /></>}
           {previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}
         </div>
         <div className="tv-preview-art">
@@ -236,7 +234,7 @@ export function TvScreen() {
                 {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
               </>
               : <div className="tv-preview-idle"><span>Connecting to {previewChannel.name}…</span></div>
-            : <div className="tv-preview-idle"><span>Tap a channel to preview it</span></div>}
+            : <div className="tv-preview-skeleton-frame"><span className="tv-preview-skeleton tv-preview-skeleton-frame-line" /><span className="tv-preview-skeleton tv-preview-skeleton-frame-line short" /></div>}
         </div>
         {previewNowPlaying && <div className="tv-preview-copy">
             <div className="tv-preview-schedule">
@@ -248,8 +246,8 @@ export function TvScreen() {
                 return <article key={`${programme.start}-${programme.title}`} className={current ? "is-current" : undefined}><time>{new Date(programme.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time><strong>{programme.title}</strong></article>;
               })}
             </div>}
-            <p>{previewChannel?.group ?? "General entertainment"}</p>
         </div>}
+        {!previewChannel && <div className="tv-preview-copy tv-preview-skeleton-copy"><span className="tv-preview-skeleton tv-preview-skeleton-row" /><span className="tv-preview-skeleton tv-preview-skeleton-row medium" /><div className="tv-preview-skeleton-grid"><span className="tv-preview-skeleton" /><span className="tv-preview-skeleton" /><span className="tv-preview-skeleton" /></div></div>}
       </aside>
     </div>}
     {matches.length > visible.length && <p className="tv-more">Showing the first {visible.length} — keep typing to narrow it down.</p>}
