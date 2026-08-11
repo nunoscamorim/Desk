@@ -208,10 +208,14 @@ button { font: inherit; }
 .spotify-empty-copy span { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.25; }
 /* Placeholder shown until real artwork loads — brand green falling away to
    Spotify black, so a track with no cover still reads as Spotify. */
-.album-art { position: relative; width: 100%; aspect-ratio: 1; border-radius: inherit; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 22%, rgba(30,215,96,.55), transparent 58%), linear-gradient(150deg, #1db954 0%, #12602f 38%, #191414 100%); }
+.album-art { position: absolute; inset: 0; border-radius: inherit; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 22%, rgba(30,215,96,.55), transparent 58%), linear-gradient(150deg, #1db954 0%, #12602f 38%, #191414 100%); }
 .album-art.has-artwork span { display: none; }
 .album-art span { font-size: 28px; }
-.spotify-info { position: relative; z-index: 1; min-width: 0; flex: 1; display: flex; flex-direction: column; padding: 14px; background: linear-gradient(180deg, rgba(8,8,7,.2) 0%, rgba(8,8,7,.05) 32%, rgba(8,8,7,.88) 100%); }
+/* Overlaid on .album-art (both positioned against .music-card, which .card
+   already makes a positioning context) rather than stacked below it — at the
+   widget's actual size the art alone is tall enough to fill the card, which
+   would push this off-screen entirely if it took its own flex share instead. */
+.spotify-info { position: absolute; inset: 0; z-index: 1; min-width: 0; display: flex; flex-direction: column; padding: 14px; background: linear-gradient(180deg, rgba(8,8,7,.2) 0%, rgba(8,8,7,.05) 32%, rgba(8,8,7,.88) 100%); }
 .track-copy { min-width: 0; margin-top: auto; padding-bottom: 8px; }
 .track-copy h2 { font-size: 16px; font-weight: 800; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-copy p { margin: 5px 0 0; color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
