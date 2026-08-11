@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { TvPlayer } from "@/app/components/tv/TvPlayer";
-import { TvStream, initialsFor, type TvStreamState } from "@/app/components/tv/TvStream";
+import { TvStream, type TvStreamState } from "@/app/components/tv/TvStream";
 import type { Channel } from "@/lib/tv/m3u";
 import type { PlaylistResult } from "@/lib/tv/playlist";
 
-type NowPlaying = { title: string; stop: string };
+type NowPlaying = { title: string; stop: string; next?: { title: string; start: string; stop: string } };
 
 type LoadState =
   | { status: "loading" }
@@ -15,22 +16,34 @@ type LoadState =
   | { status: "error"; message: string };
 
 /**
- * Provider logos are arbitrary remote images: a fair share 404, and on a slow or
- * blocked host the request can hang rather than fail. So the initials are always
- * rendered underneath and the image simply covers them once it decodes — a tile
- * is never a blank rectangle waiting on somebody else's CDN.
+ * Provider logos are arbitrary remote images. Sample their dominant colour when
+ * possible so each compact tile gets a subtle branded wash without depending on
+ * the image being served with permissive CORS headers.
  */
+function useLogoColor(logo: string | null): string | null {
+  const [color, setColor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!logo) return;
+    let cancelled = false;
+    const image = new Image(); image.crossOrigin = "anonymous"; image.src = logo;
+    image.onload = () => {
+      if (cancelled) return;
+      const canvas = document.createElement("canvas"); canvas.width = 16; canvas.height = 16;
+      const context = canvas.getContext("2d", { willReadFrequently: true }); if (!context) return;
+      try { context.drawImage(image, 0, 0, 16, 16); const pixels = context.getImageData(0, 0, 16, 16).data; let red = 0; let green = 0; let blue = 0; let count = 0; for (let index = 0; index < pixels.length; index += 16) { if (pixels[index + 3] < 128) continue; red += pixels[index]; green += pixels[index + 1]; blue += pixels[index + 2]; count += 1; } if (count && !cancelled) setColor(`rgb(${Math.round(red / count)}, ${Math.round(green / count)}, ${Math.round(blue / count)})`); } catch { /* Cross-origin logos may not expose pixels. */ }
+    };
+    return () => { cancelled = true; };
+  }, [logo]);
+  return color;
+}
+
 function ChannelTile({ channel, poster, active, onSelect }: { channel: Channel; poster: string | null; active: boolean; onSelect: () => void }) {
-  const [logoFailed, setLogoFailed] = useState(false);
-  const [logoLoaded, setLogoLoaded] = useState(false);
-  return <button type="button" className={`tv-tile${active ? " is-selected" : ""}`} onClick={onSelect} aria-pressed={active}>
-    <span className="tv-tile-logo">
-      {!logoLoaded && <i aria-hidden="true">{initialsFor(channel.name)}</i>}
-      {poster && !logoFailed &&
-        // eslint-disable-next-line @next/next/no-img-element -- arbitrary provider/EPG logos
-        <img src={poster} alt="" loading="lazy" onLoad={() => setLogoLoaded(true)} onError={() => setLogoFailed(true)} />}
-    </span>
-    <span className="tv-tile-name">{channel.name}</span>
+  const [logoFailed, setLogoFailed] = useState(!poster);
+  const logoColor = useLogoColor(poster);
+  return <button type="button" className={`tv-tile${active ? " is-selected" : ""}`} onClick={onSelect} aria-pressed={active} style={logoColor ? { "--tile-logo-color": logoColor } as CSSProperties : undefined}>
+    {poster && !logoFailed && // eslint-disable-next-line @next/next/no-img-element -- arbitrary provider/EPG logos
+      <img className="tv-tile-logo" src={poster} alt="" loading="lazy" onError={() => setLogoFailed(true)} />}
+    {logoFailed && <span className="tv-tile-name">{channel.name}</span>}
   </button>;
 }
 
@@ -52,7 +65,7 @@ const demoChannels: Channel[] = [...demoGeneralNames.map((name, index) => ({ id:
 // Demo channels carry no tvgId, so this is keyed by channel id directly
 // rather than going through the real tvg-id/XMLTV matching path.
 const demoProgrammeTitles = ["Morning Edition", "Midday Report", "The Afternoon Show", "Prime Time", "Evening Special", "Late Night Replay", "Weekend Wrap", "Feature Presentation"];
-const demoNowPlaying: Record<string, string> = Object.fromEntries(demoChannels.map((channel, index) => [channel.id, demoProgrammeTitles[index % demoProgrammeTitles.length]]));
+const demoNowPlaying: Record<string, NowPlaying> = Object.fromEntries(demoChannels.map((channel, index) => [channel.id, { title: demoProgrammeTitles[index % demoProgrammeTitles.length], stop: new Date(Date.now() + 45 * 60_000).toISOString(), next: { title: demoProgrammeTitles[(index + 1) % demoProgrammeTitles.length], start: new Date(Date.now() + 45 * 60_000).toISOString(), stop: new Date(Date.now() + 105 * 60_000).toISOString() } }]));
 
 /**
  * Turns the diagnostics report into the one sentence that explains an empty
@@ -186,7 +199,7 @@ export function TvScreen() {
   // channel the user actually taps next gets refused as already in use.
   const previewChannel = preview && matches.some((channel) => channel.id === preview.id) ? preview : null;
   const previewNowPlaying = previewChannel && showingDemoChannels
-    ? (demoNowPlaying[previewChannel.id] ? { title: demoNowPlaying[previewChannel.id] } : undefined)
+    ? demoNowPlaying[previewChannel.id]
     : previewChannel?.tvgId ? state.nowPlaying[previewChannel.tvgId] : undefined;
   // M3U's own tvg-logo wins when a provider set one; the EPG's <icon> for the
   // matching tvg-id is the fallback, since a channel that has a schedule
@@ -231,7 +244,7 @@ export function TvScreen() {
             </>
             : <p>Select a channel on the left — nothing streams until you do.</p>}
         </div>
-      </aside>
+      </aside>}
     </div>}
     {matches.length > visible.length && <p className="tv-more">Showing the first {visible.length} — keep typing to narrow it down.</p>}
   </section>;

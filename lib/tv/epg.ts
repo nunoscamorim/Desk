@@ -102,7 +102,7 @@ export async function getEpg(): Promise<EpgSet> {
 /** Drops cached EPG bodies so the next read re-fetches. */
 export function invalidateEpgCache() { cache.clear(); }
 
-export type NowPlaying = { title: string; stop: string };
+export type NowPlaying = { title: string; stop: string; next?: { title: string; start: string; stop: string } };
 
 /**
  * The programme airing right now on each EPG channel id, keyed the same way
@@ -114,14 +114,22 @@ export async function getNowPlayingByChannel(): Promise<Record<string, NowPlayin
   const { programmes } = await getEpg();
   const now = Date.now();
   const result: Record<string, NowPlaying> = {};
+  const upcoming: Record<string, { title: string; start: string; stop: string }> = {};
   for (const programme of programmes) {
     const start = Date.parse(programme.start);
     const stop = Date.parse(programme.stop);
-    if (Number.isNaN(start) || Number.isNaN(stop) || start > now || now >= stop) continue;
-    // A messy feed can carry overlapping entries for one channel; the first
-    // match wins rather than picking "latest start" — good enough for a
-    // preview annotation, not a scheduling authority.
-    if (!(programme.channelId in result)) result[programme.channelId] = { title: programme.title, stop: programme.stop };
+    if (Number.isNaN(start) || Number.isNaN(stop) || stop <= now) continue;
+    if (start <= now) {
+      // A messy feed can carry overlapping entries for one channel; the first
+      // match wins rather than picking "latest start".
+      if (!(programme.channelId in result)) result[programme.channelId] = { title: programme.title, stop: programme.stop };
+    } else if (!(programme.channelId in upcoming) || start < Date.parse(upcoming[programme.channelId].start)) {
+      upcoming[programme.channelId] = { title: programme.title, start: programme.start, stop: programme.stop };
+    }
+  }
+  for (const [channelId, next] of Object.entries(upcoming)) {
+    if (result[channelId]) result[channelId].next = next;
+    else result[channelId] = { title: "Not currently airing", stop: next.start, next };
   }
   return result;
 }
