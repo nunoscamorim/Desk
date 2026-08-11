@@ -273,6 +273,7 @@ button { font: inherit; }
 .bottom-navigation { position: absolute; right: var(--page-margin); bottom: var(--page-margin); left: var(--page-margin); z-index: 9; display: flex; align-items: center; justify-content: flex-end; gap: 10px; height: 42px; }
 .bottom-navigation button { min-width: 84px; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; padding: 0 16px; background: #252522; color: #aaa79e; font-size: 12px; font-weight: 600; cursor: pointer; touch-action: manipulation; }
 .bottom-navigation button svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.bottom-navigation button.icon-only { width: 42px; min-width: 42px; height: 42px; padding: 0; border-radius: 50%; }
 .bottom-navigation button:first-child { margin-right: auto; }
 .bottom-navigation button.active { background: color-mix(in srgb, var(--lime) 24%, #252522); color: var(--lime); }
 .bottom-navigation button:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; border-radius: 3px; }
