@@ -6,9 +6,11 @@ import { TvPlayer } from "@/app/components/tv/TvPlayer";
 import type { Channel } from "@/lib/tv/m3u";
 import type { PlaylistResult } from "@/lib/tv/playlist";
 
+type NowPlaying = { title: string; stop: string };
+
 type LoadState =
   | { status: "loading" }
-  | { status: "ready"; channels: Channel[]; playlists: PlaylistResult[] }
+  | { status: "ready"; channels: Channel[]; playlists: PlaylistResult[]; nowPlaying: Record<string, NowPlaying> }
   | { status: "error"; message: string };
 
 /**
@@ -35,7 +37,13 @@ type Diagnosis = { environment?: { authSecretSet?: boolean; adminPasswordSet?: b
 const DEMO_STREAM = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
 const demoGeneralNames = ["Desk News", "Culture One", "Documentary", "World Report", "City Life", "The History Room", "Nature Now", "Morning Brief", "Independent", "Travel Desk", "Food Stories", "Science Daily", "Arts Night", "Home & Garden", "Cinema Club"];
 const demoSportsNames = ["Sports Live", "Football Central", "Racing Club", "Tennis Tour", "Basketball Daily", "Matchday", "Golf Channel", "Fight Night", "Athletics", "The Fan Zone", "Motorsport", "Sports Desk", "Live Arena", "Stadium", "Overtime"];
-const demoChannels: Channel[] = [...demoGeneralNames.map((name, index) => ({ id: `demo-general-${index}`, name, logo: null, group: "General", url: DEMO_STREAM })), ...demoSportsNames.map((name, index) => ({ id: `demo-sports-${index}`, name, logo: null, group: "Sports", url: DEMO_STREAM }))];
+const demoChannels: Channel[] = [...demoGeneralNames.map((name, index) => ({ id: `demo-general-${index}`, tvgId: null, name, logo: null, group: "General", url: DEMO_STREAM })), ...demoSportsNames.map((name, index) => ({ id: `demo-sports-${index}`, tvgId: null, name, logo: null, group: "Sports", url: DEMO_STREAM }))];
+// Paired with demoChannels the same way: a placeholder so the preview's "now
+// playing" line has something to show before a real EPG source is added.
+// Demo channels carry no tvgId, so this is keyed by channel id directly
+// rather than going through the real tvg-id/XMLTV matching path.
+const demoProgrammeTitles = ["Morning Edition", "Midday Report", "The Afternoon Show", "Prime Time", "Evening Special", "Late Night Replay", "Weekend Wrap", "Feature Presentation"];
+const demoNowPlaying: Record<string, string> = Object.fromEntries(demoChannels.map((channel, index) => [channel.id, demoProgrammeTitles[index % demoProgrammeTitles.length]]));
 
 /**
  * Turns the diagnostics report into the one sentence that explains an empty
@@ -83,9 +91,9 @@ export function TvScreen() {
       .then(async (response) => {
         if (response.status === 401) throw new Error("This device is not signed in.");
         if (!response.ok) throw new Error(`Channels request failed (${response.status})`);
-        return response.json() as Promise<{ channels: Channel[]; playlists: PlaylistResult[] }>;
+        return response.json() as Promise<{ channels: Channel[]; playlists: PlaylistResult[]; nowPlaying?: Record<string, NowPlaying> }>;
       })
-      .then((data) => setState({ status: "ready", channels: data.channels, playlists: data.playlists }))
+      .then((data) => setState({ status: "ready", channels: data.channels, playlists: data.playlists, nowPlaying: data.nowPlaying ?? {} }))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setState({ status: "error", message: error instanceof Error ? error.message : "Could not load channels." });
@@ -138,7 +146,10 @@ export function TvScreen() {
   const sports = visible.filter((channel) => /sport/i.test(`${channel.group ?? ""} ${channel.name}`));
   const general = visible.filter((channel) => !sports.includes(channel));
   const previewChannel = preview && matches.some((channel) => channel.id === preview.id) ? preview : matches[0] ?? null;
-  const channelSection = (title: string, channelsInSection: Channel[], tone: "general" | "sports") => channelsInSection.length > 0 && <section className={`tv-channel-section tv-channel-${tone}`} aria-label={`${title} channels`}><header><div><span className="tv-section-kicker">{tone === "sports" ? "Live & on demand" : "Your lineup"}</span><h3>{title}</h3></div><span>{channelsInSection.length} channels</span></header><div className="tv-grid">{channelsInSection.map((channel) => <ChannelTile key={channel.id} channel={channel} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />)}</div></section>;
+  const previewNowPlaying = previewChannel && showingDemoChannels
+    ? (demoNowPlaying[previewChannel.id] ? { title: demoNowPlaying[previewChannel.id] } : undefined)
+    : previewChannel?.tvgId ? state.nowPlaying[previewChannel.tvgId] : undefined;
+  const channelSection = (title: string, channelsInSection: Channel[], tone: "general" | "sports") => channelsInSection.length > 0 && <section className={`tv-channel-section tv-channel-${tone}`} aria-label={`${title} channels`}><header><h3>{title}</h3><span>{channelsInSection.length} channels</span></header><div className="tv-grid">{channelsInSection.map((channel) => <ChannelTile key={channel.id} channel={channel} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />)}</div></section>;
 
   return <section className="tv-screen">
     {(failed.length > 0 || truncated.length > 0) && <div className="tv-notices">
@@ -150,7 +161,7 @@ export function TvScreen() {
       {previewChannel && <aside className="tv-preview" aria-label={`Preview ${previewChannel.name}`}>
         <div className="tv-preview-art">{previewChannel.logo && // eslint-disable-next-line @next/next/no-img-element -- arbitrary provider logos
           <img src={previewChannel.logo} alt="" />}<span className="tv-preview-live"><i /> Ready to watch</span></div>
-        <div className="tv-preview-copy"><span className="tv-section-kicker">Channel preview</span><h2>{previewChannel.name}</h2><p>{previewChannel.group ?? "General entertainment"}</p><button type="button" className="tv-watch" onClick={() => setPlaying(previewChannel)}>Watch live <span aria-hidden="true">→</span></button></div>
+        <div className="tv-preview-copy"><span className="tv-section-kicker">Channel preview</span><h2>{previewChannel.name}</h2>{previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}<p>{previewChannel.group ?? "General entertainment"}</p><button type="button" className="tv-watch" onClick={() => setPlaying(previewChannel)}>Watch live <span aria-hidden="true">→</span></button></div>
       </aside>}
     </div>}
     {matches.length > visible.length && <p className="tv-more">Showing the first {visible.length} — keep typing to narrow it down.</p>}
