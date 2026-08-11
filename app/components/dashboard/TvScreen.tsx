@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { TvPlayer } from "@/app/components/tv/TvPlayer";
 import type { Channel } from "@/lib/tv/m3u";
 import type { PlaylistResult } from "@/lib/tv/playlist";
@@ -47,16 +48,35 @@ type Diagnosis = { environment?: { authSecretSet?: boolean; adminPasswordSet?: b
 /**
  * Turns the diagnostics report into the one sentence that explains an empty
  * screen, in the order the causes actually block each other.
+ *
+ * Not signed in is the one case with an actual next step, and on this device
+ * that step is a tap rather than typing a URL: added to the home screen, the
+ * app runs with no address bar at all — Guided Access does not even enter into
+ * it — so "open /admin" was advice this screen made impossible to follow.
+ * Every other case ends here, in server or admin configuration, so text is all
+ * there is to give.
  */
-function explain(diagnosis: Diagnosis | null): string | null {
+function explain(diagnosis: Diagnosis | null): { text: string; needsSignIn?: boolean } | null {
   if (!diagnosis) return null;
   const { environment = {}, request = {}, playlists = {} } = diagnosis;
-  if (environment.authSecretSet === false) return "AUTH_SECRET is not set on the server, so saved playlists cannot be read. Set it and redeploy.";
-  if (request.canReadChannels === false) return "This device is not signed in. Open /admin on it once and enter the admin password — the session then persists.";
-  if (playlists.error) return playlists.error;
-  if (environment.dataDirWritable === false) return "The server cannot write to data/. Mount a persistent volume at /app/data.";
-  if (playlists.stored === 0) return "No playlist is saved yet. Add one in /admin — paste a URL or upload a file.";
+  if (environment.authSecretSet === false) return { text: "AUTH_SECRET is not set on the server, so saved playlists cannot be read. Set it and redeploy." };
+  if (request.canReadChannels === false) return { text: "This device isn’t signed in.", needsSignIn: true };
+  if (playlists.error) return { text: playlists.error };
+  if (environment.dataDirWritable === false) return { text: "The server cannot write to data/. Mount a persistent volume at /app/data." };
+  if (playlists.stored === 0) return { text: "No playlist is saved yet. Add one in /admin — paste a URL or upload a file." };
   return null;
+}
+
+function DiagnosisNote({ diagnosis }: { diagnosis: Diagnosis | null }) {
+  const explained = explain(diagnosis);
+  if (!explained) return null;
+  return <span className="tv-diagnosis">
+    {explained.text}
+    {explained.needsSignIn &&
+      // In-app navigation, not a URL the user has to type — the address bar
+      // does not exist in the standalone launch this kiosk uses.
+      <Link href="/admin" className="tv-signin">Sign in →</Link>}
+  </span>;
 }
 
 export function TvScreen() {
@@ -104,15 +124,18 @@ export function TvScreen() {
 
   if (playing) return <TvPlayer key={playing.id} channel={playing} onBack={() => setPlaying(null)} />;
   if (state.status === "loading") return <section className="tv-screen tv-message"><span>Loading channels…</span></section>;
-  if (state.status === "error") return <section className="tv-screen tv-message"><strong>Channels unavailable</strong><span>{state.message}</span>{explain(diagnosis) && <span className="tv-diagnosis">{explain(diagnosis)}</span>}</section>;
+  if (state.status === "error") return <section className="tv-screen tv-message"><strong>Channels unavailable</strong><span>{state.message}</span><DiagnosisNote diagnosis={diagnosis} /></section>;
 
   const failed = state.playlists.filter((playlist) => playlist.error);
   const truncated = state.playlists.filter((playlist) => playlist.truncated);
 
   if (state.channels.length === 0) {
+    const explained = explain(diagnosis);
     return <section className="tv-screen tv-message">
       <strong>No channels yet</strong>
-      <span>{explain(diagnosis) ?? (state.playlists.length === 0 ? "Add an M3U playlist in /admin — paste a URL or upload a file." : "Every configured playlist failed to load.")}</span>
+      {explained
+        ? <DiagnosisNote diagnosis={diagnosis} />
+        : <span>{state.playlists.length === 0 ? "Add an M3U playlist in /admin — paste a URL or upload a file." : "Every configured playlist failed to load."}</span>}
       {failed.map((playlist) => <span key={playlist.id} className="tv-warning">{playlist.name}: {playlist.error}</span>)}
     </section>;
   }
