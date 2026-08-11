@@ -6,8 +6,8 @@
       "enabled": true,
       "x": 0,
       "y": 0,
-      "width": 288,
-      "height": 192,
+      "width": 336,
+      "height": 160,
       "settings": {
         "label": "Next meeting"
       }
@@ -16,10 +16,10 @@
       "id": "today-calendar",
       "type": "calendar",
       "enabled": true,
-      "x": 304,
+      "x": 720,
       "y": 0,
-      "width": 352,
-      "height": 400,
+      "width": 320,
+      "height": 592,
       "settings": {
         "label": "Today",
         "showLocations": true
@@ -29,10 +29,10 @@
       "id": "spotify",
       "type": "music",
       "enabled": true,
-      "x": 768,
+      "x": 352,
       "y": 0,
-      "width": 192,
-      "height": 192,
+      "width": 352,
+      "height": 352,
       "settings": {
         "label": "Now playing"
       }
@@ -42,9 +42,9 @@
       "type": "tasks",
       "enabled": true,
       "x": 0,
-      "y": 208,
-      "width": 288,
-      "height": 192,
+      "y": 176,
+      "width": 336,
+      "height": 416,
       "settings": {
         "label": "Tasks"
       }
@@ -53,14 +53,19 @@
       "id": "ai-usage",
       "type": "usage",
       "enabled": true,
-      "x": 672,
-      "y": 208,
-      "width": 288,
+      "x": 352,
+      "y": 368,
+      "width": 352,
       "height": 112,
       "settings": {
         "label": "AI usage"
       }
     }
   ],
-  "accentColor": "#c9ff52"
+  "accentColor": "#c9ff52",
+  "fontFamily": "Arial",
+  "canvas": {
+    "width": 1112,
+    "height": 834
+  }
 }

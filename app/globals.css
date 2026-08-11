@@ -65,11 +65,10 @@ button { font: inherit; }
 .tv-demo-notice { flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--lime) 25%, #302f2a); border-radius: 8px; padding: 6px 9px; background: color-mix(in srgb, var(--lime) 8%, #1c1c19); color: var(--muted); font-size: 10px; }.tv-demo-notice a { color: var(--lime); font-weight: 750; text-decoration: none; }.tv-demo-notice a:hover { text-decoration: underline; }
 .tv-content { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 28px; }.tv-channel-list { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }.tv-list-header { display: flex; align-items: end; justify-content: space-between; gap: 12px; padding: 1px 0 10px; }.tv-list-header h3 { margin: 2px 0 0; font-size: 17px; letter-spacing: -.03em; }.tv-list-header > span { color: var(--muted-2); font-size: 10px; }
 .tv-channel-groups { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }.tv-channel-groups::-webkit-scrollbar { display: none; }
-.tv-channel-section { flex: 0 0 auto; padding: 0 0 16px; }.tv-channel-section header { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 10px; }.tv-channel-section header h3 { margin: 2px 0 0; font-size: 16px; letter-spacing: -.03em; }.tv-channel-section header > span { color: var(--muted-2); font-size: 10px; }.tv-channel-sports { background: linear-gradient(115deg, color-mix(in srgb, #ef8f56 9%, transparent), transparent 45%); }.tv-channel-sports header h3 { color: #f2aa75; }.tv-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: min-content; gap: 8px; }
+.tv-channel-section { flex: 0 0 auto; padding: 0 0 16px; }.tv-channel-section header { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 10px; }.tv-channel-section header h3 { margin: 2px 0 0; font-size: 16px; letter-spacing: -.03em; }.tv-channel-section header > span { color: var(--muted-2); font-size: 10px; }.tv-channel-sports header h3 { color: #f2aa75; }.tv-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: min-content; gap: 8px; }
 .tv-grid::-webkit-scrollbar { display: none; width: 0; }
-.tv-tile { display: flex; align-items: center; min-width: 0; min-height: 42px; border: 0; border-radius: 9px; padding: 0 12px; background: #242421; color: var(--ink); text-align: left; cursor: pointer; touch-action: manipulation; }.tv-tile.is-selected { background: color-mix(in srgb, var(--lime) 16%, #242421); box-shadow: inset 3px 0 var(--lime); }.tv-channel-sports .tv-tile.is-selected { box-shadow: inset 3px 0 #ef9b63; background: color-mix(in srgb, #ef9b56 16%, #242421); }
-.tv-tile:hover, .tv-tile:focus-visible { background: #22221f; outline: 0; }
-.tv-tile:focus-visible { box-shadow: inset 3px 0 var(--lime); }
+.tv-tile { display: flex; align-items: center; min-width: 0; min-height: 42px; border: 0; border-radius: 9px; padding: 0 12px; background: #242421; color: var(--ink); text-align: left; cursor: pointer; touch-action: manipulation; }.tv-tile.is-selected { background: color-mix(in srgb, var(--lime) 16%, #242421); }.tv-channel-sports .tv-tile.is-selected { background: color-mix(in srgb, #ef9b56 16%, #242421); }
+.tv-tile:hover, .tv-tile:focus-visible { background: #2b2b27; outline: 0; }
 .tv-tile-art { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 9px; background: #171715; }
 /* The logo sits over the initials, which stay until it has actually decoded. */
 .tv-tile-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -137,8 +136,7 @@ button { font: inherit; }
 .device-actions button:disabled { opacity: .45; cursor: default; }
 .more-card h2 { margin-top: 22px; font-size: 28px; }
 .more-card p { max-width: 280px; margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.pomodoro-screen { position: relative; height: var(--bento-h); overflow: hidden; padding: 24px 30px 22px; border: 1px solid rgba(255,255,255,.05); border-radius: 20px; background: radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--lime) 10%, transparent), transparent 38%), linear-gradient(135deg, #24231f, #181816 72%); }
-.pomodoro-screen::before { content: ""; position: absolute; inset: 12px; pointer-events: none; border: 1px solid rgba(255,255,255,.035); border-radius: 14px; }
+.pomodoro-screen { position: relative; height: var(--bento-h); overflow: hidden; padding: 24px 30px 22px; border-radius: 20px; background: radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--lime) 10%, transparent), transparent 38%), linear-gradient(135deg, #24231f, #181816 72%); }
 .pomodoro-header, .pomodoro-footer, .pomodoro-center { position: relative; z-index: 1; }
 .pomodoro-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }.pomodoro-eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--lime); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }.pomodoro-eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lime) 15%, transparent); }.pomodoro-screen.is-running .pomodoro-eyebrow i { animation: pomodoro-pulse 1.8s ease-in-out infinite; }
 .pomodoro-header h2 { max-width: 420px; margin: 13px 0 0; font-size: 29px; line-height: 1; letter-spacing: -.055em; }.pomodoro-header-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
@@ -255,7 +253,7 @@ button { font: inherit; }
    keep following the configurable accent. */
 .music-card .track-progress { background: rgba(255,255,255,.24); }
 .music-card .track-progress-fill { background: var(--spotify-green); }
-.tasks-card { grid-column: 1; grid-row: 2; padding: 18px 20px; }
+.tasks-card { grid-column: 1; grid-row: 2; padding: 18px 20px; background: color-mix(in srgb, #8fbd58 13%, var(--panel)); }.tasks-card .card-title-row h2 { color: #d9f6ad; }.tasks-card .task-item { border-left: 2px solid #8fbd58; padding-left: 10px; }.tasks-card .task-item strong { color: #f0f9df; }.tasks-card .task-detail { color: #a9c98a; }
 .task-list { margin-top: 12px; display: grid; align-content: start; gap: 8px; }
 /* Reuses the calendar's event-card look — a colored tint, an accent rail —
    rather than a checklist row, so a task and a meeting read as the same kind

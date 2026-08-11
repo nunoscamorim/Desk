@@ -11,5 +11,10 @@ export function formatTimeWithSeconds(value: string) {
 
 export function formatDuration(milliseconds: number) {
   const seconds = Math.floor(milliseconds / 1_000);
+  if (seconds >= 60 * 60) {
+    const hours = Math.floor(seconds / (60 * 60));
+    const minutes = Math.floor((seconds % (60 * 60)) / 60);
+    return `${hours}h${String(minutes).padStart(2, "0")}m`;
+  }
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
