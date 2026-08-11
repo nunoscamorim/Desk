@@ -38,7 +38,7 @@ const cache = new Map<string, { expiresAt: number; channels: Channel[]; truncate
 const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return "invalid URL"; } };
 
 type XtreamCategory = { category_id?: string; category_name?: string };
-type XtreamStream = { stream_id?: number; name?: string; stream_icon?: string; category_id?: string; tvg_id?: string };
+type XtreamStream = { stream_id?: number; name?: string; stream_icon?: string; category_id?: string; tvg_id?: string; container_extension?: string; stream_type?: string };
 const xtreamBase = (server: string) => server.trim().replace(/\/+$/, "");
 async function xtreamJson<T>(server: string, username: string, password: string, action: string): Promise<T> {
   const url = new URL(`${xtreamBase(server)}/player_api.php`);
@@ -55,7 +55,7 @@ async function loadXtream(playlist: Extract<Playlist, { source: "xtream" }>): Pr
   const categoryNames = new Map(categories.map((category) => [String(category.category_id ?? ""), category.category_name ?? "General"]));
   const selectedChannels = new Set(playlist.channels);
   const filtered = streams.filter((stream) => (!wanted.size || categoryIds.includes(String(stream.category_id ?? ""))) && (!selectedChannels.size || selectedChannels.has(String(stream.stream_id))));
-  return { channels: filtered.filter((stream) => Number.isFinite(stream.stream_id)).map((stream) => ({ id: String(stream.stream_id), tvgId: stream.tvg_id ?? null, name: stream.name?.trim() || "Untitled channel", logo: stream.stream_icon || null, group: categoryNames.get(String(stream.category_id ?? "")) ?? "General", url: `${xtreamBase(playlist.server)}/live/${encodeURIComponent(playlist.username)}/${encodeURIComponent(playlist.password)}/${stream.stream_id}.m3u8` })), truncated: false };
+  return { channels: filtered.filter((stream) => Number.isFinite(stream.stream_id)).map((stream) => { const extension = stream.container_extension?.trim() || (stream.stream_type === "hls" ? "m3u8" : "ts"); return { id: String(stream.stream_id), tvgId: stream.tvg_id ?? null, name: stream.name?.trim() || "Untitled channel", logo: stream.stream_icon || null, group: categoryNames.get(String(stream.category_id ?? "")) ?? "General", url: `${xtreamBase(playlist.server)}/live/${encodeURIComponent(playlist.username)}/${encodeURIComponent(playlist.password)}/${stream.stream_id}.${extension}` }; }), truncated: false };
 }
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
