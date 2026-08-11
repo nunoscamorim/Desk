@@ -4,7 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Task } from "@/lib/dashboard/types";
 
-const colors = ["#b8d86b", "#c4a9ff", "#ff9b64", "#7ed9e8"];
+const listColors: Record<string, string> = {
+  Betano: "#f5a623",
+  Personal: "#a78bfa",
+  Work: "#34d399",
+  Health: "#f472b6",
+  Finance: "#60a5fa",
+};
+
+const fallbackColors = ["#818cf8", "#fb923c", "#2dd4bf", "#e879f9", "#fbbf24"];
+
+function getListColor(project: string | null): string {
+  if (project && listColors[project]) return listColors[project];
+  if (!project) return fallbackColors[0];
+  let hash = 0;
+  for (let i = 0; i < project.length; i++) hash = project.charCodeAt(i) + ((hash << 5) - hash);
+  return fallbackColors[Math.abs(hash) % fallbackColors.length];
+}
 
 const dayKey = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
 
@@ -40,7 +56,7 @@ function TaskItem({ task, index, now }: { task: Task; index: number; now: number
   // "Late") that doesn't earn the same fixed-width space. It rides in the
   // subtitle instead, next to whichever list the task came from.
   const detail = [due, task.project ?? task.priority].filter(Boolean).join(" · ");
-  return <li className={`calendar-item task-item ${due === "Late" ? "task-overdue" : ""}`} style={{ "--event-color": colors[index % colors.length] } as CSSProperties}>
+  return <li className={`calendar-item task-item ${due === "Late" ? "task-overdue" : ""}`} style={{ "--event-color": getListColor(task.project) } as CSSProperties}>
     <span className="event-line" />
     <div><strong>{task.title}</strong>{detail && <span className="task-detail">{detail}</span>}</div>
   </li>;
@@ -89,7 +105,7 @@ export function TasksScreen({ tasks }: { tasks: Task[] }) {
       <button type="button" className={`task-filter ${active === null ? "active" : ""}`} aria-pressed={active === null} onClick={() => setSelected(null)}>
         <span>All tasks</span><strong>{tasks.length}</strong>
       </button>
-      {lists.map((list, index) => <button key={list.name} type="button" className={`task-filter ${active === list.name ? "active" : ""}`} aria-pressed={active === list.name} style={{ "--event-color": colors[index % colors.length] } as CSSProperties} onClick={() => setSelected(list.name)}>
+      {lists.map((list) => <button key={list.name} type="button" className={`task-filter ${active === list.name ? "active" : ""}`} aria-pressed={active === list.name} style={{ "--event-color": getListColor(list.name) } as CSSProperties} onClick={() => setSelected(list.name)}>
         <span><i />{list.name}</span><strong>{list.count}</strong>
       </button>)}
     </aside>
