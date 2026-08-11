@@ -42,17 +42,35 @@ function ChannelTile({ channel, onSelect }: { channel: Channel; onSelect: () => 
  */
 const VISIBLE_LIMIT = 300;
 
+type Diagnosis = { environment?: { authSecretSet?: boolean; adminPasswordSet?: boolean; dataDirWritable?: boolean }; request?: { authenticated?: boolean; canReadChannels?: boolean }; playlists?: { stored?: number; error?: string } };
+
+/**
+ * Turns the diagnostics report into the one sentence that explains an empty
+ * screen, in the order the causes actually block each other.
+ */
+function explain(diagnosis: Diagnosis | null): string | null {
+  if (!diagnosis) return null;
+  const { environment = {}, request = {}, playlists = {} } = diagnosis;
+  if (environment.authSecretSet === false) return "AUTH_SECRET is not set on the server, so saved playlists cannot be read. Set it and redeploy.";
+  if (request.canReadChannels === false) return "This device is not signed in. Open /admin on it once and enter the admin password — the session then persists.";
+  if (playlists.error) return playlists.error;
+  if (environment.dataDirWritable === false) return "The server cannot write to data/. Mount a persistent volume at /app/data.";
+  if (playlists.stored === 0) return "No playlist is saved yet. Add one in /admin — paste a URL or upload a file.";
+  return null;
+}
+
 export function TvScreen() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [playing, setPlaying] = useState<Channel | null>(null);
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState("");
+  const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/tv/channels", { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
-        if (response.status === 401) throw new Error("Sign in at /admin to load channels.");
+        if (response.status === 401) throw new Error("This device is not signed in.");
         if (!response.ok) throw new Error(`Channels request failed (${response.status})`);
         return response.json() as Promise<{ channels: Channel[]; playlists: PlaylistResult[] }>;
       })
@@ -61,6 +79,17 @@ export function TvScreen() {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setState({ status: "error", message: error instanceof Error ? error.message : "Could not load channels." });
       });
+    return () => controller.abort();
+  }, []);
+
+  // Fetched alongside, so an empty screen can name its own cause instead of
+  // sending the user to /admin to work out which of five things went wrong.
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/tv/diagnose", { signal: controller.signal, cache: "no-store" })
+      .then((response) => (response.ok ? response.json() as Promise<Diagnosis> : null))
+      .then(setDiagnosis)
+      .catch(() => undefined);
     return () => controller.abort();
   }, []);
 
@@ -75,7 +104,7 @@ export function TvScreen() {
 
   if (playing) return <TvPlayer key={playing.id} channel={playing} onBack={() => setPlaying(null)} />;
   if (state.status === "loading") return <section className="tv-screen tv-message"><span>Loading channels…</span></section>;
-  if (state.status === "error") return <section className="tv-screen tv-message"><strong>Channels unavailable</strong><span>{state.message}</span></section>;
+  if (state.status === "error") return <section className="tv-screen tv-message"><strong>Channels unavailable</strong><span>{state.message}</span>{explain(diagnosis) && <span className="tv-diagnosis">{explain(diagnosis)}</span>}</section>;
 
   const failed = state.playlists.filter((playlist) => playlist.error);
   const truncated = state.playlists.filter((playlist) => playlist.truncated);
@@ -83,7 +112,7 @@ export function TvScreen() {
   if (state.channels.length === 0) {
     return <section className="tv-screen tv-message">
       <strong>No channels yet</strong>
-      <span>{state.playlists.length === 0 ? "Add an M3U playlist in /admin — paste a URL or upload a file." : "Every configured playlist failed to load."}</span>
+      <span>{explain(diagnosis) ?? (state.playlists.length === 0 ? "Add an M3U playlist in /admin — paste a URL or upload a file." : "Every configured playlist failed to load.")}</span>
       {failed.map((playlist) => <span key={playlist.id} className="tv-warning">{playlist.name}: {playlist.error}</span>)}
     </section>;
   }
