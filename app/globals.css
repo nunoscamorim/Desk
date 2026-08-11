@@ -25,7 +25,7 @@ button { font: inherit; }
    the unscaled canvas and pushing it off-screen whenever the canvas is wider
    than the viewport. */
 .canvas-scaler { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(var(--canvas-scale, 1)); }
-.dashboard { --canvas-w: 1024px; --canvas-h: 600px; --bento-h: calc(var(--canvas-h) - 228px); position: relative; width: var(--canvas-w); height: var(--canvas-h); overflow: hidden; padding: var(--page-margin); background: #151412; }
+.dashboard { --canvas-w: 1024px; --canvas-h: 600px; --bento-h: calc(var(--canvas-h) - 226px); position: relative; width: var(--canvas-w); height: var(--canvas-h); overflow: hidden; padding: var(--page-margin); background: #151412; }
 .topbar { height: 90px; display: flex; align-items: flex-start; justify-content: space-between; }
 .greeting-copy { min-width: 0; max-width: 720px; }
 .greeting-quote { transform: translateY(-10px); }
