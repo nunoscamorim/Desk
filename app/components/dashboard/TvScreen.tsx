@@ -158,7 +158,14 @@ export function TvScreen() {
   const visible = matches.slice(0, VISIBLE_LIMIT);
   const sports = visible.filter((channel) => /sport/i.test(`${channel.group ?? ""} ${channel.name}`));
   const general = visible.filter((channel) => !sports.includes(channel));
-  const previewChannel = preview && matches.some((channel) => channel.id === preview.id) ? preview : matches[0] ?? null;
+  // Nothing is selected until the user taps a tile. Falling back to matches[0]
+  // here used to mean the first channel in the list was always shown as
+  // selected — and, worse, the preview pane below connects a live stream the
+  // instant a channel becomes "selected", so that fallback opened an
+  // unrequested stream on load. Most IPTV lines allow exactly one concurrent
+  // connection: that phantom stream can hold the account's only slot, so the
+  // channel the user actually taps next gets refused as already in use.
+  const previewChannel = preview && matches.some((channel) => channel.id === preview.id) ? preview : null;
   const previewNowPlaying = previewChannel && showingDemoChannels
     ? (demoNowPlaying[previewChannel.id] ? { title: demoNowPlaying[previewChannel.id] } : undefined)
     : previewChannel?.tvgId ? state.nowPlaying[previewChannel.tvgId] : undefined;
@@ -175,13 +182,31 @@ export function TvScreen() {
     </div>}
     {matches.length === 0 ? <div className="tv-grid-empty">No channel matches that search.</div> : <div className="tv-content">
       <div className="tv-channel-list"><div className="tv-channel-groups">{channelSection("General", general, "general")}{channelSection("Sports", sports, "sports")}</div></div>
-      {previewChannel && <aside className="tv-preview" aria-label={`Preview ${previewChannel.name}`}>
+      {/* Kept in the layout whether or not a channel is selected, so the grid
+          doesn't reflow to full width the moment something is picked — but the
+          stream itself only mounts once previewChannel is set by an explicit
+          tap, never before. */}
+      <aside className="tv-preview" aria-label={previewChannel ? `Preview ${previewChannel.name}` : "Channel preview"}>
         <div className="tv-preview-art">
-          <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls={false} className="tv-preview-stage" onStateChange={setPreviewState} />
-          {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
+          {previewChannel
+            ? <>
+              <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls={false} className="tv-preview-stage" onStateChange={setPreviewState} />
+              {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
+            </>
+            : <div className="tv-preview-idle"><span>Tap a channel to preview it</span></div>}
         </div>
-        <div className="tv-preview-copy"><span className="tv-section-kicker">Channel preview</span><h2>{previewChannel.name}</h2>{previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}<p>{previewChannel.group ?? "General entertainment"}</p><button type="button" className="tv-watch" onClick={() => setPlaying(previewChannel)}>Watch live <span aria-hidden="true">→</span></button></div>
-      </aside>}
+        <div className="tv-preview-copy">
+          <span className="tv-section-kicker">Channel preview</span>
+          {previewChannel
+            ? <>
+              <h2>{previewChannel.name}</h2>
+              {previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}
+              <p>{previewChannel.group ?? "General entertainment"}</p>
+              <button type="button" className="tv-watch" onClick={() => setPlaying(previewChannel)}>Watch live <span aria-hidden="true">→</span></button>
+            </>
+            : <p>Select a channel on the left — nothing streams until you do.</p>}
+        </div>
+      </aside>
     </div>}
     {matches.length > visible.length && <p className="tv-more">Showing the first {visible.length} — keep typing to narrow it down.</p>}
   </section>;
