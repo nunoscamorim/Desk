@@ -11,6 +11,7 @@ import path from "node:path";
  */
 export type Playlist =
   | { id: string; name: string; source: "url"; url: string }
+  | { id: string; name: string; source: "xtream"; server: string; username: string; password: string; categories: string[]; channels: string[] }
   | { id: string; name: string; source: "upload"; file: string; bytes: number; uploadedAt: string };
 
 const dataDir = path.join(process.cwd(), "data");
@@ -27,11 +28,15 @@ const isPlaylist = (value: unknown): value is Playlist => {
   const entry = value as Partial<Playlist> & { source?: string };
   if (typeof entry.id !== "string" || typeof entry.name !== "string") return false;
   if (entry.source === "upload") return typeof (entry as { file?: unknown }).file === "string";
+  if (entry.source === "xtream") return typeof (entry as { server?: unknown }).server === "string" && typeof (entry as { username?: unknown }).username === "string" && typeof (entry as { password?: unknown }).password === "string";
   // Entries written before uploads existed have no source and are URL playlists.
   return typeof (entry as { url?: unknown }).url === "string";
 };
 
-const withSource = (entry: Playlist): Playlist => (entry.source ? entry : { ...(entry as Playlist), source: "url" } as Playlist);
+const withSource = (entry: Playlist): Playlist => {
+  if (entry.source === "xtream") return { ...entry, categories: entry.categories ?? [], channels: entry.channels ?? [] };
+  return entry.source ? entry : { ...(entry as Playlist), source: "url" } as Playlist;
+};
 
 /**
  * The index of playlists is stored encrypted, the same way service credentials

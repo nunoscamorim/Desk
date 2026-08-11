@@ -28,7 +28,7 @@ export async function GET(request: Request) {
  */
 export async function PUT(request: Request) {
   if (!(await guard())) return Response.json({ error: "Authentication required" }, { status: 401 });
-  const body = await request.json().catch(() => ({})) as { playlists?: Array<{ id?: string; name?: string; url?: string }> };
+  const body = await request.json().catch(() => ({})) as { playlists?: Array<{ id?: string; name?: string; url?: string; source?: "url" | "xtream"; server?: string; username?: string; password?: string; categories?: string[]; channels?: string[] }> };
   if (!Array.isArray(body.playlists)) return Response.json({ error: "playlists must be an array" }, { status: 400 });
 
   const existing = await readPlaylists();
@@ -41,9 +41,20 @@ export async function PUT(request: Request) {
     // An entry with no url is one the admin sent back unchanged — it never
     // received the real one, so it is matched to what is already stored. That
     // is also the only way an upload survives a save.
-    if (!entry.url?.trim()) { if (saved) next.push({ ...saved, name }); continue; }
+    if (!entry.url?.trim() && entry.source !== "xtream") { if (saved) next.push({ ...saved, name }); continue; }
 
-    const url = entry.url.trim();
+    if (entry.source === "xtream") {
+      const server = entry.server?.trim() ?? "";
+      const username = entry.username?.trim() ?? "";
+      const password = entry.password?.trim() ?? "";
+      try { const parsed = new URL(server); if (parsed.protocol !== "http:" && parsed.protocol !== "https:") continue; } catch { continue; }
+      if (!username || !password) continue;
+      next.push({ id: saved?.id ?? entry.id ?? randomUUID(), name, source: "xtream", server, username, password, categories: Array.isArray(entry.categories) ? entry.categories.map((value) => value.trim()).filter(Boolean) : [], channels: Array.isArray(entry.channels) ? entry.channels.map((value) => value.trim()).filter(Boolean) : [] });
+      continue;
+    }
+
+    const url = entry.url?.trim();
+    if (!url) continue;
     try { const parsed = new URL(url); if (parsed.protocol !== "http:" && parsed.protocol !== "https:") continue; } catch { continue; }
     next.push({ id: saved?.id ?? entry.id ?? randomUUID(), name, source: "url", url });
   }

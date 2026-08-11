@@ -19,7 +19,17 @@ export function TvPlaylistsPanel() {
   const showToast = useToast();
   const [playlists, setPlaylists] = useState<PlaylistResult[]>([]);
   const [name, setName] = useState("");
+  const [source, setSource] = useState<"url" | "xtream">("url");
   const [url, setUrl] = useState("");
+  const [server, setServer] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [categories, setCategories] = useState("");
+  const [xtreamGroups, setXtreamGroups] = useState<Array<{ id: string; name: string }>>([]);
+  const [xtreamChannels, setXtreamChannels] = useState<Array<{ id: string; name: string; groupId: string; group: string; logo: string | null }>>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [loadingXtream, setLoadingXtream] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,7 +50,7 @@ export function TvPlaylistsPanel() {
     finally { setBusy(false); }
   };
 
-  const save = async (next: Array<{ id?: string; name: string; url?: string }>) => {
+  const save = async (next: Array<{ id?: string; name: string; url?: string; source?: "url" | "xtream"; server?: string; username?: string; password?: string; categories?: string[]; channels?: string[] }>) => {
     setBusy(true);
     try {
       const response = await fetch("/api/tv/playlists", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ playlists: next }) });
@@ -52,11 +62,21 @@ export function TvPlaylistsPanel() {
   };
 
   const add = async () => {
-    if (!url.trim()) { showToast("Paste an M3U URL first.", "error"); return; }
+    if (source === "url" && !url.trim()) { showToast("Paste an M3U URL first.", "error"); return; }
+    if (source === "xtream" && (!server.trim() || !username.trim() || !password.trim())) { showToast("Enter the Xtream server, username, and password.", "error"); return; }
     const label = name.trim() || "Playlist";
-    const ok = await save([...playlists.map((playlist) => ({ id: playlist.id, name: playlist.name })), { name: label, url: url.trim() }]);
+    const next = source === "xtream"
+      ? { name: label, source, server: server.trim(), username: username.trim(), password: password.trim(), categories: selectedGroups.length ? selectedGroups : categories.split(",").map((value) => value.trim()).filter(Boolean), channels: selectedChannels }
+      : { name: label, source, url: url.trim() };
+    const ok = await save([...playlists.map((playlist) => ({ id: playlist.id, name: playlist.name })), next]);
     showToast(ok ? `Added ${label}` : "Couldn’t save — try again", ok ? "success" : "error");
-    if (ok) { setName(""); setUrl(""); }
+    if (ok) { setName(""); setUrl(""); setServer(""); setUsername(""); setPassword(""); setCategories(""); setXtreamGroups([]); setXtreamChannels([]); setSelectedGroups([]); setSelectedChannels([]); }
+  };
+
+  const loadXtream = async () => {
+    if (!server.trim() || !username.trim() || !password.trim()) { showToast("Enter the Xtream server, username, and password first.", "error"); return; }
+    setLoadingXtream(true);
+    try { const response = await fetch("/api/tv/xtream", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ server, username, password }) }); const data = await response.json() as { groups?: typeof xtreamGroups; channels?: typeof xtreamChannels; error?: string }; if (!response.ok) throw new Error(data.error ?? "Could not load Xtream channels"); setXtreamGroups(data.groups ?? []); setXtreamChannels(data.channels ?? []); setSelectedGroups((data.groups ?? []).map((group) => group.id)); setSelectedChannels((data.channels ?? []).map((channel) => channel.id)); } catch (error) { showToast(error instanceof Error ? error.message : "Could not load Xtream channels", "error"); } finally { setLoadingXtream(false); }
   };
 
   // Uploads have their own endpoint: the file has to be parsed and written to
@@ -113,9 +133,17 @@ export function TvPlaylistsPanel() {
 
     <div className="tv-playlist-add">
       <label>Name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Living room" /></label>
-      <label>M3U URL<input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://…/playlist.m3u" autoComplete="off" spellCheck={false} /></label>
+      <label>Source<select value={source} onChange={(event) => setSource(event.target.value as "url" | "xtream")}><option value="url">M3U URL</option><option value="xtream">Xtream Codes</option></select></label>
+      {source === "url" ? <label>M3U URL<input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://…/playlist.m3u" autoComplete="off" spellCheck={false} /></label> : <>
+        <label>Server URL<input value={server} onChange={(event) => setServer(event.target.value)} placeholder="https://provider.example:8080" autoComplete="off" /></label>
+        <label>Username<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="off" /></label>
+        <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" /></label>
+        <label>Channel filters<input value={categories} onChange={(event) => setCategories(event.target.value)} placeholder="Optional group names" /></label>
+        <button type="button" className="btn btn-secondary" onClick={() => void loadXtream()} disabled={busy || loadingXtream}>{loadingXtream ? "Loading channels…" : "Load groups and channels"}</button>
+      </>}
       <button type="button" className="btn" onClick={() => void add()} disabled={busy}>{busy ? "Loading…" : "Add playlist"}</button>
     </div>
+    {source === "xtream" && xtreamGroups.length > 0 && <div className="xtream-picker"><div><p className="admin-eyebrow">Xtream filters</p><h3>Choose groups</h3>{xtreamGroups.map((group) => <label key={group.id} className="xtream-check"><input type="checkbox" checked={selectedGroups.includes(group.id)} onChange={(event) => setSelectedGroups((current) => event.target.checked ? [...current, group.id] : current.filter((id) => id !== group.id))} />{group.name}</label>)}</div><div><p className="admin-eyebrow">Channels in selected groups</p><h3>Choose channels</h3>{xtreamChannels.filter((channel) => selectedGroups.includes(channel.groupId)).map((channel) => <label key={channel.id} className="xtream-check"><input type="checkbox" checked={selectedChannels.includes(channel.id)} onChange={(event) => setSelectedChannels((current) => event.target.checked ? [...current, channel.id] : current.filter((id) => id !== channel.id))} />{channel.name}<small>{channel.group}</small></label>)}</div></div>}
     <div className="tv-playlist-upload">
       <span>…or upload an M3U file</span>
       <input ref={fileRef} type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl,text/plain" disabled={busy}

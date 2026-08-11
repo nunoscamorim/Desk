@@ -6,7 +6,7 @@ import { readPlaylists, uploadPath, type Playlist } from "./playlist-store";
 export type PlaylistResult = {
   id: string;
   name: string;
-  source: "url" | "upload";
+  source: "url" | "xtream" | "upload";
   /** Host for a URL playlist, or a size summary for an upload. The full URL is
    *  never sent out: it carries the subscription credentials. */
   host: string;
@@ -37,6 +37,27 @@ const cache = new Map<string, { expiresAt: number; channels: Channel[]; truncate
 
 const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return "invalid URL"; } };
 
+type XtreamCategory = { category_id?: string; category_name?: string };
+type XtreamStream = { stream_id?: number; name?: string; stream_icon?: string; category_id?: string; tvg_id?: string };
+const xtreamBase = (server: string) => server.trim().replace(/\/+$/, "");
+async function xtreamJson<T>(server: string, username: string, password: string, action: string): Promise<T> {
+  const url = new URL(`${xtreamBase(server)}/player_api.php`);
+  url.search = new URLSearchParams({ username, password, action }).toString();
+  const response = await fetchWithRetry(url, { cache: "no-store" }, { label: `tv:xtream:${action}`, timeoutMs: FETCH_TIMEOUT_MS, budgetMs: FETCH_BUDGET_MS });
+  if (!response.ok) throw new Error(`Xtream request failed (${response.status})`);
+  return response.json() as Promise<T>;
+}
+async function loadXtream(playlist: Extract<Playlist, { source: "xtream" }>): Promise<{ channels: Channel[]; truncated: boolean }> {
+  const categories = await xtreamJson<XtreamCategory[]>(playlist.server, playlist.username, playlist.password, "get_live_categories");
+  const wanted = new Set(playlist.categories.map((value) => value.toLowerCase()));
+  const categoryIds = categories.filter((category) => !wanted.size || wanted.has(String(category.category_name ?? "").toLowerCase()) || wanted.has(String(category.category_id ?? "").toLowerCase())).map((category) => String(category.category_id ?? ""));
+  const streams = await xtreamJson<XtreamStream[]>(playlist.server, playlist.username, playlist.password, "get_live_streams");
+  const categoryNames = new Map(categories.map((category) => [String(category.category_id ?? ""), category.category_name ?? "General"]));
+  const selectedChannels = new Set(playlist.channels);
+  const filtered = streams.filter((stream) => (!wanted.size || categoryIds.includes(String(stream.category_id ?? ""))) && (!selectedChannels.size || selectedChannels.has(String(stream.stream_id))));
+  return { channels: filtered.filter((stream) => Number.isFinite(stream.stream_id)).map((stream) => ({ id: String(stream.stream_id), tvgId: stream.tvg_id ?? null, name: stream.name?.trim() || "Untitled channel", logo: stream.stream_icon || null, group: categoryNames.get(String(stream.category_id ?? "")) ?? "General", url: `${xtreamBase(playlist.server)}/live/${encodeURIComponent(playlist.username)}/${encodeURIComponent(playlist.password)}/${stream.stream_id}.m3u8` })), truncated: false };
+}
+
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 const oversized = (bytes: number) => new Error(`Playlist is ${Math.round(bytes / 1024 / 1024)} MB, over the ${MAX_BODY_BYTES / 1024 / 1024} MB limit`);
@@ -47,6 +68,7 @@ async function readBody(playlist: Playlist): Promise<string> {
     try { return await readFile(uploadPath(playlist.file), "utf8"); }
     catch { throw new Error("Uploaded file is missing — re-upload it"); }
   }
+  if (playlist.source === "xtream") throw new Error("Xtream sources are loaded through the API adapter");
 
   // Without a User-Agent this goes out identifying itself as Node, and a fair
   // number of public playlist hosts answer that with a 403 while serving the
@@ -79,6 +101,7 @@ function describe(response: Response, body: string): string {
 }
 
 async function loadOne(playlist: Playlist): Promise<{ channels: Channel[]; truncated: boolean }> {
+  if (playlist.source === "xtream") return loadXtream(playlist);
   const cacheKey = playlist.source === "upload" ? `upload:${playlist.file}` : playlist.url;
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return { channels: cached.channels, truncated: cached.truncated };
@@ -105,7 +128,7 @@ async function loadOne(playlist: Playlist): Promise<{ channels: Channel[]; trunc
 export async function getChannels(): Promise<ChannelSet> {
   const playlists = await readPlaylists();
   const settled = await Promise.all(playlists.map(async (playlist): Promise<{ result: PlaylistResult; channels: Channel[] }> => {
-    const base = { id: playlist.id, name: playlist.name, source: playlist.source, host: playlist.source === "upload" ? `uploaded file · ${(playlist.bytes / 1024).toFixed(0)} KB` : hostOf(playlist.url) };
+    const base = { id: playlist.id, name: playlist.name, source: playlist.source, host: playlist.source === "upload" ? `uploaded file · ${(playlist.bytes / 1024).toFixed(0)} KB` : playlist.source === "xtream" ? hostOf(playlist.server) : hostOf(playlist.url) };
     try {
       const { channels, truncated } = await loadOne(playlist);
       return { result: { ...base, channelCount: channels.length, truncated, error: null }, channels };
