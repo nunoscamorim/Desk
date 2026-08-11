@@ -20,12 +20,21 @@ export function TvPlaylistsPanel() {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const load = () => fetch("/api/tv/playlists", { cache: "no-store" })
+  const load = (refresh = false) => fetch(`/api/tv/playlists${refresh ? "?refresh=1" : ""}`, { cache: "no-store" })
     .then(async (response) => { if (response.status === 401) throw new Error("Sign in to manage playlists."); return response.json() as Promise<{ playlists: PlaylistResult[] }>; })
     .then((data) => setPlaylists(data.playlists ?? []))
     .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not read playlists."));
 
   useEffect(() => { void load(); }, []);
+
+  // Re-contacts each host rather than replaying the cached answer, so a
+  // playlist that failed can be retried after fixing whatever was wrong.
+  const recheck = async () => {
+    setBusy(true);
+    setStatus("Re-checking…");
+    try { await load(true); setStatus("Re-checked."); }
+    finally { setBusy(false); }
+  };
 
   const save = async (next: Array<{ id?: string; name: string; url?: string }>) => {
     setBusy(true);
@@ -69,7 +78,7 @@ export function TvPlaylistsPanel() {
   const remove = (id: string) => save(playlists.filter((playlist) => playlist.id !== id).map((playlist) => ({ id: playlist.id, name: playlist.name })));
 
   return <section className="admin-panel tv-panel">
-    <div className="panel-heading"><div><p className="admin-eyebrow">TV</p><h2>M3U playlists</h2></div><span>{playlists.length} configured</span></div>
+    <div className="panel-heading"><div><p className="admin-eyebrow">TV</p><h2>M3U playlists</h2></div><span className="tv-panel-actions"><button type="button" onClick={() => void recheck()} disabled={busy}>Re-check</button>{playlists.length} configured</span></div>
 
     <div className="tv-playlist-rows">
       {playlists.length === 0 && <p className="settings-note">No playlists yet. Paste an M3U URL below — it is stored encrypted, since these usually carry your subscription credentials.</p>}

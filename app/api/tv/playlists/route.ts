@@ -12,8 +12,11 @@ async function guard() { return !isPasswordConfigured() || (await isAdminAuthent
  * subscription credentials. The admin panel does not need it back to edit the
  * list, and a saved secret that can be read again is a secret waiting to leak.
  */
-export async function GET() {
+export async function GET(request: Request) {
   if (!(await guard())) return Response.json({ error: "Authentication required" }, { status: 401 });
+  // ?refresh=1 drops the cached bodies first, so re-checking a playlist that
+  // failed actually re-contacts the host instead of replaying the last answer.
+  if (new URL(request.url).searchParams.get("refresh")) invalidatePlaylistCache();
   const { playlists } = await getChannels();
   return Response.json({ playlists });
 }

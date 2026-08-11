@@ -52,7 +52,12 @@ async function readBody(playlist: Playlist): Promise<string> {
   // number of public playlist hosts answer that with a 403 while serving the
   // same URL to a player. The proxy route already had to do this.
   const response = await fetchWithRetry(playlist.url, { cache: "no-store", redirect: "follow", headers: { "user-agent": "VLC/3.0.20 LibVLC/3.0.20", accept: "*/*" } }, { label: `tv:${playlist.name}`, timeoutMs: FETCH_TIMEOUT_MS, budgetMs: FETCH_BUDGET_MS });
-  if (!response.ok) throw new Error(`Playlist request failed (${response.status})`);
+
+  // A bare status code is not enough to act on: a refusal from the host, a
+  // Cloudflare challenge and a login page all arrive as an error page, and only
+  // what came back distinguishes them. The URL itself is never echoed — it
+  // carries the subscription credentials.
+  if (!response.ok) throw new Error(`Playlist request failed (${response.status} ${response.statusText || ""})`.trim() + describe(response, await response.text().catch(() => "")));
 
   const declared = Number(response.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw oversized(declared);
@@ -61,7 +66,16 @@ async function readBody(playlist: Playlist): Promise<string> {
   // Content-Length is advisory and often absent on generated playlists, so the
   // real size is checked again once it has actually arrived.
   if (body.length > MAX_BODY_BYTES) throw oversized(body.length);
+  if (!body.trim()) throw new Error(`Playlist is empty${describe(response, "")}`);
   return body;
+}
+
+/** Short, safe summary of what a response actually contained. */
+function describe(response: Response, body: string): string {
+  const type = response.headers.get("content-type")?.split(";")[0]?.trim();
+  const snippet = body.replace(/\s+/g, " ").trim().slice(0, 90);
+  const parts = [type && `type ${type}`, snippet && `starts "${snippet}${body.length > 90 ? "…" : ""}"`].filter(Boolean);
+  return parts.length ? ` — ${parts.join(", ")}` : "";
 }
 
 async function loadOne(playlist: Playlist): Promise<{ channels: Channel[]; truncated: boolean }> {
@@ -69,8 +83,12 @@ async function loadOne(playlist: Playlist): Promise<{ channels: Channel[]; trunc
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return { channels: cached.channels, truncated: cached.truncated };
 
-  const parsed = parseM3u(await readBody(playlist));
-  if (parsed.channels.length === 0) throw new Error("No channels found — is this an M3U playlist?");
+  const body = await readBody(playlist);
+  const parsed = parseM3u(body);
+  // Saying what did arrive turns "no channels" from a dead end into something
+  // actionable: an HTML page here means the host served something other than
+  // the playlist, which is a different problem from a playlist that parsed badly.
+  if (parsed.channels.length === 0) throw new Error(`No channels found — received ${(body.length / 1024).toFixed(0)} KB starting "${body.replace(/\s+/g, " ").trim().slice(0, 90)}"`);
 
   cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, channels: parsed.channels, truncated: parsed.truncated });
   return parsed;
