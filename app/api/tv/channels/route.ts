@@ -1,4 +1,5 @@
 import { getChannels } from "@/lib/tv/playlist";
+import { getNowPlayingByChannel } from "@/lib/tv/epg";
 import { isAdminAuthenticated, isPasswordConfigured } from "@/lib/auth";
 
 /**
@@ -13,5 +14,10 @@ import { isAdminAuthenticated, isPasswordConfigured } from "@/lib/auth";
  */
 export async function GET() {
   if (isPasswordConfigured() && !(await isAdminAuthenticated())) return Response.json({ error: "Authentication required" }, { status: 401 });
-  return Response.json(await getChannels());
+  const channelSet = await getChannels();
+  // Best-effort: a broken or unconfigured EPG should never take the channel
+  // grid down with it, so a lookup failure here just means no "now playing"
+  // annotations rather than a failed request.
+  const nowPlaying = await getNowPlayingByChannel().catch(() => ({}));
+  return Response.json({ ...channelSet, nowPlaying });
 }

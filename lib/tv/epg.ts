@@ -101,3 +101,27 @@ export async function getEpg(): Promise<EpgSet> {
 
 /** Drops cached EPG bodies so the next read re-fetches. */
 export function invalidateEpgCache() { cache.clear(); }
+
+export type NowPlaying = { title: string; stop: string };
+
+/**
+ * The programme airing right now on each EPG channel id, keyed the same way
+ * an M3U channel's tvg-id would be — for annotating the TV screen's channel
+ * tiles with what's actually on. Reuses getEpg()'s own cache, so calling this
+ * per-request is cheap rather than needing a cache layer of its own.
+ */
+export async function getNowPlayingByChannel(): Promise<Record<string, NowPlaying>> {
+  const { programmes } = await getEpg();
+  const now = Date.now();
+  const result: Record<string, NowPlaying> = {};
+  for (const programme of programmes) {
+    const start = Date.parse(programme.start);
+    const stop = Date.parse(programme.stop);
+    if (Number.isNaN(start) || Number.isNaN(stop) || start > now || now >= stop) continue;
+    // A messy feed can carry overlapping entries for one channel; the first
+    // match wins rather than picking "latest start" — good enough for a
+    // preview annotation, not a scheduling authority.
+    if (!(programme.channelId in result)) result[programme.channelId] = { title: programme.title, stop: programme.stop };
+  }
+  return result;
+}
