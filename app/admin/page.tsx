@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { Header } from "@/app/components/dashboard/Header";
 import { BottomNavigation, type DashboardScreen } from "@/app/components/dashboard/BottomNavigation";
+import { DashboardScreenContent } from "@/app/components/dashboard/DashboardShell";
 import { WidgetRenderer } from "@/app/components/dashboard/WidgetRenderer";
 import { bentoArea, type CanvasSize, type WidgetConfig, type WidgetType } from "@/lib/dashboard/config";
 import { createWidgetInstance, definitionFor, widgetRegistry, widgetTypes } from "@/lib/dashboard/widget-registry";
@@ -12,6 +13,7 @@ import { SaveBar } from "./SaveBar";
 import { useConfirm } from "./ConfirmContext";
 import { useToast } from "./ToastContext";
 import { BENTO_GRID, reflowBento } from "./reflow";
+import { useNowPlaying } from "@/lib/device/use-now-playing";
 import type { DashboardData } from "@/lib/dashboard/types";
 
 async function loadData(): Promise<DashboardData> {
@@ -68,7 +70,10 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial", ca
   }, [bounds, config, interaction, onChange]);
   const begin = (event: ReactPointerEvent<HTMLDivElement>, widget: WidgetConfig, resize = false) => { event.preventDefault(); event.stopPropagation(); setSelected(widget.id); setInteraction({ id: widget.id, resize, x: event.clientX, y: event.clientY, widget }); };
   useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
-  return <div className="admin-preview" ref={frameRef}><div className="admin-preview-canvas" style={{ width: canvas.width * scale, height: canvas.height * scale } as CSSProperties}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, "--canvas-w": `${canvas.width}px`, "--canvas-h": `${canvas.height}px`, fontFamily } as CSSProperties}><Header data={data} /><section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section><BottomNavigation screen={screen} onChange={setScreen} /></main></div><span className="preview-caption">{canvas.width} × {canvas.height} · 32px screen safe area · 16px snap grid · drag to move · corner handle to resize{scale < 1 ? ` · shown at ${Math.round(scale * 100)}%` : ""}</span></div>;
+  const content = screen === "home"
+    ? <section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section>
+    : <DashboardScreenContent screen={screen} data={data} widgets={config} />;
+  return <div className="admin-preview" ref={frameRef}><div className="admin-preview-canvas" style={{ width: canvas.width * scale, height: canvas.height * scale } as CSSProperties}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, "--canvas-w": `${canvas.width}px`, "--canvas-h": `${canvas.height}px`, fontFamily } as CSSProperties}><Header data={data} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main></div><span className="preview-caption">{canvas.width} × {canvas.height} · 32px screen safe area · 16px snap grid · drag to move · corner handle to resize{scale < 1 ? ` · shown at ${Math.round(scale * 100)}%` : ""}</span></div>;
 }
 
 export default function AdminDashboardPage() {
@@ -76,11 +81,19 @@ export default function AdminDashboardPage() {
   const confirm = useConfirm();
   const showToast = useToast();
   const [data, setData] = useState<DashboardData | null>(null);
+  const nowPlaying = useNowPlaying();
   // The selection is an instance id, not a type: the same type can now appear
   // more than once, so a type would no longer identify a single widget.
   const [selected, setSelected] = useState<string | null>(null);
 
-  useEffect(() => { void loadData().then(setData).catch(() => setData(null)); }, []);
+  useEffect(() => {
+    let active = true;
+    const load = () => void loadData().then((next) => { if (active) setData(next); }).catch(() => undefined);
+    load();
+    const timer = window.setInterval(load, 60000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+  const liveData = data && nowPlaying !== undefined ? { ...data, spotifyNowPlaying: nowPlaying } : data;
 
   const selectedConfig = useMemo(() => config.find((widget) => widget.id === selected) ?? config[0] ?? null, [config, selected]);
   const selectedDefinition = selectedConfig ? definitionFor(selectedConfig.type) : null;
@@ -118,7 +131,7 @@ export default function AdminDashboardPage() {
       </section>
       <section className="admin-panel preview-panel">
         <div className="panel-heading"><div><p className="admin-eyebrow">Display preview</p><h2>What the desk sees</h2></div><span className="hardware-chip">{canvas.width} × {canvas.height}</span></div>
-        {data && loaded ? <Preview data={data} config={config} onChange={setConfig} accentColor={accentColor} fontFamily={fontFamily} canvas={canvas} /> : <div className="admin-preview-skeleton" aria-busy="true"><span className="sr-only">Loading preview…</span>{Array.from({ length: 5 }, (_, index) => <span className="skeleton" key={index} />)}</div>}
+        {liveData && loaded ? <Preview data={liveData} config={config} onChange={setConfig} accentColor={accentColor} fontFamily={fontFamily} canvas={canvas} /> : <div className="admin-preview-skeleton" aria-busy="true"><span className="sr-only">Loading preview…</span>{Array.from({ length: 5 }, (_, index) => <span className="skeleton" key={index} />)}</div>}
       </section>
     </div>
   </>;

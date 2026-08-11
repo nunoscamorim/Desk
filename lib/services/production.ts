@@ -1,5 +1,5 @@
 import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
-import type { SpotifyNowPlaying, Weather } from "@/lib/dashboard/types";
+import type { SpotifyNowPlaying, SpotifyRecentTrack, Weather } from "@/lib/dashboard/types";
 import type { CoolifyService, CoolifyStatus } from "./coolify";
 import type { SpotifyService } from "./spotify";
 import type { WeatherService } from "./weather";
@@ -63,6 +63,26 @@ export class SpotifyApiService implements SpotifyService {
     const data = await response.json() as { is_playing: boolean; progress_ms: number; item?: { name: string; duration_ms: number; artists?: Array<{ name: string }>; album?: { name: string; images?: Array<{ url: string }> } } };
     if (!data.item) return null;
     return { isPlaying: data.is_playing, track: data.item.name, artist: data.item.artists?.map((artist) => artist.name).join(", ") ?? "Unknown artist", album: data.item.album?.name ?? "", progressMs: data.progress_ms, durationMs: data.item.duration_ms, artworkUrl: data.item.album?.images?.[0]?.url ?? null };
+  }
+
+  // Spotify can list the same track more than once if it was replayed; deduped
+  // by track id, keeping the first (most recent) occurrence, so the row reads
+  // as distinct tracks rather than the same cover repeated.
+  async getRecentlyPlayed(): Promise<SpotifyRecentTrack[]> {
+    const accessToken = await this.getAccessToken();
+    if (!accessToken) return [];
+    const response = await fetchWithRetry("https://api.spotify.com/v1/me/player/recently-played?limit=10", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }, { label: "spotify-recently-played" });
+    if (!response.ok) throw new Error(`Spotify request failed (${response.status})`);
+    const data = await response.json() as { items?: Array<{ played_at: string; track: { id: string; name: string; artists?: Array<{ name: string }>; album?: { images?: Array<{ url: string }> } } }> };
+    const seen = new Set<string>();
+    const tracks: SpotifyRecentTrack[] = [];
+    for (const item of data.items ?? []) {
+      if (seen.has(item.track.id)) continue;
+      seen.add(item.track.id);
+      tracks.push({ id: item.track.id, track: item.track.name, artist: item.track.artists?.map((artist) => artist.name).join(", ") ?? "Unknown artist", artworkUrl: item.track.album?.images?.[0]?.url ?? null, playedAt: item.played_at });
+      if (tracks.length >= 8) break;
+    }
+    return tracks;
   }
 }
 

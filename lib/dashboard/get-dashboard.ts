@@ -106,7 +106,7 @@ export async function getDashboard(services?: DashboardServices): Promise<Dashbo
 }
 
 async function getDashboardWithServices(services: DashboardServices): Promise<DashboardData> {
-  const [weather, googleCalendar, appleCalendar, icalCalendar, spotifyNowPlaying, tasks, codexUsage, claudeCodeUsage, coolify] = await Promise.all([
+  const [weather, googleCalendar, appleCalendar, icalCalendar, spotifyNowPlaying, spotifyRecentlyPlayed, tasks, codexUsage, claudeCodeUsage, coolify] = await Promise.all([
     withFallback("weather", services.weather.getCurrentWeather(), await new MockWeatherService().getCurrentWeather()),
     // Falls back to an empty schedule rather than mock events: a broken calendar
     // should read as "nothing scheduled", never as invented meetings that look
@@ -115,6 +115,7 @@ async function getDashboardWithServices(services: DashboardServices): Promise<Da
     withFallback("apple-calendar", services.appleCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }),
     withFallback("ical-calendar", services.icalCalendar.getTodayCalendar(), { date: new Date().toISOString().slice(0, 10), events: [] }, CALENDAR_TIMEOUT_MS),
     withFallback("spotify", services.spotify.getNowPlaying(), null),
+    withFallback("spotify-recent", services.spotify.getRecentlyPlayed(), []),
     // CalDAV walks three discovery hops before the first reminder is read, so
     // this shares the calendar's wider budget rather than a single-call one.
     withFallback("tasks", services.tasks.getTasks(), [], CALENDAR_TIMEOUT_MS),
@@ -137,6 +138,7 @@ async function getDashboardWithServices(services: DashboardServices): Promise<Da
     nextMeeting,
     todaysCalendar,
     spotifyNowPlaying,
+    spotifyRecentlyPlayed,
     tasks,
     codexUsage,
     claudeCodeUsage,

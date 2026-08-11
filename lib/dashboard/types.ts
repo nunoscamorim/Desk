@@ -40,6 +40,14 @@ export type SpotifyNowPlaying = {
   artworkUrl: string | null;
 };
 
+export type SpotifyRecentTrack = {
+  id: string;
+  track: string;
+  artist: string;
+  artworkUrl: string | null;
+  playedAt: string;
+};
+
 export type Task = {
   id: string;
   title: string;
@@ -62,6 +70,7 @@ export type DashboardData = {
   nextMeeting: Meeting | null;
   todaysCalendar: TodayCalendar;
   spotifyNowPlaying: SpotifyNowPlaying | null;
+  spotifyRecentlyPlayed: SpotifyRecentTrack[];
   tasks: Task[];
   codexUsage: AiUsage;
   claudeCodeUsage: AiUsage;
@@ -73,6 +82,7 @@ export interface DashboardProvider {
   getNextMeeting(): Promise<Meeting | null>;
   getTodayCalendar(): Promise<TodayCalendar>;
   getSpotifyNowPlaying(): Promise<SpotifyNowPlaying | null>;
+  getSpotifyRecentlyPlayed(): Promise<SpotifyRecentTrack[]>;
   getTasks(): Promise<Task[]>;
   getCodexUsage(): Promise<AiUsage>;
   getClaudeCodeUsage(): Promise<AiUsage>;

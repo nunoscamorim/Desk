@@ -6,6 +6,7 @@ export const SPOTIFY_OAUTH_STATE_COOKIE = "spotify_oauth_state";
 const SPOTIFY_SCOPE = [
   "user-read-currently-playing",
   "user-read-playback-state",
+  "user-read-recently-played",
 ].join(" ");
 const AUTHORIZE_ENDPOINT = "https://accounts.spotify.com/authorize";
 const TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
