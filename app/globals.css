@@ -253,7 +253,7 @@ button { font: inherit; }
    keep following the configurable accent. */
 .music-card .track-progress { background: rgba(255,255,255,.24); }
 .music-card .track-progress-fill { background: var(--spotify-green); }
-.tasks-card { grid-column: 1; grid-row: 2; padding: 18px 20px; background: color-mix(in srgb, #8fbd58 13%, var(--panel)); }.tasks-card .card-title-row h2 { color: #d9f6ad; }.tasks-card .task-item { border-left: 2px solid #8fbd58; padding-left: 10px; }.tasks-card .task-item strong { color: #f0f9df; }.tasks-card .task-detail { color: #a9c98a; }
+.tasks-card { grid-column: 1; grid-row: 2; padding: 18px 20px; }
 .task-list { margin-top: 12px; display: grid; align-content: start; gap: 8px; }
 /* Reuses the calendar's event-card look — a colored tint, an accent rail —
    rather than a checklist row, so a task and a meeting read as the same kind
