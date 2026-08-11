@@ -78,7 +78,19 @@ export function TvStream({ channel, poster, muted = false, controls = true, clas
           // resolve cleanly through Turbopack's dev bundling (fails with "is
           // not a constructor" once the worker tries to spin up) — demuxing
           // on the main thread costs a little but works everywhere.
-          const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: source }, { liveBufferLatencyChasing: true });
+          const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: source }, {
+            // A larger input stash absorbs the bursty delivery common to IPTV
+            // providers. Aggressive latency chasing repeatedly seeks toward
+            // the live edge and was the main source of visible glitches.
+            enableStashBuffer: true,
+            stashInitialSize: 1024 * 1024,
+            liveBufferLatencyChasing: false,
+            lazyLoad: false,
+            autoCleanupSourceBuffer: true,
+            autoCleanupMaxBackwardDuration: 30,
+            autoCleanupMinBackwardDuration: 10,
+            fixAudioTimestampGap: true,
+          });
           destroyPlayer = () => player.destroy();
           player.on(mpegts.Events.ERROR, (type: string) => {
             // A CORS rejection arrives as a generic network error, so the
@@ -101,7 +113,15 @@ export function TvStream({ channel, poster, muted = false, controls = true, clas
           const { default: Hls } = await import("hls.js");
           if (disposed) return;
           if (!Hls.isSupported()) { fail("This browser cannot play HLS."); return; }
-          const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: false,
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+            backBufferLength: 30,
+            manifestLoadingMaxRetry: 4,
+            fragLoadingMaxRetry: 6,
+          });
           destroyPlayer = () => hls.destroy();
           hls.on(Hls.Events.ERROR, (_event, data) => {
             if (!data.fatal) return;
@@ -139,7 +159,6 @@ export function TvStream({ channel, poster, muted = false, controls = true, clas
       video.removeAttribute("src");
       video.load();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setState/onStateChange intentionally excluded: they're stable enough here and including them would re-run the connect effect on every render.
   }, [channel.id, channel.url, viaProxy]);
 
   const retry = () => { setViaProxy(false); setState("connecting"); setDetail(null); };

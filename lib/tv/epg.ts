@@ -1,12 +1,13 @@
 import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import { readFile } from "node:fs/promises";
 import { readEpgSources, epgUploadPath, type EpgSource } from "./epg-store";
+import { readPlaylists } from "./playlist-store";
 import { MAX_PROGRAMMES, parseXmltv, type EpgChannel, type EpgProgramme } from "./xmltv";
 
 export type EpgSourceResult = {
   id: string;
   name: string;
-  source: "url" | "upload";
+  source: "url" | "upload" | "xtream";
   /** Host for a URL source, or a size summary for an upload. The full URL is
    *  never sent out: it may carry subscription credentials. */
   host: string;
@@ -17,6 +18,7 @@ export type EpgSourceResult = {
 };
 
 export type EpgSet = { channels: EpgChannel[]; programmes: EpgProgramme[]; sources: EpgSourceResult[] };
+type ResolvedEpgSource = EpgSource | { id: string; name: string; source: "xtream"; url: string };
 
 // Same budget as TV playlists (lib/tv/playlist.ts) — XMLTV feeds are at least
 // as large, and this is the same class of "someone else's slow server" fetch.
@@ -26,6 +28,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_BODY_BYTES = 40 * 1024 * 1024;
 
 const cache = new Map<string, { expiresAt: number; channels: EpgChannel[]; programmes: EpgProgramme[]; truncated: boolean }>();
+const pending = new Map<string, Promise<{ channels: EpgChannel[]; programmes: EpgProgramme[]; truncated: boolean }>>();
 
 const hostOf = (url: string): string => { try { return new URL(url).host; } catch { return "invalid URL"; } };
 
@@ -42,7 +45,7 @@ function describe(response: Response, body: string): string {
 }
 
 /** Uploads are read from disk; URL sources are fetched. */
-async function readBody(source: EpgSource): Promise<string> {
+async function readBody(source: ResolvedEpgSource): Promise<string> {
   if (source.source === "upload") {
     try { return await readFile(epgUploadPath(source.file), "utf8"); }
     catch { throw new Error("Uploaded file is missing — re-upload it"); }
@@ -61,17 +64,22 @@ async function readBody(source: EpgSource): Promise<string> {
   return body;
 }
 
-async function loadOne(source: EpgSource): Promise<{ channels: EpgChannel[]; programmes: EpgProgramme[]; truncated: boolean }> {
+async function loadOne(source: ResolvedEpgSource): Promise<{ channels: EpgChannel[]; programmes: EpgProgramme[]; truncated: boolean }> {
   const cacheKey = source.source === "upload" ? `upload:${source.file}` : source.url;
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached;
+  const active = pending.get(cacheKey);
+  if (active) return active;
 
-  const body = await readBody(source);
-  const parsed = parseXmltv(body);
-  if (parsed.channels.length === 0) throw new Error(`No channels found — received ${(body.length / 1024).toFixed(0)} KB starting "${body.replace(/\s+/g, " ").trim().slice(0, 90)}"`);
-
-  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, ...parsed });
-  return parsed;
+  const load = (async () => {
+    const body = await readBody(source);
+    const parsed = parseXmltv(body);
+    if (parsed.channels.length === 0) throw new Error(`No channels found — received ${(body.length / 1024).toFixed(0)} KB starting "${body.replace(/\s+/g, " ").trim().slice(0, 90)}"`);
+    cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, ...parsed });
+    return parsed;
+  })();
+  pending.set(cacheKey, load);
+  try { return await load; } finally { pending.delete(cacheKey); }
 }
 
 /**
@@ -82,7 +90,17 @@ async function loadOne(source: EpgSource): Promise<{ channels: EpgChannel[]; pro
  * behaviour lib/tv/playlist.ts has for M3U playlists.
  */
 export async function getEpg(): Promise<EpgSet> {
-  const sources = await readEpgSources();
+  const [configuredSources, playlists] = await Promise.all([readEpgSources(), readPlaylists()]);
+  // Xtream exposes its XMLTV guide alongside player_api.php. Treat it as an
+  // automatic EPG source so adding an Xtream playlist is enough to populate
+  // programme data; credentials remain server-side and encrypted at rest.
+  const xtreamSources: ResolvedEpgSource[] = playlists.filter((playlist) => playlist.source === "xtream").map((playlist) => {
+    const base = playlist.server.trim().replace(/\/+$/, "");
+    const url = new URL(`${base}/xmltv.php`);
+    url.search = new URLSearchParams({ username: playlist.username, password: playlist.password }).toString();
+    return { id: `xtream:${playlist.id}`, name: `${playlist.name} guide`, source: "xtream", url: url.toString() };
+  });
+  const sources: ResolvedEpgSource[] = [...configuredSources, ...xtreamSources];
   const settled = await Promise.all(sources.map(async (source): Promise<{ result: EpgSourceResult; channels: EpgChannel[]; programmes: EpgProgramme[] }> => {
     const base = { id: source.id, name: source.name, source: source.source, host: source.source === "upload" ? `uploaded file · ${(source.bytes / 1024).toFixed(0)} KB` : hostOf(source.url) };
     try {
@@ -100,10 +118,11 @@ export async function getEpg(): Promise<EpgSet> {
 }
 
 /** Drops cached EPG bodies so the next read re-fetches. */
-export function invalidateEpgCache() { cache.clear(); }
+export function invalidateEpgCache() { cache.clear(); pending.clear(); }
 
 export type EpgListing = { title: string; start: string; stop: string };
 export type NowPlaying = { title: string; stop: string; next?: EpgListing; schedule?: EpgListing[] };
+const guideKey = (value: string) => value.normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "").toLocaleLowerCase();
 
 /**
  * The programme airing right now on each EPG channel id, keyed the same way
@@ -112,7 +131,7 @@ export type NowPlaying = { title: string; stop: string; next?: EpgListing; sched
  * per-request is cheap rather than needing a cache layer of its own.
  */
 export async function getNowPlayingByChannel(): Promise<Record<string, NowPlaying>> {
-  const { programmes } = await getEpg();
+  const { channels, programmes } = await getEpg();
   const now = Date.now();
   const result: Record<string, NowPlaying> = {};
   const upcoming: Record<string, { title: string; start: string; stop: string }> = {};
@@ -137,6 +156,16 @@ export async function getNowPlayingByChannel(): Promise<Record<string, NowPlayin
   for (const [channelId, listings] of Object.entries(schedule)) {
     if (result[channelId]) result[channelId].schedule = listings.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)).slice(0, 6);
   }
+  // Providers are inconsistent about whether a playlist carries the XMLTV id,
+  // display name, or a punctuation/case variant. Alias all three forms so the
+  // client can still join a stream to its guide without fuzzy guessing.
+  for (const channel of channels) {
+    const listing = result[channel.id];
+    if (!listing) continue;
+    result[guideKey(channel.id)] ??= listing;
+    result[channel.displayName] ??= listing;
+    result[guideKey(channel.displayName)] ??= listing;
+  }
   return result;
 }
 
@@ -149,7 +178,11 @@ export async function getEpgIconsByChannel(): Promise<Record<string, string>> {
   const { channels } = await getEpg();
   const result: Record<string, string> = {};
   for (const channel of channels) {
-    if (channel.icon && !(channel.id in result)) result[channel.id] = channel.icon;
+    if (!channel.icon) continue;
+    result[channel.id] ??= channel.icon;
+    result[guideKey(channel.id)] ??= channel.icon;
+    result[channel.displayName] ??= channel.icon;
+    result[guideKey(channel.displayName)] ??= channel.icon;
   }
   return result;
 }

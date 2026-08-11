@@ -54,6 +54,7 @@ function ChannelTile({ channel, poster, active, onSelect }: { channel: Channel; 
  * is capped and the search box is what reaches the rest.
  */
 const VISIBLE_LIMIT = 300;
+const guideKey = (value: string) => value.normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "").toLocaleLowerCase();
 
 type Diagnosis = { environment?: { authSecretSet?: boolean; adminPasswordSet?: boolean; dataDirWritable?: boolean }; request?: { authenticated?: boolean; canReadChannels?: boolean }; playlists?: { stored?: number; error?: string } };
 
@@ -197,13 +198,20 @@ export function TvScreen() {
   // connection: that phantom stream can hold the account's only slot, so the
   // channel the user actually taps next gets refused as already in use.
   const previewChannel = preview && matches.some((channel) => channel.id === preview.id) ? preview : null;
+  const guideValue = <T,>(values: Record<string, T>, channel: Channel): T | undefined => {
+    const candidates = [channel.tvgId, channel.name].filter((value): value is string => Boolean(value));
+    for (const candidate of candidates) {
+      const match = values[candidate] ?? values[guideKey(candidate)];
+      if (match) return match;
+    }
+  };
   const previewNowPlaying = previewChannel && showingDemoChannels
     ? demoNowPlaying[previewChannel.id]
-    : previewChannel?.tvgId ? state.nowPlaying[previewChannel.tvgId] : undefined;
+    : previewChannel ? guideValue(state.nowPlaying, previewChannel) : undefined;
   // M3U's own tvg-logo wins when a provider set one; the EPG's <icon> for the
   // matching tvg-id is the fallback, since a channel that has a schedule
   // usually has branding too even when the playlist itself carries none.
-  const resolveLogo = (channel: Channel): string | null => channel.logo || (channel.tvgId ? state.epgIcons[channel.tvgId] : undefined) || null;
+  const resolveLogo = (channel: Channel): string | null => channel.logo || guideValue(state.epgIcons, channel) || null;
   const channelTiles = visible.map((channel) => <ChannelTile key={channel.id} channel={channel} poster={resolveLogo(channel)} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />);
   // Only actually stream once liveChannel has caught up with the current
   // selection — during the gap in between, the tapped tile is already
@@ -230,7 +238,7 @@ export function TvScreen() {
           {previewChannel
             ? isLive
               ? <>
-                <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls={false} className="tv-preview-stage" onStateChange={setPreviewState} />
+                <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls className="tv-preview-stage" onStateChange={setPreviewState} />
                 {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
               </>
               : <div className="tv-preview-idle"><span>Connecting to {previewChannel.name}…</span></div>
