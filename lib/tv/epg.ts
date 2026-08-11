@@ -125,3 +125,17 @@ export async function getNowPlayingByChannel(): Promise<Record<string, NowPlayin
   }
   return result;
 }
+
+/**
+ * Channel logos declared in the EPG data, keyed by EPG channel id — the same
+ * key an M3U channel's tvg-id matches against. Used as a fallback when the
+ * M3U provider set no tvg-logo of its own for a channel.
+ */
+export async function getEpgIconsByChannel(): Promise<Record<string, string>> {
+  const { channels } = await getEpg();
+  const result: Record<string, string> = {};
+  for (const channel of channels) {
+    if (channel.icon && !(channel.id in result)) result[channel.id] = channel.icon;
+  }
+  return result;
+}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { TvPlayer } from "@/app/components/tv/TvPlayer";
+import { TvStream, initialsFor, type TvStreamState } from "@/app/components/tv/TvStream";
 import type { Channel } from "@/lib/tv/m3u";
 import type { PlaylistResult } from "@/lib/tv/playlist";
 
@@ -10,7 +11,7 @@ type NowPlaying = { title: string; stop: string };
 
 type LoadState =
   | { status: "loading" }
-  | { status: "ready"; channels: Channel[]; playlists: PlaylistResult[]; nowPlaying: Record<string, NowPlaying> }
+  | { status: "ready"; channels: Channel[]; playlists: PlaylistResult[]; nowPlaying: Record<string, NowPlaying>; epgIcons: Record<string, string> }
   | { status: "error"; message: string };
 
 /**
@@ -19,8 +20,16 @@ type LoadState =
  * rendered underneath and the image simply covers them once it decodes — a tile
  * is never a blank rectangle waiting on somebody else's CDN.
  */
-function ChannelTile({ channel, active, onSelect }: { channel: Channel; active: boolean; onSelect: () => void }) {
+function ChannelTile({ channel, poster, active, onSelect }: { channel: Channel; poster: string | null; active: boolean; onSelect: () => void }) {
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
   return <button type="button" className={`tv-tile${active ? " is-selected" : ""}`} onClick={onSelect} aria-pressed={active}>
+    <span className="tv-tile-logo">
+      {!logoLoaded && <i aria-hidden="true">{initialsFor(channel.name)}</i>}
+      {poster && !logoFailed &&
+        // eslint-disable-next-line @next/next/no-img-element -- arbitrary provider/EPG logos
+        <img src={poster} alt="" loading="lazy" onLoad={() => setLogoLoaded(true)} onError={() => setLogoFailed(true)} />}
+    </span>
     <span className="tv-tile-name">{channel.name}</span>
   </button>;
 }
@@ -83,6 +92,7 @@ export function TvScreen() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [playing, setPlaying] = useState<Channel | null>(null);
   const [preview, setPreview] = useState<Channel | null>(null);
+  const [previewState, setPreviewState] = useState<TvStreamState>("connecting");
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
 
   useEffect(() => {
@@ -91,9 +101,9 @@ export function TvScreen() {
       .then(async (response) => {
         if (response.status === 401) throw new Error("This device is not signed in.");
         if (!response.ok) throw new Error(`Channels request failed (${response.status})`);
-        return response.json() as Promise<{ channels: Channel[]; playlists: PlaylistResult[]; nowPlaying?: Record<string, NowPlaying> }>;
+        return response.json() as Promise<{ channels: Channel[]; playlists: PlaylistResult[]; nowPlaying?: Record<string, NowPlaying>; epgIcons?: Record<string, string> }>;
       })
-      .then((data) => setState({ status: "ready", channels: data.channels, playlists: data.playlists, nowPlaying: data.nowPlaying ?? {} }))
+      .then((data) => setState({ status: "ready", channels: data.channels, playlists: data.playlists, nowPlaying: data.nowPlaying ?? {}, epgIcons: data.epgIcons ?? {} }))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setState({ status: "error", message: error instanceof Error ? error.message : "Could not load channels." });
@@ -124,9 +134,12 @@ export function TvScreen() {
   const showingDemoChannels = state.status === "ready" && state.channels.length === 0 && process.env.NODE_ENV !== "production";
   const matches = channels;
 
-  if (playing) return <TvPlayer key={playing.id} channel={playing} onBack={() => setPlaying(null)} />;
   if (state.status === "loading") return <section className="tv-screen tv-message"><span>Loading channels…</span></section>;
   if (state.status === "error") return <section className="tv-screen tv-message"><strong>Channels unavailable</strong><span>{state.message}</span><DiagnosisNote diagnosis={diagnosis} /></section>;
+  // Placed after the loading/error guards (not before) so state is narrowed
+  // to "ready" here — playing is only ever set from buttons that exist in the
+  // ready-state tree, so this can never actually fire while state isn't ready.
+  if (playing) return <TvPlayer key={playing.id} channel={playing} poster={playing.logo || (playing.tvgId ? state.epgIcons[playing.tvgId] : undefined) || null} onBack={() => setPlaying(null)} />;
 
   const failed = state.playlists.filter((playlist) => playlist.error);
   const truncated = state.playlists.filter((playlist) => playlist.truncated);
@@ -149,7 +162,11 @@ export function TvScreen() {
   const previewNowPlaying = previewChannel && showingDemoChannels
     ? (demoNowPlaying[previewChannel.id] ? { title: demoNowPlaying[previewChannel.id] } : undefined)
     : previewChannel?.tvgId ? state.nowPlaying[previewChannel.tvgId] : undefined;
-  const channelSection = (title: string, channelsInSection: Channel[], tone: "general" | "sports") => channelsInSection.length > 0 && <section className={`tv-channel-section tv-channel-${tone}`} aria-label={`${title} channels`}><header><h3>{title}</h3><span>{channelsInSection.length} channels</span></header><div className="tv-grid">{channelsInSection.map((channel) => <ChannelTile key={channel.id} channel={channel} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />)}</div></section>;
+  // M3U's own tvg-logo wins when a provider set one; the EPG's <icon> for the
+  // matching tvg-id is the fallback, since a channel that has a schedule
+  // usually has branding too even when the playlist itself carries none.
+  const resolveLogo = (channel: Channel): string | null => channel.logo || (channel.tvgId ? state.epgIcons[channel.tvgId] : undefined) || null;
+  const channelSection = (title: string, channelsInSection: Channel[], tone: "general" | "sports") => channelsInSection.length > 0 && <section className={`tv-channel-section tv-channel-${tone}`} aria-label={`${title} channels`}><header><h3>{title}</h3><span>{channelsInSection.length} channels</span></header><div className="tv-grid">{channelsInSection.map((channel) => <ChannelTile key={channel.id} channel={channel} poster={resolveLogo(channel)} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />)}</div></section>;
 
   return <section className="tv-screen">
     {(failed.length > 0 || truncated.length > 0) && <div className="tv-notices">
@@ -159,8 +176,10 @@ export function TvScreen() {
     {matches.length === 0 ? <div className="tv-grid-empty">No channel matches that search.</div> : <div className="tv-content">
       <div className="tv-channel-list"><div className="tv-channel-groups">{channelSection("General", general, "general")}{channelSection("Sports", sports, "sports")}</div></div>
       {previewChannel && <aside className="tv-preview" aria-label={`Preview ${previewChannel.name}`}>
-        <div className="tv-preview-art">{previewChannel.logo && // eslint-disable-next-line @next/next/no-img-element -- arbitrary provider logos
-          <img src={previewChannel.logo} alt="" />}<span className="tv-preview-live"><i /> Ready to watch</span></div>
+        <div className="tv-preview-art">
+          <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls={false} className="tv-preview-stage" onStateChange={setPreviewState} />
+          {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
+        </div>
         <div className="tv-preview-copy"><span className="tv-section-kicker">Channel preview</span><h2>{previewChannel.name}</h2>{previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}<p>{previewChannel.group ?? "General entertainment"}</p><button type="button" className="tv-watch" onClick={() => setPlaying(previewChannel)}>Watch live <span aria-hidden="true">→</span></button></div>
       </aside>}
     </div>}
