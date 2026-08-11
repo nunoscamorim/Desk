@@ -44,3 +44,4 @@ data/*.enc
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+data/tv-uploads/

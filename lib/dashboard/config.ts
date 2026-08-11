@@ -26,7 +26,7 @@ export const CANVAS_PADDING = 32;
 
 /**
  * Vertical chrome the widget area sits between: the 32px top padding, the 90px
- * topbar, and 64px reserved for the bottom navigation. Widget bounds, the CSS
+ * topbar, and 74px reserved for the bottom navigation. Widget bounds, the CSS
  * grid box, and the admin's drag limits all derive from this one number so they
  * cannot drift apart.
  */

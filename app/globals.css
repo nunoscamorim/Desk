@@ -57,8 +57,9 @@ button { font: inherit; }
 .tv-tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; border: 1px solid transparent; border-radius: 13px; padding: 9px; background: var(--panel); color: var(--ink); text-align: left; cursor: pointer; touch-action: manipulation; }
 .tv-tile:hover, .tv-tile:focus-visible { border-color: #3d3c37; outline: 0; }
 .tv-tile:focus-visible { border-color: var(--lime); }
-.tv-tile-art { display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 9px; background: #171715; }
-.tv-tile-art img { width: 100%; height: 100%; object-fit: contain; }
+.tv-tile-art { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 9px; background: #171715; }
+/* The logo sits over the initials, which stay until it has actually decoded. */
+.tv-tile-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .tv-tile-art i { color: var(--lime); font-size: 19px; font-style: normal; font-weight: 750; letter-spacing: -.02em; }
 .tv-tile-name { overflow: hidden; font-size: 12px; font-weight: 600; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .tv-tile-group { overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
@@ -343,3 +344,16 @@ button { font: inherit; }
 .config-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 0 auto; padding: 0; border: 0; }.config-actions button { min-width: 118px; height: 38px; border: 0; border-radius: 9px; padding: 0 14px; background: var(--lime); color: #11120e; font-size: 11px; font-weight: 700; cursor: pointer; }.config-actions button.secondary { border: 1px solid var(--line); background: #171716; color: var(--ink); }.config-actions button:disabled { opacity: .45; cursor: default; }
 .save-status { display: inline-flex; align-items: center; gap: 7px; margin-right: 4px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: 10px; white-space: nowrap; }.save-status span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }.save-status.synced { border-color: #303c1e; color: #b8d977; }.save-status.synced span { background: var(--lime); }.save-status.dirty { border-color: #4a4327; color: #e3c766; }.save-status.dirty span { background: #e3c766; }.save-status.error { border-color: #5a2b2b; color: #e79191; }.save-status.error span { background: #e79191; }
 .font-setting { display: block; margin-top: 16px; color: #b5b2aa; font-size: 10px; }.font-setting select { display: block; width: 100%; height: 38px; margin-top: 7px; border: 1px solid #393834; border-radius: 8px; padding: 0 10px; outline: 0; background: #111110; color: var(--ink); font: inherit; font-size: 12px; }.font-setting select:focus { border-color: var(--lime); }
+.tv-playlist-upload { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.tv-playlist-upload > span { flex: 0 0 auto; color: #b5b2aa; font-size: 10px; }
+.tv-playlist-upload input[type="file"] { min-width: 0; flex: 1 1 auto; color: var(--muted); font: inherit; font-size: 11px; }
+.tv-playlist-upload input[type="file"]::file-selector-button { margin-right: 10px; height: 32px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; background: #171716; color: var(--ink); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+.tv-playlist-upload input[type="file"]::file-selector-button:hover { border-color: var(--lime); color: var(--lime); }
+.tv-filters { flex: 0 0 auto; display: flex; align-items: center; gap: 9px; }
+.tv-search { flex: 1 1 auto; min-width: 0; height: 38px; border: 1px solid #393834; border-radius: 10px; padding: 0 12px; outline: 0; background: #111110; color: var(--ink); font: inherit; font-size: 13px; }
+.tv-search:focus { border-color: var(--lime); }
+.tv-group { flex: 0 0 auto; max-width: 220px; height: 38px; border: 1px solid #393834; border-radius: 10px; padding: 0 10px; outline: 0; background: #111110; color: var(--ink); font: inherit; font-size: 12px; }
+.tv-group:focus { border-color: var(--lime); }
+.tv-count { flex: 0 0 auto; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.tv-grid-empty { flex: 1 1 auto; display: grid; place-items: center; border-radius: 15px; background: var(--panel); color: var(--muted); font-size: 12px; }
+.tv-more { flex: 0 0 auto; margin: 0; color: #77746d; font-size: 10px; text-align: center; }
