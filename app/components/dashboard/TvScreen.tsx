@@ -8,7 +8,8 @@ import { TvStream, type TvStreamState } from "@/app/components/tv/TvStream";
 import type { Channel } from "@/lib/tv/m3u";
 import type { PlaylistResult } from "@/lib/tv/playlist";
 
-type NowPlaying = { title: string; stop: string; next?: { title: string; start: string; stop: string } };
+type EpgListing = { title: string; start: string; stop: string };
+type NowPlaying = { title: string; stop: string; next?: EpgListing; schedule?: EpgListing[] };
 
 type LoadState =
   | { status: "loading" }
@@ -65,7 +66,7 @@ const demoChannels: Channel[] = [...demoGeneralNames.map((name, index) => ({ id:
 // Demo channels carry no tvgId, so this is keyed by channel id directly
 // rather than going through the real tvg-id/XMLTV matching path.
 const demoProgrammeTitles = ["Morning Edition", "Midday Report", "The Afternoon Show", "Prime Time", "Evening Special", "Late Night Replay", "Weekend Wrap", "Feature Presentation"];
-const demoNowPlaying: Record<string, NowPlaying> = Object.fromEntries(demoChannels.map((channel, index) => [channel.id, { title: demoProgrammeTitles[index % demoProgrammeTitles.length], stop: new Date(Date.now() + 45 * 60_000).toISOString(), next: { title: demoProgrammeTitles[(index + 1) % demoProgrammeTitles.length], start: new Date(Date.now() + 45 * 60_000).toISOString(), stop: new Date(Date.now() + 105 * 60_000).toISOString() } }]));
+const demoNowPlaying: Record<string, NowPlaying> = Object.fromEntries(demoChannels.map((channel, index) => { const start = Date.now() - 15 * 60_000; const schedule = [0, 45, 105, 165].map((offset, listingIndex) => ({ title: demoProgrammeTitles[(index + listingIndex) % demoProgrammeTitles.length], start: new Date(start + offset * 60_000).toISOString(), stop: new Date(start + (offset + (listingIndex === 0 ? 45 : 60)) * 60_000).toISOString() })); return [channel.id, { title: schedule[0].title, stop: schedule[0].stop, next: schedule[1], schedule }]; }));
 
 /**
  * Turns the diagnostics report into the one sentence that explains an empty
@@ -223,6 +224,10 @@ export function TvScreen() {
           stream itself only mounts once liveChannel has caught up with the
           tap, never before. */}
       <aside className="tv-preview" aria-label={previewChannel ? `Preview ${previewChannel.name}` : "Channel preview"}>
+        <div className="tv-preview-head">
+          {previewChannel ? <h2>{previewChannel.name}</h2> : <p>Select a channel to preview it.</p>}
+          {previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}
+        </div>
         <div className="tv-preview-art">
           {previewChannel
             ? isLive
@@ -233,18 +238,19 @@ export function TvScreen() {
               : <div className="tv-preview-idle"><span>Connecting to {previewChannel.name}…</span></div>
             : <div className="tv-preview-idle"><span>Tap a channel to preview it</span></div>}
         </div>
-        <div className="tv-preview-copy">
-          <span className="tv-section-kicker">Channel preview</span>
-          {previewChannel
-            ? <>
-              <h2>{previewChannel.name}</h2>
-              {previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}
-              <p>{previewChannel.group ?? "General entertainment"}</p>
-              <button type="button" className="tv-watch" onClick={() => setPlaying(previewChannel)}>Watch live <span aria-hidden="true">→</span></button>
-            </>
-            : <p>Select a channel on the left — nothing streams until you do.</p>}
-        </div>
-      </aside>}
+        {previewNowPlaying && <div className="tv-preview-copy">
+            <div className="tv-preview-schedule">
+              {previewNowPlaying.next && <p className="tv-preview-next"><span>What’s next</span><strong>{previewNowPlaying.next.title}</strong><time dateTime={previewNowPlaying.next.start}>{new Date(previewNowPlaying.next.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time></p>}
+            </div>
+            {previewNowPlaying.schedule && <div className="tv-program-grid" aria-label="Programme schedule">
+              {previewNowPlaying.schedule.map((programme) => {
+                const current = programme.title === previewNowPlaying.title;
+                return <article key={`${programme.start}-${programme.title}`} className={current ? "is-current" : undefined}><time>{new Date(programme.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time><strong>{programme.title}</strong></article>;
+              })}
+            </div>}
+            <p>{previewChannel?.group ?? "General entertainment"}</p>
+        </div>}
+      </aside>
     </div>}
     {matches.length > visible.length && <p className="tv-more">Showing the first {visible.length} — keep typing to narrow it down.</p>}
   </section>;

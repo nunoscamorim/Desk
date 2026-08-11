@@ -102,7 +102,8 @@ export async function getEpg(): Promise<EpgSet> {
 /** Drops cached EPG bodies so the next read re-fetches. */
 export function invalidateEpgCache() { cache.clear(); }
 
-export type NowPlaying = { title: string; stop: string; next?: { title: string; start: string; stop: string } };
+export type EpgListing = { title: string; start: string; stop: string };
+export type NowPlaying = { title: string; stop: string; next?: EpgListing; schedule?: EpgListing[] };
 
 /**
  * The programme airing right now on each EPG channel id, keyed the same way
@@ -115,10 +116,12 @@ export async function getNowPlayingByChannel(): Promise<Record<string, NowPlayin
   const now = Date.now();
   const result: Record<string, NowPlaying> = {};
   const upcoming: Record<string, { title: string; start: string; stop: string }> = {};
+  const schedule: Record<string, EpgListing[]> = {};
   for (const programme of programmes) {
     const start = Date.parse(programme.start);
     const stop = Date.parse(programme.stop);
     if (Number.isNaN(start) || Number.isNaN(stop) || stop <= now) continue;
+    (schedule[programme.channelId] ??= []).push({ title: programme.title, start: programme.start, stop: programme.stop });
     if (start <= now) {
       // A messy feed can carry overlapping entries for one channel; the first
       // match wins rather than picking "latest start".
@@ -130,6 +133,9 @@ export async function getNowPlayingByChannel(): Promise<Record<string, NowPlayin
   for (const [channelId, next] of Object.entries(upcoming)) {
     if (result[channelId]) result[channelId].next = next;
     else result[channelId] = { title: "Not currently airing", stop: next.start, next };
+  }
+  for (const [channelId, listings] of Object.entries(schedule)) {
+    if (result[channelId]) result[channelId].schedule = listings.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)).slice(0, 6);
   }
   return result;
 }
