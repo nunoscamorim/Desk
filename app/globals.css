@@ -361,3 +361,4 @@ button { font: inherit; }
 .tv-panel-actions button { height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 0 11px; background: #171716; color: var(--ink); font: inherit; font-size: 10px; font-weight: 600; cursor: pointer; }
 .tv-panel-actions button:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
 .tv-panel-actions button:disabled { opacity: .5; cursor: default; }
+.tv-diagnosis { max-width: 460px; margin-top: 4px; border: 1px solid #4a3a24; border-radius: 8px; padding: 8px 11px; background: #241d12; color: #e0b877; font-size: 11px; line-height: 1.45; }

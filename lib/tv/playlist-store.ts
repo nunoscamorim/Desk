@@ -50,6 +50,12 @@ export async function readPlaylists(): Promise<Playlist[]> {
   let encoded: string;
   try { encoded = await readFile(filePath, "utf8"); } catch { return []; }
 
+  // Deliberately outside the catch below. key() throws when AUTH_SECRET is
+  // unset, and swallowing that alongside a genuine decryption failure reported
+  // a misconfigured deployment as a corrupt file — while silently returning no
+  // playlists, which looks identical to never having added one.
+  if (!process.env.AUTH_SECRET) throw new Error("AUTH_SECRET is not set, so saved playlists cannot be read");
+
   try {
     const [ivText, tagText, payload] = encoded.split(":");
     const decipher = createDecipheriv("aes-256-gcm", key(), Buffer.from(ivText, "hex"));
