@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 const durations = { focus: 25 * 60, break: 5 * 60 } as const;
 
+function TimerIcon({ name }: { name: "play" | "pause" | "reset" }) {
+  if (name === "play") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" /></svg>;
+  if (name === "pause") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7zM14 5h3v14h-3z" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a7 7 0 1 0 1 5" /><path d="M20 4v5h-5" /></svg>;
+}
+
 export function PomodoroWidget() {
   const [mode, setMode] = useState<keyof typeof durations>("focus");
   const [remaining, setRemaining] = useState(durations.focus);
@@ -36,8 +42,8 @@ export function PomodoroWidget() {
   const progress = ((durations[mode] - remaining) / durations[mode]) * 100;
 
   return <section className={`pomodoro-screen pomodoro-${mode} ${running ? "is-running" : ""}`} aria-label="Pomodoro timer">
-    <header className="pomodoro-header"><div className="pomodoro-tabs" role="group" aria-label="Timer mode"><button type="button" aria-pressed={mode === "focus"} onClick={() => selectMode("focus")}>Focus</button><button type="button" aria-pressed={mode === "break"} onClick={() => selectMode("break")}>Break</button></div><span className="pomodoro-rhythm"><strong>25</strong> focus <i /> <strong>5</strong> reset</span></header>
-    <div className="pomodoro-layout"><div className="pomodoro-copy"><span className="pomodoro-mode"><i />{running ? "In progress" : "Ready to begin"}</span><h2>{mode === "focus" ? "Make this block count." : "Take a real breather."}</h2><p>{mode === "focus" ? "One task. No tabs. No context switching." : "Stand up, look away, and come back lighter."}</p><div className="pomodoro-actions"><button type="button" className="primary" onClick={() => setRunning((value) => !value)}><span aria-hidden="true">{running ? "Ⅱ" : "▶"}</span>{running ? "Pause" : "Start session"}</button><button type="button" onClick={reset}><span aria-hidden="true">↺</span>Reset</button></div></div>
-      <div className="pomodoro-clock"><div className="pomodoro-dial" style={{ "--timer-progress": `${progress}%` } as React.CSSProperties}><div className="pomodoro-dial-inner"><time dateTime={`PT${minutes}M${seconds}S`}>{String(minutes).padStart(2, "0")}<span>:</span>{String(seconds).padStart(2, "0")}</time><small aria-live="polite">{running ? (mode === "focus" ? "Stay with it" : "Breathe") : mode === "focus" ? "Focus timer" : "Break timer"}</small></div></div><span className="pomodoro-progress-label">{Math.round(progress)}% complete</span></div></div>
+    <header className="pomodoro-header"><div><span className="pomodoro-eyebrow"><i />{running ? "In progress" : "Ready to begin"}</span><h2>{mode === "focus" ? "Make this block count." : "Take a real breather."}</h2></div><div className="pomodoro-header-tools"><span className="pomodoro-rhythm"><strong>25</strong> focus <i /> <strong>5</strong> break</span><div className="pomodoro-tabs" role="group" aria-label="Timer mode"><button type="button" aria-pressed={mode === "focus"} onClick={() => selectMode("focus")}>Focus</button><button type="button" aria-pressed={mode === "break"} onClick={() => selectMode("break")}>Break</button></div></div></header>
+    <div className="pomodoro-center"><div className="pomodoro-clock"><div className="pomodoro-dial" style={{ "--timer-progress": `${progress}%` } as React.CSSProperties}><div className="pomodoro-dial-inner"><time dateTime={`PT${minutes}M${seconds}S`}>{String(minutes).padStart(2, "0")}<span>:</span>{String(seconds).padStart(2, "0")}</time></div></div><span className="pomodoro-progress-label">{Math.round(progress)}% complete</span></div></div>
+    <footer className="pomodoro-footer"><p>{mode === "focus" ? "One task. No tabs. No context switching." : "Stand up, look away, and come back lighter."}</p><div className="pomodoro-actions"><button type="button" className="primary" onClick={() => setRunning((value) => !value)}><TimerIcon name={running ? "pause" : "play"} /><span>{running ? "Pause" : "Start session"}</span></button><button type="button" className="reset-button" onClick={reset}><TimerIcon name="reset" /><span>Reset</span></button></div></footer>
   </section>;
 }

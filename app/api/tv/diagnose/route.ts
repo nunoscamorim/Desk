@@ -2,6 +2,8 @@ import { access, constants } from "node:fs/promises";
 import path from "node:path";
 import { readPlaylists } from "@/lib/tv/playlist-store";
 import { getChannels } from "@/lib/tv/playlist";
+import { readEpgSources } from "@/lib/tv/epg-store";
+import { getEpg } from "@/lib/tv/epg";
 import { isAdminAuthenticated, isPasswordConfigured } from "@/lib/auth";
 
 /**
@@ -56,6 +58,22 @@ export async function GET() {
     report.results = playlists.map((playlist) => ({ name: playlist.name, source: playlist.source, host: playlist.host, channelCount: playlist.channelCount, truncated: playlist.truncated, error: playlist.error }));
   } catch (error) {
     report.channels = { error: error instanceof Error ? error.message : String(error) };
+  }
+
+  try {
+    const storedEpg = await readEpgSources();
+    report.epg = { stored: storedEpg.length, bySource: { url: storedEpg.filter((s) => s.source === "url").length, upload: storedEpg.filter((s) => s.source === "upload").length } };
+  } catch (error) {
+    report.epg = { error: error instanceof Error ? error.message : String(error) };
+    return Response.json(report);
+  }
+
+  try {
+    const { channels, programmes, sources } = await getEpg();
+    report.epg = { ...(report.epg as object), channels: channels.length, programmes: programmes.length };
+    report.epgResults = sources.map((source) => ({ name: source.name, source: source.source, host: source.host, channelCount: source.channelCount, programmeCount: source.programmeCount, truncated: source.truncated, error: source.error }));
+  } catch (error) {
+    report.epg = { ...(report.epg as object), error: error instanceof Error ? error.message : String(error) };
   }
 
   return Response.json(report);

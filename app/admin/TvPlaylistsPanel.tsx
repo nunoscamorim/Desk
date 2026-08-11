@@ -86,8 +86,14 @@ export function TvPlaylistsPanel() {
     showToast(ok ? `Removed ${playlist.name}` : "Couldn’t save — try again", ok ? "success" : "error");
   };
 
-  return <section className="admin-panel tv-panel">
-    <div className="panel-heading"><div><p className="admin-eyebrow">TV</p><h2>M3U playlists</h2></div><span className="tv-panel-actions"><button type="button" className="btn btn-secondary btn-sm" onClick={() => void recheck()} disabled={busy}>Re-check</button>{playlists.length} configured</span></div>
+  return <>
+    {/* Matches the Dashboard/Display pattern of a page-level action button
+        sitting in .admin-header, rather than lower down inside the panel —
+        every admin page keeps its primary action at the same top offset. */}
+    <header className="admin-header"><div><p className="admin-eyebrow">Dashboard / Configuration</p><h1>TV playlists.</h1><p>Manage the M3U playlists behind the TV screen.</p></div><button type="button" className="btn btn-secondary" onClick={() => void recheck()} disabled={busy}>Re-check</button></header>
+    <div className="admin-workspace">
+    <section className="admin-panel tv-panel">
+    <div className="panel-heading"><div><p className="admin-eyebrow">TV</p><h2>M3U playlists</h2></div><span className="tv-panel-actions">{playlists.length} configured</span></div>
 
     <div className="tv-playlist-rows">
       {loading && Array.from({ length: 2 }, (_, index) => <div className="tv-playlist-row skeleton-row" key={index}><span className="skeleton" style={{ width: 8, height: 8, borderRadius: "50%" }} /><span className="skeleton" style={{ height: 28 }} /><span className="skeleton" style={{ width: 80, height: 12, justifySelf: "end" }} /><span className="skeleton" style={{ width: 64, height: 30 }} /></div>)}
@@ -115,5 +121,7 @@ export function TvPlaylistsPanel() {
       <input ref={fileRef} type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl,text/plain" disabled={busy}
         onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); }} />
     </div>
-  </section>;
+    </section>
+    </div>
+  </>;
 }

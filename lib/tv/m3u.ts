@@ -1,6 +1,9 @@
 export type Channel = {
   /** Stable within a playlist: the provider's tvg-id when present, else derived. */
   id: string;
+  /** The provider's own tvg-id, kept distinct from `id` — matches an XMLTV
+   *  <channel id> for programme-guide lookups; null when the provider set none. */
+  tvgId: string | null;
   name: string;
   logo: string | null;
   group: string | null;
@@ -80,7 +83,7 @@ export function parseM3u(body: string): ParseResult {
     while (seen.has(id)) id = `${id}_${channels.length}`;
     seen.add(id);
 
-    channels.push({ id, name: pending.name, logo: pending.logo, group: pending.group, url });
+    channels.push({ id, tvgId: pending.tvgId, name: pending.name, logo: pending.logo, group: pending.group, url });
     pending = null;
 
     if (channels.length >= MAX_CHANNELS) return { channels, truncated: true };

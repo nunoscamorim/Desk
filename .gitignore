@@ -45,3 +45,4 @@ data/*.enc
 *.tsbuildinfo
 next-env.d.ts
 data/tv-uploads/
+data/tv-epg-uploads/

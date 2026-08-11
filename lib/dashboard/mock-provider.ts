@@ -92,32 +92,28 @@ export class MockDashboardProvider implements DashboardProvider {
   }
 
   async getTasks(): Promise<Task[]> {
-    return [
-      {
-        id: "task-dashboard-api",
-        title: "Build dashboard API",
-        status: "in_progress",
-        priority: "high",
-        dueAt: inMinutes(this.now, 240),
-        project: "Desk Dashboard",
-      },
-      {
-        id: "task-review-prototype",
-        title: "Review dashboard prototype",
-        status: "todo",
-        priority: "medium",
-        dueAt: inMinutes(this.now, 1_440),
-        project: "Desk Dashboard",
-      },
-      {
-        id: "task-submit-expenses",
-        title: "Submit monthly expenses",
-        status: "todo",
-        priority: "low",
-        dueAt: null,
-        project: "Admin",
-      },
+    const projects = ["Betano", "Personal", "Work", "Health", "Finance", "Desk Dashboard", "Admin"];
+    const titles = [
+      "Fix login bug", "Update documentation", "Review PR #142", "Deploy to staging",
+      "Write unit tests", "Refactor auth module", "Update dependencies", "Fix CSS layout",
+      "Add error handling", "Optimize queries", "Create API endpoint", "Update README",
+      "Fix mobile responsive", "Add dark mode support", "Implement caching", "Fix memory leak",
+      "Update CI pipeline", "Add logging", "Fix race condition", "Update database schema",
+      "Add validation", "Fix broken links", "Update translations", "Add animations",
+      "Fix performance issue", "Update security patches", "Add monitoring", "Fix accessibility",
+      "Update test coverage", "Add rate limiting",
     ];
+    const statuses: Task["status"][] = ["todo", "in_progress", "todo", "todo", "in_progress"];
+    const priorities: Task["priority"][] = ["high", "medium", "low"];
+    
+    return titles.map((title, i) => ({
+      id: `task-${i}`,
+      title,
+      status: statuses[i % statuses.length],
+      priority: priorities[i % priorities.length],
+      dueAt: i % 3 === 0 ? inMinutes(this.now, (i + 1) * 60) : i % 3 === 1 ? inMinutes(this.now, (i + 1) * 1440) : null,
+      project: projects[i % projects.length],
+    }));
   }
 
   async getCodexUsage(): Promise<AiUsage> {
