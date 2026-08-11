@@ -29,8 +29,12 @@ export const CANVAS_PADDING = 32;
  * topbar, and 74px reserved for the bottom navigation. Widget bounds, the CSS
  * grid box, and the admin's drag limits all derive from this one number so they
  * cannot drift apart.
+ * The gap to the top of the buttons is 30px rather than 32 so the bento height
+ * lands on the 16px snap grid for the default canvas (834 − 226 = 608). That
+ * lets full-height widgets sit flush at the bottom instead of being floored
+ * 14px short by the snap.
  */
-const CANVAS_CHROME = CANVAS_PADDING + 90 + 74 + 32;
+const CANVAS_CHROME = CANVAS_PADDING + 90 + 74 + 30;
 
 /** Region widgets may be positioned within, in canvas coordinates. */
 export function bentoArea(canvas: CanvasSize): CanvasSize {
