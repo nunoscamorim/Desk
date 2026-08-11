@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useToast } from "./ToastContext";
 
 const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   missing_client: "Save a Google client ID and secret before connecting.",
@@ -20,6 +21,7 @@ const SPOTIFY_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function CredentialsPanel() {
+  const showToast = useToast();
   const [googleId, setGoogleId] = useState(""); const [googleSecret, setGoogleSecret] = useState(""); const [spotifyId, setSpotifyId] = useState(""); const [spotifySecret, setSpotifySecret] = useState(""); const [status, setStatus] = useState(""); const [googleConfigured, setGoogleConfigured] = useState(false); const [googleConnected, setGoogleConnected] = useState(false); const [googleMessage, setGoogleMessage] = useState(""); const [spotifyConfigured, setSpotifyConfigured] = useState(false); const [spotifyConnected, setSpotifyConnected] = useState(false); const [spotifyMessage, setSpotifyMessage] = useState("");
 
   const refreshStatus = () => fetch("/api/config/credentials").then((r) => r.json()).then((v: { google?: boolean; googleConnected?: boolean; spotify?: boolean; spotifyConnected?: boolean }) => { setGoogleConfigured(Boolean(v.google)); setGoogleConnected(Boolean(v.googleConnected)); setSpotifyConfigured(Boolean(v.spotify)); setSpotifyConnected(Boolean(v.spotifyConnected)); setStatus(`${v.google ? "Google configured" : "Google not configured"} · ${v.spotify ? "Spotify configured" : "Spotify not configured"}`); }).catch(() => setStatus("Unable to read status"));
@@ -46,7 +48,7 @@ export function CredentialsPanel() {
     }
   }, []);
 
-  const save = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const response = await fetch("/api/config/credentials", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleClientId: googleId, googleClientSecret: googleSecret, spotifyClientId: spotifyId, spotifyClientSecret: spotifySecret }) }); setStatus(response.ok ? "Encrypted credentials saved" : "Unable to save credentials"); if (response.ok) { setGoogleSecret(""); setSpotifySecret(""); void refreshStatus(); } };
+  const save = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const response = await fetch("/api/config/credentials", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleClientId: googleId, googleClientSecret: googleSecret, spotifyClientId: spotifyId, spotifyClientSecret: spotifySecret }) }); showToast(response.ok ? "Encrypted credentials saved" : "Unable to save credentials", response.ok ? "success" : "error"); if (response.ok) { setGoogleSecret(""); setSpotifySecret(""); void refreshStatus(); } };
 
   return (
     <>
@@ -58,7 +60,7 @@ export function CredentialsPanel() {
         <label>Google client secret<input type="password" value={googleSecret} onChange={(e) => setGoogleSecret(e.target.value)} autoComplete="new-password" /></label>
         <label>Spotify client ID<input value={spotifyId} onChange={(e) => setSpotifyId(e.target.value)} autoComplete="off" /></label>
         <label>Spotify client secret<input type="password" value={spotifySecret} onChange={(e) => setSpotifySecret(e.target.value)} autoComplete="new-password" /></label>
-        <button type="submit">Save encrypted credentials</button>
+        <button type="submit" className="btn btn-block">Save encrypted credentials</button>
         <span className="credential-status">{status}</span>
       </form>
       <div className="credentials-panel">
@@ -70,10 +72,9 @@ export function CredentialsPanel() {
             : "Save the client ID/secret above, then connect your account. This is a one-time consent that keeps working indefinitely (as long as the Google Cloud project is published — see below)."}
         </p>
         <a
-          className="admin-back"
+          className="btn btn-block"
           href={googleConfigured ? "/api/auth/google-calendar/connect" : undefined}
           aria-disabled={!googleConfigured}
-          style={!googleConfigured ? { opacity: 0.5, pointerEvents: "none" } : undefined}
         >
           {googleConnected ? "Reconnect Google Calendar" : "Connect Google Calendar"}
         </a>
@@ -93,10 +94,9 @@ export function CredentialsPanel() {
             : "Save the Spotify client ID/secret above, then connect your account once."}
         </p>
         <a
-          className="admin-back"
+          className="btn btn-block"
           href={spotifyConfigured ? "/api/auth/spotify/connect" : undefined}
           aria-disabled={!spotifyConfigured}
-          style={!spotifyConfigured ? { opacity: 0.5, pointerEvents: "none" } : undefined}
         >
           {spotifyConnected ? "Reconnect Spotify" : "Connect Spotify"}
         </a>
