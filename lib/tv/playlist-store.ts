@@ -1,14 +1,41 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export type Playlist = { id: string; name: string; url: string };
+/**
+ * A playlist is either fetched from a URL or uploaded as a file.
+ *
+ * Kept as a discriminated union rather than optional fields so nothing can be
+ * half of each — an entry with neither a URL nor a stored file would read as a
+ * playlist that silently never loads.
+ */
+export type Playlist =
+  | { id: string; name: string; source: "url"; url: string }
+  | { id: string; name: string; source: "upload"; file: string; bytes: number; uploadedAt: string };
 
-const filePath = path.join(process.cwd(), "data", "tv-playlists.enc");
+const dataDir = path.join(process.cwd(), "data");
+const filePath = path.join(dataDir, "tv-playlists.enc");
+export const uploadsDir = path.join(dataDir, "tv-uploads");
+
 const key = () => { const secret = process.env.AUTH_SECRET; if (!secret) throw new Error("AUTH_SECRET is required"); return createHash("sha256").update(secret).digest(); };
 
+/** Guards against a stored name escaping the uploads directory. */
+export const uploadPath = (file: string) => path.join(uploadsDir, path.basename(file));
+
+const isPlaylist = (value: unknown): value is Playlist => {
+  if (!value || typeof value !== "object") return false;
+  const entry = value as Partial<Playlist> & { source?: string };
+  if (typeof entry.id !== "string" || typeof entry.name !== "string") return false;
+  if (entry.source === "upload") return typeof (entry as { file?: unknown }).file === "string";
+  // Entries written before uploads existed have no source and are URL playlists.
+  return typeof (entry as { url?: unknown }).url === "string";
+};
+
+const withSource = (entry: Playlist): Playlist => (entry.source ? entry : { ...(entry as Playlist), source: "url" } as Playlist);
+
 /**
- * Playlists are stored encrypted, the same way service credentials are.
+ * The index of playlists is stored encrypted, the same way service credentials
+ * are.
  *
  * This is not belt-and-braces: a provider M3U URL is a bearer credential —
  * `…/get.php?username=…&password=…` — and everything else under data/ is
@@ -27,8 +54,8 @@ export async function readPlaylists(): Promise<Playlist[]> {
     const [ivText, tagText, payload] = encoded.split(":");
     const decipher = createDecipheriv("aes-256-gcm", key(), Buffer.from(ivText, "hex"));
     decipher.setAuthTag(Buffer.from(tagText, "hex"));
-    const parsed = JSON.parse(Buffer.concat([decipher.update(Buffer.from(payload, "base64")), decipher.final()]).toString("utf8")) as Playlist[];
-    return Array.isArray(parsed) ? parsed.filter((entry) => entry && typeof entry.url === "string") : [];
+    const parsed = JSON.parse(Buffer.concat([decipher.update(Buffer.from(payload, "base64")), decipher.final()]).toString("utf8")) as unknown;
+    return Array.isArray(parsed) ? parsed.filter(isPlaylist).map(withSource) : [];
   } catch (error) {
     console.error(`[tv] ${filePath} exists but could not be decrypted — AUTH_SECRET likely changed since it was written. The TV screen will read as having no playlists until it is restored.`, error);
     return [];
@@ -39,6 +66,30 @@ export async function writePlaylists(playlists: Playlist[]) {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key(), iv);
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(playlists), "utf8"), cipher.final()]);
-  await mkdir(path.dirname(filePath), { recursive: true });
+  await mkdir(dataDir, { recursive: true });
   await writeFile(filePath, `${iv.toString("hex")}:${cipher.getAuthTag().toString("hex")}:${encrypted.toString("base64")}\n`, "utf8");
+}
+
+/** Saves uploaded playlist text and returns the entry describing it. */
+export async function saveUpload(name: string, body: string): Promise<Playlist> {
+  await mkdir(uploadsDir, { recursive: true });
+  const id = randomUUID();
+  const file = `${id}.m3u`;
+  await writeFile(uploadPath(file), body, "utf8");
+  return { id, name, source: "upload", file, bytes: Buffer.byteLength(body, "utf8"), uploadedAt: new Date().toISOString() };
+}
+
+/**
+ * Removes upload files no longer referenced by the saved index.
+ *
+ * Called after every write rather than on delete specifically, so a file cannot
+ * be orphaned by a path that forgot to clean up after itself — the index is the
+ * single source of truth for what should exist on disk.
+ */
+export async function pruneUploads(playlists: Playlist[]) {
+  const keep = new Set(playlists.filter((entry) => entry.source === "upload").map((entry) => entry.file));
+  const { readdir } = await import("node:fs/promises");
+  let present: string[];
+  try { present = await readdir(uploadsDir); } catch { return; }
+  await Promise.all(present.filter((file) => !keep.has(file)).map((file) => rm(uploadPath(file), { force: true }).catch(() => undefined)));
 }

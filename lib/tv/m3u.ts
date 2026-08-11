@@ -10,11 +10,15 @@ export type Channel = {
 export type ParseResult = { channels: Channel[]; truncated: boolean };
 
 /**
- * A playlist that parses to more entries than this is not the curated list this
- * screen is built for — it is somebody's full provider dump. Rendering 50,000
- * tiles would lock the iPad up, so the list is cut and the UI says so.
+ * Ceiling on parsed entries.
+ *
+ * Public aggregate playlists — iptv-org's country index and the like — run to
+ * about ten thousand channels, and cutting them off part-way is worse than
+ * useless: the channel you want is as likely to be in the half that was dropped.
+ * The screen keeps the whole list and makes it navigable by search instead. This
+ * remains only as a backstop against a pathological file.
  */
-export const MAX_CHANNELS = 1000;
+export const MAX_CHANNELS = 20000;
 
 const attribute = (line: string, name: string): string | null => {
   const match = new RegExp(`${name}="([^"]*)"`, "i").exec(line);
@@ -66,8 +70,11 @@ export function parseM3u(body: string): ParseResult {
     const url = line;
     if (!/^https?:\/\//i.test(url)) { pending = null; continue; }
 
-    let id = pending.tvgId ?? `${pending.name}|${url}`;
-    while (seen.has(id)) id = `${id}|${channels.length}`;
+    // Falls back to the position rather than to name+url: an aggregate playlist
+    // is mostly entries without a tvg-id, and embedding the URL in the id sent a
+    // second copy of every stream URL to the browser.
+    let id = pending.tvgId ?? String(channels.length);
+    while (seen.has(id)) id = `${id}_${channels.length}`;
     seen.add(id);
 
     channels.push({ id, name: pending.name, logo: pending.logo, group: pending.group, url });

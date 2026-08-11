@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PlaylistResult } from "@/lib/tv/playlist";
 
 /**
@@ -18,6 +18,7 @@ export function TvPlaylistsPanel() {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () => fetch("/api/tv/playlists", { cache: "no-store" })
     .then(async (response) => { if (response.status === 401) throw new Error("Sign in to manage playlists."); return response.json() as Promise<{ playlists: PlaylistResult[] }>; })
@@ -44,6 +45,27 @@ export function TvPlaylistsPanel() {
     setName(""); setUrl("");
   };
 
+  // Uploads have their own endpoint: the file has to be parsed and written to
+  // disk before it can join the list, which a JSON save cannot do.
+  const upload = async (file: File) => {
+    setBusy(true);
+    setStatus(`Reading ${file.name}…`);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      if (name.trim()) form.set("name", name.trim());
+      const response = await fetch("/api/tv/playlists/upload", { method: "POST", body: form });
+      const data = await response.json() as { playlists?: PlaylistResult[]; error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Upload failed");
+      setPlaylists(data.playlists ?? []);
+      setName("");
+      setStatus(`Added ${file.name}.`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Upload failed."); }
+    finally { setBusy(false); if (fileRef.current) fileRef.current.value = ""; }
+  };
+
+  // Removal is a list replacement: whatever is left is saved, and the server
+  // deletes any upload file no longer referenced.
   const remove = (id: string) => save(playlists.filter((playlist) => playlist.id !== id).map((playlist) => ({ id: playlist.id, name: playlist.name })));
 
   return <section className="admin-panel tv-panel">
@@ -68,6 +90,11 @@ export function TvPlaylistsPanel() {
       <label>Name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Living room" /></label>
       <label>M3U URL<input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://…/playlist.m3u" autoComplete="off" spellCheck={false} /></label>
       <button type="button" onClick={() => void add()} disabled={busy}>{busy ? "Loading…" : "Add playlist"}</button>
+    </div>
+    <div className="tv-playlist-upload">
+      <span>…or upload an M3U file</span>
+      <input ref={fileRef} type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl,text/plain" disabled={busy}
+        onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); }} />
     </div>
     {status && <p className="settings-note">{status}</p>}
   </section>;
