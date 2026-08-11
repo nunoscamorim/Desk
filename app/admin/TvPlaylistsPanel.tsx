@@ -76,7 +76,7 @@ export function TvPlaylistsPanel() {
   const loadXtream = async () => {
     if (!server.trim() || !username.trim() || !password.trim()) { showToast("Enter the Xtream server, username, and password first.", "error"); return; }
     setLoadingXtream(true);
-    try { const response = await fetch("/api/tv/xtream", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ server, username, password }) }); const data = await response.json() as { groups?: typeof xtreamGroups; channels?: typeof xtreamChannels; error?: string }; if (!response.ok) throw new Error(data.error ?? "Could not load Xtream channels"); setXtreamGroups(data.groups ?? []); setXtreamChannels(data.channels ?? []); setSelectedGroups((data.groups ?? []).map((group) => group.id)); setSelectedChannels((data.channels ?? []).map((channel) => channel.id)); } catch (error) { showToast(error instanceof Error ? error.message : "Could not load Xtream channels", "error"); } finally { setLoadingXtream(false); }
+    try { const response = await fetch("/api/tv/xtream", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ server, username, password }) }); const data = await response.json() as { groups?: typeof xtreamGroups; channels?: typeof xtreamChannels; error?: string }; if (!response.ok) throw new Error(data.error ?? "Could not load Xtream channels"); setXtreamGroups(data.groups ?? []); setXtreamChannels(data.channels ?? []); setSelectedGroups([]); setSelectedChannels([]); } catch (error) { showToast(error instanceof Error ? error.message : "Could not load Xtream channels", "error"); } finally { setLoadingXtream(false); }
   };
 
   // Uploads have their own endpoint: the file has to be parsed and written to
