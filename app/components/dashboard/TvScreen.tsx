@@ -3,17 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { TvPlayer } from "@/app/components/tv/TvPlayer";
 import { TvStream, type TvStreamState } from "@/app/components/tv/TvStream";
 import type { Channel } from "@/lib/tv/m3u";
 import type { PlaylistResult } from "@/lib/tv/playlist";
 
-type EpgListing = { title: string; start: string; stop: string };
-type NowPlaying = { title: string; stop: string; next?: EpgListing; schedule?: EpgListing[] };
-
 type LoadState =
   | { status: "loading" }
-  | { status: "ready"; channels: Channel[]; playlists: PlaylistResult[]; nowPlaying: Record<string, NowPlaying>; epgIcons: Record<string, string> }
+  | { status: "ready"; channels: Channel[]; playlists: PlaylistResult[] }
   | { status: "error"; message: string };
 
 /**
@@ -54,7 +50,6 @@ function ChannelTile({ channel, poster, active, onSelect }: { channel: Channel; 
  * is capped and the search box is what reaches the rest.
  */
 const VISIBLE_LIMIT = 300;
-const guideKey = (value: string) => value.normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "").toLocaleLowerCase();
 
 type Diagnosis = { environment?: { authSecretSet?: boolean; adminPasswordSet?: boolean; dataDirWritable?: boolean }; request?: { authenticated?: boolean; canReadChannels?: boolean }; playlists?: { stored?: number; error?: string } };
 
@@ -62,12 +57,6 @@ const DEMO_STREAM = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
 const demoGeneralNames = ["Desk News", "Culture One", "Documentary", "World Report", "City Life", "The History Room", "Nature Now", "Morning Brief", "Independent", "Travel Desk", "Food Stories", "Science Daily", "Arts Night", "Home & Garden", "Cinema Club"];
 const demoSportsNames = ["Sports Live", "Football Central", "Racing Club", "Tennis Tour", "Basketball Daily", "Matchday", "Golf Channel", "Fight Night", "Athletics", "The Fan Zone", "Motorsport", "Sports Desk", "Live Arena", "Stadium", "Overtime"];
 const demoChannels: Channel[] = [...demoGeneralNames.map((name, index) => ({ id: `demo-general-${index}`, tvgId: null, name, logo: null, group: "General", url: DEMO_STREAM })), ...demoSportsNames.map((name, index) => ({ id: `demo-sports-${index}`, tvgId: null, name, logo: null, group: "Sports", url: DEMO_STREAM }))];
-// Paired with demoChannels the same way: a placeholder so the preview's "now
-// playing" line has something to show before a real EPG source is added.
-// Demo channels carry no tvgId, so this is keyed by channel id directly
-// rather than going through the real tvg-id/XMLTV matching path.
-const demoProgrammeTitles = ["Morning Edition", "Midday Report", "The Afternoon Show", "Prime Time", "Evening Special", "Late Night Replay", "Weekend Wrap", "Feature Presentation"];
-const demoNowPlaying: Record<string, NowPlaying> = Object.fromEntries(demoChannels.map((channel, index) => { const start = Date.now() - 15 * 60_000; const schedule = [0, 45, 105, 165].map((offset, listingIndex) => ({ title: demoProgrammeTitles[(index + listingIndex) % demoProgrammeTitles.length], start: new Date(start + offset * 60_000).toISOString(), stop: new Date(start + (offset + (listingIndex === 0 ? 45 : 60)) * 60_000).toISOString() })); return [channel.id, { title: schedule[0].title, stop: schedule[0].stop, next: schedule[1], schedule }]; }));
 
 /**
  * Turns the diagnostics report into the one sentence that explains an empty
@@ -105,7 +94,6 @@ function DiagnosisNote({ diagnosis }: { diagnosis: Diagnosis | null }) {
 
 export function TvScreen() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [playing, setPlaying] = useState<Channel | null>(null);
   const [preview, setPreview] = useState<Channel | null>(null);
   const [previewState, setPreviewState] = useState<TvStreamState>("connecting");
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
@@ -135,9 +123,9 @@ export function TvScreen() {
       .then(async (response) => {
         if (response.status === 401) throw new Error("This device is not signed in.");
         if (!response.ok) throw new Error(`Channels request failed (${response.status})`);
-        return response.json() as Promise<{ channels: Channel[]; playlists: PlaylistResult[]; nowPlaying?: Record<string, NowPlaying>; epgIcons?: Record<string, string> }>;
+        return response.json() as Promise<{ channels: Channel[]; playlists: PlaylistResult[] }>;
       })
-      .then((data) => setState({ status: "ready", channels: data.channels, playlists: data.playlists, nowPlaying: data.nowPlaying ?? {}, epgIcons: data.epgIcons ?? {} }))
+      .then((data) => setState({ status: "ready", channels: data.channels, playlists: data.playlists }))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setState({ status: "error", message: error instanceof Error ? error.message : "Could not load channels." });
@@ -165,16 +153,10 @@ export function TvScreen() {
     // configured. They all point at a public test HLS stream.
     return state.channels.length > 0 || process.env.NODE_ENV === "production" ? state.channels : demoChannels;
   }, [state]);
-  const showingDemoChannels = state.status === "ready" && state.channels.length === 0 && process.env.NODE_ENV !== "production";
   const matches = channels;
 
   if (state.status === "loading") return <section className="tv-screen tv-message"><span>Loading channels…</span></section>;
   if (state.status === "error") return <section className="tv-screen tv-message"><strong>Channels unavailable</strong><span>{state.message}</span><DiagnosisNote diagnosis={diagnosis} /></section>;
-  // Placed after the loading/error guards (not before) so state is narrowed
-  // to "ready" here — playing is only ever set from buttons that exist in the
-  // ready-state tree, so this can never actually fire while state isn't ready.
-  if (playing) return <TvPlayer key={playing.id} channel={playing} poster={playing.logo || (playing.tvgId ? state.epgIcons[playing.tvgId] : undefined) || null} onBack={() => setPlaying(null)} />;
-
   const failed = state.playlists.filter((playlist) => playlist.error);
   const truncated = state.playlists.filter((playlist) => playlist.truncated);
 
@@ -198,24 +180,11 @@ export function TvScreen() {
   // connection: that phantom stream can hold the account's only slot, so the
   // channel the user actually taps next gets refused as already in use.
   const previewChannel = preview && matches.some((channel) => channel.id === preview.id) ? preview : null;
-  const guideValue = <T,>(values: Record<string, T>, channel: Channel): T | undefined => {
-    const candidates = [channel.tvgId, channel.name].filter((value): value is string => Boolean(value));
-    for (const candidate of candidates) {
-      const match = values[candidate] ?? values[guideKey(candidate)];
-      if (match) return match;
-    }
-  };
-  const previewNowPlaying = previewChannel && showingDemoChannels
-    ? demoNowPlaying[previewChannel.id]
-    : previewChannel ? guideValue(state.nowPlaying, previewChannel) : undefined;
-  // M3U's own tvg-logo wins when a provider set one; the EPG's <icon> for the
-  // matching tvg-id is the fallback, since a channel that has a schedule
-  // usually has branding too even when the playlist itself carries none.
-  const resolveLogo = (channel: Channel): string | null => channel.logo || guideValue(state.epgIcons, channel) || null;
+  const resolveLogo = (channel: Channel): string | null => channel.logo;
   const channelTiles = visible.map((channel) => <ChannelTile key={channel.id} channel={channel} poster={resolveLogo(channel)} active={previewChannel?.id === channel.id} onSelect={() => setPreview(channel)} />);
   // Only actually stream once liveChannel has caught up with the current
-  // selection — during the gap in between, the tapped tile is already
-  // highlighted and its name is already showing below, just not yet playing.
+  // selection — during the gap in between, the tapped tile is highlighted
+  // immediately while the player waits before opening the new connection.
   const isLive = liveChannel !== null && previewChannel !== null && liveChannel.id === previewChannel.id;
 
   return <section className="tv-screen">
@@ -224,39 +193,23 @@ export function TvScreen() {
       {truncated.map((playlist) => <span key={playlist.id} className="tv-warning">{playlist.name}: showing the first {playlist.channelCount.toLocaleString()} channels only.</span>)}
     </div>}
     {matches.length === 0 ? <div className="tv-grid-empty">No channel matches that search.</div> : <div className="tv-content">
-      <div className="tv-channel-list"><div className="tv-channel-groups"><div className="tv-grid" aria-label="TV channels">{channelTiles}</div></div></div>
       {/* Kept in the layout whether or not a channel is selected, so the grid
           doesn't reflow to full width the moment something is picked — but the
           stream itself only mounts once liveChannel has caught up with the
           tap, never before. */}
       <aside className="tv-preview" aria-label={previewChannel ? `Preview ${previewChannel.name}` : "Channel preview"}>
-        <div className="tv-preview-head">
-          {previewChannel ? <h2>{previewChannel.name}</h2> : <><span className="tv-preview-skeleton tv-preview-skeleton-title" /><span className="tv-preview-skeleton tv-preview-skeleton-meta" /></>}
-          {previewNowPlaying && <p className="tv-preview-now"><i /><span>Now: {previewNowPlaying.title}</span></p>}
-        </div>
         <div className="tv-preview-art">
           {previewChannel
             ? isLive
               ? <>
-                <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted controls className="tv-preview-stage" onStateChange={setPreviewState} />
+                <TvStream key={previewChannel.id} channel={previewChannel} poster={resolveLogo(previewChannel)} muted={false} controls className="tv-preview-stage" onStateChange={setPreviewState} />
                 {previewState === "playing" && <span className="tv-preview-live"><i /> Live</span>}
               </>
               : <div className="tv-preview-idle"><span>Connecting to {previewChannel.name}…</span></div>
             : <div className="tv-preview-skeleton-frame"><span className="tv-preview-skeleton tv-preview-skeleton-frame-line" /><span className="tv-preview-skeleton tv-preview-skeleton-frame-line short" /></div>}
         </div>
-        {previewNowPlaying && <div className="tv-preview-copy">
-            <div className="tv-preview-schedule">
-              {previewNowPlaying.next && <p className="tv-preview-next"><span>What’s next</span><strong>{previewNowPlaying.next.title}</strong><time dateTime={previewNowPlaying.next.start}>{new Date(previewNowPlaying.next.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time></p>}
-            </div>
-            {previewNowPlaying.schedule && <div className="tv-program-grid" aria-label="Programme schedule">
-              {previewNowPlaying.schedule.map((programme) => {
-                const current = programme.title === previewNowPlaying.title;
-                return <article key={`${programme.start}-${programme.title}`} className={current ? "is-current" : undefined}><time>{new Date(programme.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time><strong>{programme.title}</strong></article>;
-              })}
-            </div>}
-        </div>}
-        {!previewChannel && <div className="tv-preview-copy tv-preview-skeleton-copy"><span className="tv-preview-skeleton tv-preview-skeleton-row" /><span className="tv-preview-skeleton tv-preview-skeleton-row medium" /><div className="tv-preview-skeleton-grid"><span className="tv-preview-skeleton" /><span className="tv-preview-skeleton" /><span className="tv-preview-skeleton" /></div></div>}
       </aside>
+      <div className="tv-channel-list"><div className="tv-channel-groups"><div className="tv-grid" aria-label="TV channels">{channelTiles}</div></div></div>
     </div>}
     {matches.length > visible.length && <p className="tv-more">Showing the first {visible.length} — keep typing to narrow it down.</p>}
   </section>;

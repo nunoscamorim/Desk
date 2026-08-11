@@ -1,5 +1,6 @@
 import type { DashboardData } from "@/lib/dashboard/types";
 import { useEffect, useState } from "react";
+import type { DashboardScreen } from "./BottomNavigation";
 import { WeatherWidget } from "./WeatherWidget";
 
 const dayFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" });
@@ -39,15 +40,20 @@ function getGreeting(date: Date): Greeting {
   return options[hourlyRotation % options.length];
 }
 
-export function Header({ data }: { data: DashboardData }) {
+export function Header({ data, screen = "home" }: { data: DashboardData; screen?: DashboardScreen }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
   const greeting = getGreeting(now);
+  const meetingStartsIn = data.nextMeeting ? Math.ceil((new Date(data.nextMeeting.startAt).getTime() - now.getTime()) / 60_000) : null;
+  const imminentMeeting = screen !== "home" && data.nextMeeting && meetingStartsIn !== null && meetingStartsIn >= 0 && meetingStartsIn <= 60 ? data.nextMeeting : null;
+  const meetingNotice = imminentMeeting
+    ? meetingStartsIn === 0 ? `Up next now: ${imminentMeeting.title}` : `Up next in ${meetingStartsIn} ${meetingStartsIn === 1 ? "minute" : "minutes"}: ${imminentMeeting.title}`
+    : null;
   return <header className="topbar">
-    <div className="greeting-copy"><p className="date-label">{dayFormatter.format(now)} · <time dateTime={now.toISOString()}>{now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</time></p><div className="greeting-quote"><h1>{greeting.message}</h1><p className="quote-source">{greeting.source}</p></div></div>
+    <div className="greeting-copy"><p className="date-label">{dayFormatter.format(now)} · <time dateTime={now.toISOString()}>{now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</time></p><div className="greeting-quote"><h1>{meetingNotice ?? greeting.message}</h1>{!meetingNotice && <p className="quote-source">{greeting.source}</p>}</div></div>
     <WeatherWidget weather={data.weather} />
   </header>;
 }
