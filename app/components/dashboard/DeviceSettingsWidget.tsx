@@ -89,6 +89,11 @@ export function DeviceSettingsWidget() {
         </div>
       </div>
       <p className="device-note">The display re-fetches calendar, weather, and music data on this interval.</p>
+      {/* A full reload rather than a re-fetch: on a display that stays open for
+          weeks it is also how a new deploy gets picked up, and how a screen that
+          has got itself stuck recovers without finding a keyboard. */}
+      <button type="button" className="device-reload" onClick={() => window.location.reload()}>Refresh now</button>
+      <p className="device-note">Reloads the display immediately — picks up a new version and clears a stuck screen.</p>
 
       <span className="card-label device-label-spaced">Screen</span>
       <div className="device-row">

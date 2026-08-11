@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# encrypted stores under data/ — service credentials and TV playlist URLs. They
+# are encrypted at rest, but the key is AUTH_SECRET and these are somebody's
+# live subscriptions; they have no business in the repository.
+data/*.enc
+
 # vercel
 .vercel
 
