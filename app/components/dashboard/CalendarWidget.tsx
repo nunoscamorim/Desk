@@ -14,19 +14,44 @@ function CalendarItem({ event, showLocations, index }: { event: CalendarEvent; s
   return <li className={`calendar-item ${event.allDay ? "all-day-item" : ""}`} style={{ "--event-color": colors[index % colors.length] } as CSSProperties}><time dateTime={event.allDay ? event.startAt.slice(0, 10) : event.startAt}>{event.allDay ? "All day" : formatTime(event.startAt)}</time><span className="event-line" /><div><strong>{event.title}</strong>{showLocations && detail && <span>{detail}</span>}</div></li>;
 }
 
+/** The date key `offset` days after `calendar.date`, as "YYYY-MM-DD". */
+function dayKey(date: string, offset: number) {
+  const d = new Date(`${date}T12:00:00`);
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
 export function CalendarWidget({ calendar, settings }: { calendar: TodayCalendar; settings?: { showLocations?: boolean; strictDate?: boolean; dateLabel?: string } }) {
   const showLocations = settings?.showLocations ?? true;
   // Ticking rather than reading the clock during render keeps the component
-  // deterministic, and means finished events drop out of the "next 8h" window on
-  // their own instead of lingering until the next dashboard refresh. Half a
-  // minute is granular enough for filtering by start and end time.
+  // deterministic, and means finished events drop out on their own instead of
+  // lingering until the next dashboard refresh. Half a minute is granular
+  // enough for filtering by end time.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer); }, []);
-  const horizon = now + 8 * 60 * 60 * 1000;
-  const upcoming = calendar.events.filter((event) => new Date(event.endAt).getTime() > now && new Date(event.startAt).getTime() < horizon);
-  const nextEvent = calendar.events.find((event) => new Date(event.endAt).getTime() > now);
-  const visibleDate = settings?.strictDate ? calendar.date : upcoming.length ? upcoming[0].startAt.slice(0, 10) : nextEvent?.startAt.slice(0, 10);
-  const visibleEvents = settings?.strictDate ? calendar.events.filter((event) => event.startAt.slice(0, 10) === calendar.date && new Date(event.endAt).getTime() > now) : visibleDate ? (upcoming.length ? upcoming : calendar.events.filter((event) => event.startAt.slice(0, 10) === visibleDate && new Date(event.endAt).getTime() > now)) : [];
-  const heading = settings?.dateLabel ?? (visibleDate === calendar.date ? "Today" : visibleDate ? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(`${visibleDate}T12:00:00`)) : "Schedule");
-  return <article className="card calendar-card"><div className="calendar-heading"><div><span className="card-label">{settings?.strictDate ? "Schedule" : "Schedule · next 8h"}</span><h2>{heading}</h2></div><span className="event-count">{visibleEvents.length}<small>events</small></span></div>{visibleEvents.length ? <ol className="calendar-list" tabIndex={0} aria-label={`${heading} events`}>{visibleEvents.map((event, index) => <CalendarItem key={event.id} event={event} index={index} showLocations={showLocations} />)}</ol> : <div className="empty-state">Nothing scheduled.</div>}</article>;
+  const stillOn = (event: CalendarEvent) => new Date(event.endAt).getTime() > now;
+
+  let visibleEvents: CalendarEvent[];
+  let heading: string;
+  let label: string;
+  if (settings?.strictDate) {
+    // The calendar screen pins one date per card and keeps its all-day items.
+    visibleEvents = calendar.events.filter((event) => event.startAt.slice(0, 10) === calendar.date && stillOn(event));
+    heading = settings.dateLabel ?? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(`${calendar.date}T12:00:00`));
+    label = "Schedule";
+  } else {
+    // The schedule widget is day-based and ignores all-day events: it shows
+    // today's timed events until the last one of the day has ended, then it
+    // flips its heading to "Tomorrow" and shows the next day instead.
+    const timedEvents = calendar.events.filter((event) => !event.allDay);
+    const today = calendar.date;
+    const tomorrow = dayKey(today, 1);
+    const todaysEvents = timedEvents.filter((event) => event.startAt.slice(0, 10) === today && stillOn(event));
+    const tomorrowsEvents = timedEvents.filter((event) => event.startAt.slice(0, 10) === tomorrow);
+    const showingTomorrow = todaysEvents.length === 0;
+    visibleEvents = showingTomorrow ? tomorrowsEvents : todaysEvents;
+    heading = showingTomorrow ? "Tomorrow" : "Today";
+    label = showingTomorrow ? "Schedule · tomorrow" : "Schedule · today";
+  }
+  return <article className="card calendar-card"><div className="calendar-heading"><div><span className="card-label">{label}</span><h2>{heading}</h2></div><span className="event-count">{visibleEvents.length}<small>events</small></span></div>{visibleEvents.length ? <ol className="calendar-list" tabIndex={0} aria-label={`${heading} events`}>{visibleEvents.map((event, index) => <CalendarItem key={event.id} event={event} index={index} showLocations={showLocations} />)}</ol> : <div className="empty-state">Nothing scheduled.</div>}</article>;
 }

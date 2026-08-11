@@ -4,6 +4,7 @@ import type {
   DashboardProvider,
   Meeting,
   SpotifyNowPlaying,
+  SpotifyRecentTrack,
   Task,
   TodayCalendar,
   Weather,
@@ -77,6 +78,17 @@ export class MockDashboardProvider implements DashboardProvider {
       durationMs: 244_000,
       artworkUrl: null,
     };
+  }
+
+  async getSpotifyRecentlyPlayed(): Promise<SpotifyRecentTrack[]> {
+    return [
+      { id: "track-blinding-lights", track: "Blinding Lights", artist: "The Weeknd", artworkUrl: null, playedAt: inMinutes(this.now, -35) },
+      { id: "track-electric-feel", track: "Electric Feel", artist: "MGMT", artworkUrl: null, playedAt: inMinutes(this.now, -58) },
+      { id: "track-redbone", track: "Redbone", artist: "Childish Gambino", artworkUrl: null, playedAt: inMinutes(this.now, -80) },
+      { id: "track-instant-crush", track: "Instant Crush", artist: "Daft Punk ft. Julian Casablancas", artworkUrl: null, playedAt: inMinutes(this.now, -112) },
+      { id: "track-nights", track: "Nights", artist: "Frank Ocean", artworkUrl: null, playedAt: inMinutes(this.now, -140) },
+      { id: "track-heat-waves", track: "Heat Waves", artist: "Glass Animals", artworkUrl: null, playedAt: inMinutes(this.now, -175) },
+    ];
   }
 
   async getTasks(): Promise<Task[]> {

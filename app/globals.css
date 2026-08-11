@@ -208,24 +208,45 @@ button { font: inherit; }
 .spotify-empty-copy span { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.25; }
 /* Placeholder shown until real artwork loads — brand green falling away to
    Spotify black, so a track with no cover still reads as Spotify. */
-.album-art { position: relative; width: 100%; aspect-ratio: 1; border-radius: inherit; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 22%, rgba(30,215,96,.55), transparent 58%), linear-gradient(150deg, #1db954 0%, #12602f 38%, #191414 100%); }
+.album-art { position: absolute; inset: 0; border-radius: inherit; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 22%, rgba(30,215,96,.55), transparent 58%), linear-gradient(150deg, #1db954 0%, #12602f 38%, #191414 100%); }
 .album-art.has-artwork span { display: none; }
 .album-art span { font-size: 28px; }
-.spotify-info { position: relative; z-index: 1; min-width: 0; flex: 1; display: flex; flex-direction: column; padding: 14px; background: linear-gradient(180deg, rgba(8,8,7,.2) 0%, rgba(8,8,7,.05) 32%, rgba(8,8,7,.88) 100%); }
+/* Overlaid on .album-art (both positioned against .music-card, which .card
+   already makes a positioning context) rather than stacked below it — at the
+   widget's actual size the art alone is tall enough to fill the card, which
+   would push this off-screen entirely if it took its own flex share instead. */
+.spotify-info { position: absolute; inset: 0; z-index: 1; min-width: 0; display: flex; flex-direction: column; padding: 14px; background: linear-gradient(180deg, rgba(8,8,7,.2) 0%, rgba(8,8,7,.05) 32%, rgba(8,8,7,.88) 100%); }
 .track-copy { min-width: 0; margin-top: auto; padding-bottom: 8px; }
 .track-copy h2 { font-size: 16px; font-weight: 800; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-copy p { margin: 5px 0 0; color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-copy small { display: block; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .spotify-playback { margin-top: 0; }
+/* Sized to its content (the 400px artwork frame) rather than stretched to the
+   full screen height, so the card wraps the album art instead of leaving a
+   dead expanse of background to its right and below — that freed height is
+   what .recently-played, below it in .music-screen, renders into. */
 .music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: linear-gradient(var(--album-tint), var(--album-tint)), var(--spotify-black); }
 .music-artwork-frame { width: 400px; height: 400px; padding: 16px; align-self: center; }
 .music-screen-card .album-art { position: relative; inset: auto; width: 100%; height: 100%; border-radius: 10px; }
-.music-screen-card .spotify-info { position: relative; height: var(--bento-h); padding: 16px; background: none; }
-.music-screen-card .spotify-empty { grid-column: 1 / -1; height: var(--bento-h); padding: 16px; }
+.music-screen-card .spotify-info { position: relative; padding: 16px; background: none; }
+.music-screen-card .spotify-empty { grid-column: 1 / -1; height: 432px; padding: 16px; }
 .music-screen-card .spotify-empty-copy { inset: 70px 34px 34px; }
 .music-screen-card .track-copy { margin-top: auto; padding-bottom: 16px; }
 .music-screen-card .track-copy h2 { font-size: 30px; line-height: 1; }
 .music-screen-card .track-copy p { margin-top: 9px; font-size: 16px; }
+.music-screen { display: flex; flex-direction: column; gap: 20px; height: var(--bento-h); }
+.recently-played { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.recently-played-row { flex: 1 1 auto; min-height: 0; display: flex; align-items: flex-start; gap: 14px; overflow-x: auto; overscroll-behavior: contain; scrollbar-width: none; padding-bottom: 2px; }
+.recently-played-row::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.recent-track-tile { flex: 0 0 auto; width: 112px; display: flex; flex-direction: column; gap: 6px; }
+/* Same fallback gradient formula as .album-art, kept as literals rather than
+   the --spotify-green/--spotify-black vars: those are only declared on
+   .music-card, and this tile sits outside it as a sibling in .music-screen. */
+.recent-track-art { position: relative; width: 112px; height: 112px; border-radius: 10px; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 22%, rgba(30,215,96,.45), transparent 58%), linear-gradient(150deg, #1db954 0%, #12602f 38%, #191414 100%); }
+.recent-track-art.has-artwork span { display: none; }
+.recent-track-art span { color: #1ed760; font-size: 20px; }
+.recent-track-name { overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.recent-track-artist { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .music-screen-details { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; color: var(--muted); font-size: 11px; }
 .music-screen-times { display: flex; justify-content: space-between; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .music-screen-card .track-progress { height: 5px; }
