@@ -2,7 +2,20 @@ import type { WidgetConfig, WidgetSettings, WidgetType } from "./config";
 
 export type WidgetSettingsField =
   | { key: string; type: "text"; label: string }
-  | { key: string; type: "boolean"; label: string };
+  | { key: string; type: "boolean"; label: string }
+  | { key: string; type: "color"; label: string };
+
+/**
+ * Offered by every widget, so it is written once here rather than repeated in
+ * each entry below.
+ *
+ * An empty value means "the colour this card already has in the stylesheet" —
+ * the distinction matters because each card type has its own (the meeting card
+ * is lime, the Spotify card is green-tinted black), and a colour input has no
+ * way of its own to say "unset". A widget nobody has touched therefore keeps
+ * looking exactly as designed.
+ */
+const backgroundField: WidgetSettingsField = { key: "background", type: "color", label: "Background" };
 
 export type WidgetDefinition = {
   label: string;
@@ -44,8 +57,8 @@ export const widgetRegistry: Record<WidgetType, WidgetDefinition> = {
     defaultSize: { width: 288, height: 192 },
     minSize: { width: 160, height: 112 },
     aspectLock: false,
-    defaultSettings: { label: "Next meeting" },
-    settingsFields: [{ key: "label", type: "text", label: "Label" }],
+    defaultSettings: { label: "Next meeting", background: "" },
+    settingsFields: [{ key: "label", type: "text", label: "Label" }, backgroundField],
   },
   calendar: {
     label: "Calendar",
@@ -55,8 +68,8 @@ export const widgetRegistry: Record<WidgetType, WidgetDefinition> = {
     defaultSize: { width: 352, height: 400 },
     minSize: { width: 224, height: 176 },
     aspectLock: false,
-    defaultSettings: { label: "Today", showLocations: true },
-    settingsFields: [{ key: "label", type: "text", label: "Label" }, { key: "showLocations", type: "boolean", label: "Show locations and times" }],
+    defaultSettings: { label: "Today", showLocations: true, background: "" },
+    settingsFields: [{ key: "label", type: "text", label: "Label" }, { key: "showLocations", type: "boolean", label: "Show locations and times" }, backgroundField],
   },
   music: {
     label: "Spotify",
@@ -66,8 +79,8 @@ export const widgetRegistry: Record<WidgetType, WidgetDefinition> = {
     defaultSize: { width: 192, height: 192 },
     minSize: { width: 160, height: 160 },
     aspectLock: true,
-    defaultSettings: { label: "Now playing" },
-    settingsFields: [{ key: "label", type: "text", label: "Label" }],
+    defaultSettings: { label: "Now playing", background: "" },
+    settingsFields: [{ key: "label", type: "text", label: "Label" }, backgroundField],
   },
   tasks: {
     label: "Tasks",
@@ -77,19 +90,19 @@ export const widgetRegistry: Record<WidgetType, WidgetDefinition> = {
     defaultSize: { width: 288, height: 192 },
     minSize: { width: 192, height: 144 },
     aspectLock: false,
-    defaultSettings: { label: "Tasks" },
-    settingsFields: [{ key: "label", type: "text", label: "Label" }],
+    defaultSettings: { label: "Tasks", background: "" },
+    settingsFields: [{ key: "label", type: "text", label: "Label" }, backgroundField],
   },
   habits: {
     label: "Habits",
-    description: "The next habit in your day",
+    description: "Today's habit schedule",
     symbol: "✓",
     cardClassName: "habits-card",
-    defaultSize: { width: 288, height: 192 },
-    minSize: { width: 224, height: 160 },
+    defaultSize: { width: 288, height: 160 },
+    minSize: { width: 224, height: 96 },
     aspectLock: false,
-    defaultSettings: { label: "Habits" },
-    settingsFields: [{ key: "label", type: "text", label: "Label" }],
+    defaultSettings: { label: "Habits", background: "" },
+    settingsFields: [{ key: "label", type: "text", label: "Label" }, backgroundField],
   },
   usage: {
     label: "AI usage",
@@ -99,8 +112,8 @@ export const widgetRegistry: Record<WidgetType, WidgetDefinition> = {
     defaultSize: { width: 288, height: 112 },
     minSize: { width: 224, height: 112 },
     aspectLock: false,
-    defaultSettings: { label: "AI usage" },
-    settingsFields: [{ key: "label", type: "text", label: "Label" }],
+    defaultSettings: { label: "AI usage", background: "" },
+    settingsFields: [{ key: "label", type: "text", label: "Label" }, backgroundField],
   },
 };
 
@@ -117,6 +130,7 @@ export const defaultWidgetConfig: WidgetConfig[] = [
   { id: "spotify", type: "music", enabled: true, x: 768, y: 0, width: 192, height: 192, settings: { label: "Now playing" } },
   { id: "tasks", type: "tasks", enabled: true, x: 0, y: 208, width: 288, height: 192, settings: { label: "Tasks" } },
   { id: "ai-usage", type: "usage", enabled: true, x: 672, y: 208, width: 288, height: 112, settings: { label: "AI usage" } },
+  { id: "habits", type: "habits", enabled: true, x: 672, y: 336, width: 288, height: 112, settings: { label: "Habits" } },
 ];
 
 const finiteOr = (value: unknown, fallback: number): number => (typeof value === "number" && Number.isFinite(value) ? value : fallback);

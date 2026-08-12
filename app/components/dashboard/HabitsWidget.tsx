@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { HabitIcon } from "@/app/components/habits/HabitIcon";
-import type { HabitsToday } from "@/lib/habits/types";
+import type { HabitOccurrenceView, HabitsToday } from "@/lib/habits/types";
 
 async function getToday(): Promise<HabitsToday> {
   const response = await fetch("/api/habits/today", { cache: "no-store" });
@@ -20,11 +20,22 @@ export async function runHabitAction(occurrenceId: string, action: "complete" | 
   return today;
 }
 
+function getOccurrenceTime(occurrence: HabitOccurrenceView) {
+  return formatHabitTime(occurrence.status === "snoozed" && occurrence.snoozedUntil
+    ? occurrence.snoozedUntil
+    : occurrence.scheduledFor);
+}
+
+function getOccurrenceState(occurrence: HabitOccurrenceView) {
+  if (occurrence.timing === "overdue") return "Overdue";
+  if (occurrence.status === "missed") return "Missed";
+  if (occurrence.status === "snoozed") return "Later";
+  return null;
+}
+
 export function HabitsWidget() {
   const [today, setToday] = useState<HabitsToday | null>(null);
   const [failed, setFailed] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [confirmingMedication, setConfirmingMedication] = useState(false);
   const load = useCallback(() => void getToday().then((next) => { setToday(next); setFailed(false); }).catch(() => setFailed(true)), []);
 
   useEffect(() => {
@@ -35,25 +46,27 @@ export function HabitsWidget() {
     return () => { window.clearInterval(timer); window.removeEventListener("habits:changed", changed); };
   }, [load]);
 
-  const act = async (action: "complete" | "snooze") => {
-    if (!today?.next) return;
-    setBusy(true);
-    try { setToday(await runHabitAction(today.next.id, action, action === "snooze" ? { minutes: today.next.habit.reminders.defaultSnoozeMinutes } : undefined)); } finally { setBusy(false); }
-  };
+  const openHabits = () => window.dispatchEvent(new CustomEvent("dashboard:navigate", { detail: "habits" }));
+  const openCue = <span className="habit-widget-open">View habits<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></span>;
 
-  if (failed) return <article className="card habits-card habit-widget-state"><p className="card-label">Habits</p><strong>Habits unavailable</strong><button type="button" onClick={load}>Try again</button></article>;
+  if (failed) return <button type="button" className="card habits-card habit-widget-state habit-widget-link" onClick={openHabits}><p className="card-label">Habits</p><strong>Habits unavailable</strong><span>Open the page to try again.</span>{openCue}</button>;
   if (!today) return <article className="card habits-card habit-widget-loading" aria-busy="true"><span className="skeleton line small" /><span className="skeleton block" /><span className="skeleton line" /></article>;
-  if (!today.plannedCount) return <article className="card habits-card habit-widget-state"><p className="card-label">Habits</p><strong>No habits today</strong><span>Set up your schedule in Admin.</span></article>;
-  if (!today.next) return <article className="card habits-card habit-widget-done"><span className="habit-widget-check"><HabitIcon name="check" /></span><div><p className="card-label">Habits</p><strong>Done for today</strong><span>{today.completedCount} completed</span></div></article>;
-  const occurrence = today.next;
-  const complete = () => {
-    if (occurrence.habit.category === "medication" && !confirmingMedication) { setConfirmingMedication(true); return; }
-    setConfirmingMedication(false);
-    void act("complete");
-  };
-  return <article className="card habits-card" style={{ "--habit-color": occurrence.habit.color } as React.CSSProperties}>
-    <div className="habit-widget-top"><span className="habit-widget-icon"><HabitIcon name={occurrence.habit.icon} /></span><p className="card-label">{occurrence.status === "snoozed" ? "Later" : occurrence.timing === "overdue" ? "Ready when you are" : "Up next"}</p><span className="habit-widget-count">{today.completedCount}/{today.plannedCount}</span></div>
-    <div className="habit-widget-copy"><strong>{occurrence.habit.name}</strong><span>{occurrence.status === "snoozed" && occurrence.snoozedUntil ? `Remind at ${formatHabitTime(occurrence.snoozedUntil)}` : `${formatHabitTime(occurrence.scheduledFor)} · about ${occurrence.habit.estimatedDurationMinutes} min`}</span></div>
-    <div className="habit-widget-actions"><button type="button" disabled={busy} onClick={() => { setConfirmingMedication(false); void act("snooze"); }}>Later</button><button className="primary" type="button" disabled={busy} onClick={complete}><HabitIcon name="check" />{confirmingMedication ? "Confirm taken" : "Done"}</button></div>
-  </article>;
+  if (!today.plannedCount) return <button type="button" className="card habits-card habit-widget-state habit-widget-link" onClick={openHabits}><p className="card-label">Habits</p><strong>No habits today</strong><span>Set up your schedule in Admin.</span>{openCue}</button>;
+  const visibleOccurrences = today.occurrences
+    .filter((occurrence) => occurrence.status !== "completed" && occurrence.status !== "skipped")
+    .slice(0, 3);
+  if (!visibleOccurrences.length) return <button type="button" className="card habits-card habit-widget-done habit-widget-link" onClick={openHabits}><span className="habit-widget-check"><HabitIcon name="check" /></span><span><span className="card-label">Habits</span><strong>Done for today</strong><span>{today.completedCount} completed</span></span>{openCue}</button>;
+  return <button type="button" className="card habits-card habit-widget-agenda habit-widget-link" onClick={openHabits}>
+    <span className="habit-widget-agenda-head"><strong>Habits</strong><span className="habit-widget-total"><strong>{today.plannedCount}</strong> today</span></span>
+    <span className="habit-widget-list">
+      {visibleOccurrences.map((occurrence) => {
+        const state = getOccurrenceState(occurrence);
+        return <span className={`habit-widget-row${state === "Overdue" ? " is-overdue" : ""}`} key={occurrence.id}>
+          <span className="habit-widget-row-icon"><HabitIcon name={occurrence.habit.icon} /></span>
+          <strong>{occurrence.habit.name}</strong>
+          <span className="habit-widget-row-time"><time dateTime={occurrence.status === "snoozed" && occurrence.snoozedUntil ? occurrence.snoozedUntil : occurrence.scheduledFor}>{getOccurrenceTime(occurrence)}</time>{state && <em>{state}</em>}</span>
+        </span>;
+      })}
+    </span>
+  </button>;
 }

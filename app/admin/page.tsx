@@ -16,6 +16,9 @@ import { BENTO_GRID, reflowBento } from "./reflow";
 import { useNowPlaying } from "@/lib/device/use-now-playing";
 import type { DashboardData } from "@/lib/dashboard/types";
 
+/** Stands in for an unset colour: the panel shade most cards already use. */
+const DEFAULT_SWATCH = "#211f1c";
+
 async function loadData(): Promise<DashboardData> {
   const response = await fetch("/api/dashboard", { cache: "no-store" });
   if (!response.ok) throw new Error("Dashboard unavailable");
@@ -118,6 +121,18 @@ export default function AdminDashboardPage() {
   // without the admin needing to know anything about it.
   const settingsControls = selectedConfig && selectedDefinition ? selectedDefinition.settingsFields.map((field) => field.type === "boolean"
     ? <label className="settings-check" key={field.key}><input type="checkbox" checked={selectedConfig.settings[field.key] !== false} onChange={(event) => updateSelectedSetting(field.key, event.target.checked)} /> {field.label}</label>
+    // A colour input cannot represent "unset", so the stored empty string is
+    // named in words and Reset is the way back to it — otherwise merely opening
+    // the picker would commit a colour the user never chose.
+    : field.type === "color"
+    ? <div className="settings-color" key={field.key}>
+      <label htmlFor={`widget-setting-${field.key}`}>{field.label}</label>
+      <div className="settings-color-row">
+        <input id={`widget-setting-${field.key}`} type="color" value={String(selectedConfig.settings[field.key] || DEFAULT_SWATCH)} onChange={(event) => updateSelectedSetting(field.key, event.target.value)} />
+        <span className="settings-color-value">{selectedConfig.settings[field.key] ? String(selectedConfig.settings[field.key]) : "Widget default"}</span>
+        <button type="button" className="btn btn-secondary" disabled={!selectedConfig.settings[field.key]} onClick={() => updateSelectedSetting(field.key, "")}>Reset</button>
+      </div>
+    </div>
     : <label key={field.key}>{field.label}<input value={String(selectedConfig.settings[field.key] ?? "")} onChange={(event) => updateSelectedSetting(field.key, event.target.value)} /></label>) : null;
 
   return <>

@@ -9,20 +9,22 @@
       "width": 336,
       "height": 160,
       "settings": {
-        "label": "Next meeting"
+        "label": "Next meeting",
+        "background": ""
       }
     },
     {
       "id": "today-calendar",
       "type": "calendar",
       "enabled": true,
-      "x": 720,
-      "y": 0,
-      "width": 320,
-      "height": 592,
+      "x": 0,
+      "y": 176,
+      "width": 336,
+      "height": 432,
       "settings": {
         "label": "Today",
-        "showLocations": true
+        "showLocations": true,
+        "background": ""
       }
     },
     {
@@ -34,31 +36,47 @@
       "width": 352,
       "height": 352,
       "settings": {
-        "label": "Now playing"
+        "label": "Now playing",
+        "background": ""
       }
     },
     {
       "id": "tasks",
       "type": "tasks",
       "enabled": true,
-      "x": 0,
-      "y": 176,
-      "width": 336,
-      "height": 416,
+      "x": 720,
+      "y": 0,
+      "width": 320,
+      "height": 480,
       "settings": {
-        "label": "Tasks"
+        "label": "Tasks",
+        "background": ""
       }
     },
     {
       "id": "ai-usage",
       "type": "usage",
       "enabled": true,
+      "x": 720,
+      "y": 496,
+      "width": 320,
+      "height": 112,
+      "settings": {
+        "label": "AI usage",
+        "background": ""
+      }
+    },
+    {
+      "id": "habits",
+      "type": "habits",
+      "enabled": true,
       "x": 352,
       "y": 368,
       "width": 352,
-      "height": 112,
+      "height": 240,
       "settings": {
-        "label": "AI usage"
+        "label": "Habits",
+        "background": ""
       }
     }
   ],

@@ -32,6 +32,11 @@ export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColo
   useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
   const [screen, setScreen] = useState<DashboardScreen>("home");
   const [focusHabit, setFocusHabit] = useState<HabitFocusContext | null>(null);
+  useEffect(() => {
+    const navigate = (event: Event) => { const next = (event as CustomEvent<DashboardScreen>).detail; if (next === "habits") setScreen(next); };
+    window.addEventListener("dashboard:navigate", navigate);
+    return () => window.removeEventListener("dashboard:navigate", navigate);
+  }, []);
   const startHabitFocus = (context: HabitFocusContext) => { setFocusHabit(context); setScreen("focus"); };
   const completeHabitFocus = () => {
     if (!focusHabit) return;
