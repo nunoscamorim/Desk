@@ -80,6 +80,17 @@ export const widgetRegistry: Record<WidgetType, WidgetDefinition> = {
     defaultSettings: { label: "Tasks" },
     settingsFields: [{ key: "label", type: "text", label: "Label" }],
   },
+  habits: {
+    label: "Habits",
+    description: "The next habit in your day",
+    symbol: "✓",
+    cardClassName: "habits-card",
+    defaultSize: { width: 288, height: 192 },
+    minSize: { width: 224, height: 160 },
+    aspectLock: false,
+    defaultSettings: { label: "Habits" },
+    settingsFields: [{ key: "label", type: "text", label: "Label" }],
+  },
   usage: {
     label: "AI usage",
     description: "Codex and Claude limits",

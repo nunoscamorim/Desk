@@ -37,6 +37,7 @@ yarn-error.log*
 # are encrypted at rest, but the key is AUTH_SECRET and these are somebody's
 # live subscriptions; they have no business in the repository.
 data/*.enc
+data/habits.json
 
 # vercel
 .vercel

@@ -4,6 +4,7 @@ import { CalendarWidget } from "./CalendarWidget";
 import { NextMeetingWidget } from "./NextMeetingWidget";
 import { SpotifyWidget } from "./SpotifyWidget";
 import { TasksWidget } from "./TasksWidget";
+import { HabitsWidget } from "./HabitsWidget";
 import type { WidgetSettings, WidgetType } from "@/lib/dashboard/config";
 import type { DashboardData } from "@/lib/dashboard/types";
 
@@ -19,6 +20,7 @@ const widgetViews: Record<WidgetType, (data: DashboardData, settings: WidgetSett
   calendar: (data, settings) => <CalendarWidget calendar={data.todaysCalendar} settings={{ showLocations: settings.showLocations !== false }} />,
   music: (data) => <SpotifyWidget nowPlaying={data.spotifyNowPlaying} />,
   tasks: (data) => <TasksWidget tasks={data.tasks} />,
+  habits: () => <HabitsWidget />,
   usage: (data) => <AiUsageWidget codex={data.codexUsage} claudeCode={data.claudeCodeUsage} />,
 };
 

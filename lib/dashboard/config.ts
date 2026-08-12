@@ -1,4 +1,4 @@
-export type WidgetType = "meeting" | "calendar" | "music" | "tasks" | "usage";
+export type WidgetType = "meeting" | "calendar" | "music" | "tasks" | "habits" | "usage";
 
 export type WidgetSettings = Record<string, string | number | boolean>;
 
