@@ -123,14 +123,22 @@ async function getDashboardWithServices(services: DashboardServices): Promise<Da
     withFallback("claude-code-usage", services.claudeCodeUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
     withFallback("coolify", services.coolify.getStatus(), { status: "unknown", version: null, checkedAt: new Date().toISOString() }),
   ]);
-  const events = [...googleCalendar.events, ...appleCalendar.events, ...icalCalendar.events].sort((a, b) => a.startAt.localeCompare(b.startAt));
+  // Ordered by instant rather than as text: these feeds do not agree on whether
+  // a timestamp carries a UTC "Z" or a local offset, and two spellings of the
+  // same moment do not sort against each other correctly as strings.
+  const events = [...googleCalendar.events, ...appleCalendar.events, ...icalCalendar.events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   const todaysCalendar = { date: googleCalendar.date, events };
   const now = Date.now();
   // All-day entries — holidays, birthdays, out-of-office — are not something to
   // count down to, and one running for the whole day would otherwise sit in this
   // slot and hide the actual next meeting. They still appear in the schedule.
-  const nextEvent = events.find((event) => !event.allDay && new Date(event.endAt).getTime() > now);
-  const nextMeeting = nextEvent ? { ...nextEvent, minutesUntil: Math.max(0, Math.ceil((new Date(nextEvent.startAt).getTime() - now) / 60000)) } : null;
+  //
+  // A meeting already under way is skipped for the same reason. Everything that
+  // reads this slot counts down to a *start* — the header's "Up next in 12
+  // minutes", the widget's clock — so keeping a running meeting here showed a
+  // frozen 0:00 for its whole duration and hid the meeting after it.
+  const nextEvent = events.find((event) => !event.allDay && new Date(event.startAt).getTime() > now);
+  const nextMeeting = nextEvent ? { ...nextEvent, minutesUntil: Math.ceil((new Date(nextEvent.startAt).getTime() - now) / 60000) } : null;
 
   return {
     generatedAt: new Date().toISOString(),
