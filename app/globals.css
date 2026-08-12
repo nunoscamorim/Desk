@@ -63,7 +63,11 @@ button { font: inherit; }
   --muted: color-mix(in srgb, var(--widget-ink) 68%, transparent);
   --muted-2: color-mix(in srgb, var(--widget-ink) 48%, transparent);
 }
-.editable-widget { cursor: move; touch-action: none; }.editable-widget.selected-widget { outline: 2px solid var(--lime); outline-offset: 3px; }.resize-handle { position: absolute; right: 5px; bottom: 5px; z-index: 4; width: 28px; height: 28px; border: 0; border-radius: 7px; background: rgba(13,13,12,.78); cursor: nwse-resize; touch-action: none; }.resize-handle span, .resize-handle::after { content: ""; position: absolute; right: 7px; bottom: 8px; width: 10px; height: 2px; background: var(--lime); transform: rotate(-45deg); }.resize-handle::after { right: 7px; bottom: 13px; width: 7px; }
+.editable-widget { cursor: move; touch-action: none; }.editable-widget.selected-widget { outline: 2px solid var(--lime); outline-offset: 3px; }.editable-widget:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
+/* Overlaps are shown rather than silently corrected: the editor no longer moves
+   widgets the user did not drag, so it has to say when two are stacked. Last so
+   it outranks the selection outline — a collision matters more than focus. */
+.editable-widget.is-colliding, .editable-widget.is-colliding.selected-widget { outline: 2px solid var(--danger); outline-offset: 3px; }.resize-handle { position: absolute; right: 5px; bottom: 5px; z-index: 4; width: 28px; height: 28px; border: 0; border-radius: 7px; background: rgba(13,13,12,.78); cursor: nwse-resize; touch-action: none; }.resize-handle span, .resize-handle::after { content: ""; position: absolute; right: 7px; bottom: 8px; width: 10px; height: 2px; background: var(--lime); transform: rotate(-45deg); }.resize-handle::after { right: 7px; bottom: 13px; width: 7px; }
 .screen-grid { display: grid; height: var(--bento-h); grid-template-columns: 1.5fr 1fr; gap: 16px; }
 .screen-grid.single-screen { grid-template-columns: 1fr; }
 .calendar-days-screen { display: grid; height: var(--bento-h); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }

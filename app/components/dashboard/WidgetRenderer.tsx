@@ -2,7 +2,7 @@ import type { DashboardData } from "@/lib/dashboard/types";
 import type { WidgetConfig } from "@/lib/dashboard/config";
 import { definitionFor } from "@/lib/dashboard/widget-registry";
 import { renderWidget } from "./widget-views";
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 
 /**
  * Picks the text colour that stays readable on `background`.
@@ -23,7 +23,7 @@ function inkFor(background: string): string | null {
   return luminance > 0.179 ? "#11120e" : "#faf8f1";
 }
 
-export function WidgetRenderer({ widget, data, editable = false, selected = false, onPointerDown, onResizePointerDown }: { widget: WidgetConfig; data: DashboardData; editable?: boolean; selected?: boolean; onPointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizePointerDown?: (event: ReactPointerEvent<HTMLButtonElement>) => void }) {
+export function WidgetRenderer({ widget, data, editable = false, selected = false, colliding = false, onPointerDown, onKeyDown, onResizePointerDown }: { widget: WidgetConfig; data: DashboardData; editable?: boolean; selected?: boolean; colliding?: boolean; onPointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void; onKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void; onResizePointerDown?: (event: ReactPointerEvent<HTMLButtonElement>) => void }) {
   if (!widget.enabled) return null;
   // Only a widget given a colour of its own carries the class and the variables,
   // so every other one keeps the background its own stylesheet rule gives it —
@@ -31,5 +31,5 @@ export function WidgetRenderer({ widget, data, editable = false, selected = fals
   const background = typeof widget.settings.background === "string" ? widget.settings.background.trim() : "";
   const ink = background ? inkFor(background) : null;
   const style = { left: widget.x, top: widget.y, width: widget.width, height: widget.height, ...(background ? { "--widget-bg": background } : {}), ...(ink ? { "--widget-ink": ink } : {}) } as CSSProperties;
-  return <div className={`configured-widget configured-${widget.type} ${background ? "has-widget-bg" : ""} ${editable ? "editable-widget" : ""} ${selected ? "selected-widget" : ""}`} style={style} onPointerDown={onPointerDown}>{renderWidget(widget.type, data, widget.settings)}{editable && <button type="button" className="resize-handle" aria-label={`Resize ${definitionFor(widget.type).label}`} onPointerDown={onResizePointerDown}><span /></button>}</div>;
+  return <div className={`configured-widget configured-${widget.type} ${background ? "has-widget-bg" : ""} ${editable ? "editable-widget" : ""} ${selected ? "selected-widget" : ""} ${colliding ? "is-colliding" : ""}`} style={style} onPointerDown={onPointerDown} onKeyDown={onKeyDown} tabIndex={editable ? 0 : undefined} role={editable ? "group" : undefined} aria-label={editable ? `${definitionFor(widget.type).label} widget${colliding ? ", overlapping another widget" : ""}` : undefined}>{renderWidget(widget.type, data, widget.settings)}{editable && <button type="button" className="resize-handle" aria-label={`Resize ${definitionFor(widget.type).label}`} onPointerDown={onResizePointerDown}><span /></button>}</div>;
 }

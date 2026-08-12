@@ -26,10 +26,13 @@ type LoadState =
 const logoColorCache = new Map<string, string | null>();
 
 function useLogoColor(logo: string | null): string | null {
-  const [color, setColor] = useState<string | null>(() => (logo ? (logoColorCache.get(logo) ?? null) : null));
+  // The cache above is the single source of truth; this state exists only to
+  // re-render the tile once a sample lands. Reading through it rather than
+  // copying into state also means a logo already sampled by another tile paints
+  // on the first render, with no effect having to set state to catch up.
+  const [, markSampled] = useState(0);
   useEffect(() => {
-    if (!logo) { setColor(null); return; }
-    if (logoColorCache.has(logo)) { setColor(logoColorCache.get(logo) ?? null); return; }
+    if (!logo || logoColorCache.has(logo)) return;
     let cancelled = false;
     const image = new Image(); image.crossOrigin = "anonymous"; image.src = logo;
     image.onload = () => {
@@ -43,7 +46,7 @@ function useLogoColor(logo: string | null): string | null {
         for (let index = 0; index < pixels.length; index += 16) { if (pixels[index + 3] < 128) continue; red += pixels[index]; green += pixels[index + 1]; blue += pixels[index + 2]; count += 1; }
         const sampled = count ? `rgb(${Math.round(red / count)}, ${Math.round(green / count)}, ${Math.round(blue / count)})` : null;
         logoColorCache.set(logo, sampled);
-        if (!cancelled) setColor(sampled);
+        if (!cancelled) markSampled((version) => version + 1);
       } catch {
         // Cross-origin logos may not expose pixels — cache the miss too, so a
         // logo that can't be sampled isn't retried by every tile that shows it.
@@ -52,7 +55,7 @@ function useLogoColor(logo: string | null): string | null {
     };
     return () => { cancelled = true; };
   }, [logo]);
-  return color;
+  return logo ? logoColorCache.get(logo) ?? null : null;
 }
 
 function ChannelTile({ channel, poster, active, onSelect }: { channel: Channel; poster: string | null; active: boolean; onSelect: () => void }) {

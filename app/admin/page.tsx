@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { Header } from "@/app/components/dashboard/Header";
 import { BottomNavigation, type DashboardScreen } from "@/app/components/dashboard/BottomNavigation";
 import { DashboardScreenContent } from "@/app/components/dashboard/DashboardShell";
@@ -12,7 +12,7 @@ import { useAdminConfig } from "./AdminConfigContext";
 import { SaveBar } from "./SaveBar";
 import { useConfirm } from "./ConfirmContext";
 import { useToast } from "./ToastContext";
-import { BENTO_GRID, reflowBento } from "./reflow";
+import { BENTO_GRID, collidingIds, findFreeSlot, settleDrop } from "./reflow";
 import { useNowPlaying } from "@/lib/device/use-now-playing";
 import type { DashboardData } from "@/lib/dashboard/types";
 
@@ -48,35 +48,62 @@ function Preview({ data, config, onChange, accentColor, fontFamily = "Arial", ca
   useEffect(() => {
     if (!interaction) return;
     const snap = (value: number) => Math.round(value / BENTO_GRID) * BENTO_GRID;
-    const move = (event: PointerEvent) => {
-      const element = document.querySelector(".admin-preview-canvas") as HTMLElement | null;
-      if (!element) return;
-      const dashboard = element.querySelector(".dashboard") as HTMLElement | null;
+    const clamp = (value: number, extent: number, limit: number) => Math.max(0, Math.min(limit - extent, value));
+    // Always derived from where the drag *started*, never from the widget's
+    // current position, so the geometry cannot drift as the pointer moves.
+    const geometryFor = (event: PointerEvent) => {
+      const dashboard = document.querySelector(".admin-preview-canvas .dashboard") as HTMLElement | null;
       const transform = dashboard ? getComputedStyle(dashboard).transform : "none";
       const scale = transform !== "none" ? new DOMMatrix(transform).a : 1;
       const dx = (event.clientX - interaction.x) / scale;
       const dy = (event.clientY - interaction.y) / scale;
-      const next = config.map((widget) => {
-        if (widget.id !== interaction.id) return widget;
-        const { minSize, aspectLock } = definitionFor(widget.type);
-        const squareSize = Math.max(minSize.width, Math.min(bounds.width - widget.x, bounds.height - widget.y, snap(Math.max(interaction.widget.width + dx, interaction.widget.height + dy))));
-        const candidate = interaction.resize
-          ? aspectLock ? { ...widget, width: squareSize, height: squareSize } : { ...widget, width: Math.max(minSize.width, Math.min(bounds.width - widget.x, snap(interaction.widget.width + dx))), height: Math.max(minSize.height, Math.min(bounds.height - widget.y, snap(interaction.widget.height + dy))) }
-          : { ...widget, x: Math.max(0, Math.min(bounds.width - widget.width, snap(interaction.widget.x + dx))), y: Math.max(0, Math.min(bounds.height - widget.height, snap(interaction.widget.y + dy))) };
-        return candidate;
-      });
-      onChange(reflowBento(next, interaction.id, bounds));
+      const source = interaction.widget;
+      const { minSize, aspectLock } = definitionFor(source.type);
+      if (!interaction.resize) return { ...source, x: clamp(snap(source.x + dx), source.width, bounds.width), y: clamp(snap(source.y + dy), source.height, bounds.height) };
+      if (aspectLock) {
+        const size = Math.max(minSize.width, Math.min(bounds.width - source.x, bounds.height - source.y, snap(Math.max(source.width + dx, source.height + dy))));
+        return { ...source, width: size, height: size };
+      }
+      return { ...source, width: Math.max(minSize.width, Math.min(bounds.width - source.x, snap(source.width + dx))), height: Math.max(minSize.height, Math.min(bounds.height - source.y, snap(source.height + dy))) };
     };
-    const end = () => setInteraction(null);
+    // Only ever the widget under the pointer. The layout used to be re-packed on
+    // every single pointermove — neighbours shoved aside and shrunk to fit —
+    // which is what made one drag rearrange the whole display.
+    const apply = (event: PointerEvent) => config.map((widget) => (widget.id === interaction.id ? geometryFor(event) : widget));
+    const move = (event: PointerEvent) => onChange(apply(event));
+    const end = (event: PointerEvent) => {
+      // Trading slots happens on release only, so nothing shifts mid-drag.
+      onChange(interaction.resize ? apply(event) : settleDrop(apply(event), interaction.id, interaction.widget, bounds));
+      setInteraction(null);
+    };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", end);
     return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); };
   }, [bounds, config, interaction, onChange]);
+
+  // Arrow keys nudge the selected widget a grid step at a time — a pointer is a
+  // blunt instrument for lining two widgets up on a canvas shown at 70%.
+  const nudge = (widget: WidgetConfig, dx: number, dy: number) => {
+    const next = config.map((item) => (item.id === widget.id
+      ? { ...item, x: Math.max(0, Math.min(bounds.width - item.width, item.x + dx)), y: Math.max(0, Math.min(bounds.height - item.height, item.y + dy)) }
+      : item));
+    onChange(next);
+  };
+  const onWidgetKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>, widget: WidgetConfig) => {
+    const step = event.shiftKey ? 1 : BENTO_GRID;
+    const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+    const delta = moves[event.key];
+    if (!delta) return;
+    event.preventDefault();
+    setSelected(widget.id);
+    nudge(widget, delta[0], delta[1]);
+  };
   const begin = (event: ReactPointerEvent<HTMLDivElement>, widget: WidgetConfig, resize = false) => { event.preventDefault(); event.stopPropagation(); setSelected(widget.id); setInteraction({ id: widget.id, resize, x: event.clientX, y: event.clientY, widget }); };
   useEffect(() => { if (fontFamily === "Arial") return; const link = document.createElement("link"); link.rel = "stylesheet"; link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`; document.head.appendChild(link); return () => link.remove(); }, [fontFamily]);
+  const colliding = collidingIds(config);
   const content = screen === "home"
-    ? <section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} onPointerDown={(event) => begin(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section>
+    ? <section className="dashboard-grid">{config.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} editable selected={selected === widget.id} colliding={colliding.has(widget.id)} onPointerDown={(event) => begin(event, widget)} onKeyDown={(event) => onWidgetKeyDown(event, widget)} onResizePointerDown={(event) => begin(event as unknown as ReactPointerEvent<HTMLDivElement>, widget, true)} />)}</section>
     : <DashboardScreenContent screen={screen} data={data} widgets={config} />;
-  return <div className="admin-preview" ref={frameRef}><div className="admin-preview-canvas" style={{ width: canvas.width * scale, height: canvas.height * scale } as CSSProperties}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, "--canvas-w": `${canvas.width}px`, "--canvas-h": `${canvas.height}px`, fontFamily } as CSSProperties}><Header data={data} screen={screen} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main></div><span className="preview-caption">{canvas.width} × {canvas.height} · 32px screen safe area · 16px snap grid · drag to move · corner handle to resize{scale < 1 ? ` · shown at ${Math.round(scale * 100)}%` : ""}</span></div>;
+  return <div className="admin-preview" ref={frameRef}><div className="admin-preview-canvas" style={{ width: canvas.width * scale, height: canvas.height * scale } as CSSProperties}><main className="dashboard" aria-label="Editable live desk preview" style={{ "--lime": accentColor, "--preview-scale": scale, "--canvas-w": `${canvas.width}px`, "--canvas-h": `${canvas.height}px`, fontFamily } as CSSProperties}><Header data={data} screen={screen} />{content}<BottomNavigation screen={screen} onChange={setScreen} /></main></div><span className="preview-caption">{canvas.width} × {canvas.height} · 32px screen safe area · 16px snap grid · drag to move · arrows to nudge · corner handle to resize{scale < 1 ? ` · shown at ${Math.round(scale * 100)}%` : ""}</span></div>;
 }
 
 export default function AdminDashboardPage() {
@@ -102,8 +129,8 @@ export default function AdminDashboardPage() {
   const selectedDefinition = selectedConfig ? definitionFor(selectedConfig.type) : null;
   const updateSelectedSetting = (key: string, value: string | number | boolean) => { if (!selectedConfig) return; setConfig(config.map((widget) => widget.id === selectedConfig.id ? { ...widget, settings: { ...widget.settings, [key]: value } } : widget)); };
   const toggle = (id: string) => setConfig(config.map((widget) => widget.id === id ? { ...widget, enabled: !widget.enabled } : widget));
-  const addWidget = (type: WidgetType) => { const instance = createWidgetInstance(type, config); const next = reflowBento([...config, instance], instance.id, bentoArea(canvas)); setConfig(next); setSelected(instance.id); resetSaveState(); };
-  const duplicateWidget = (id: string) => { const source = config.find((widget) => widget.id === id); if (!source) return; const instance = { ...createWidgetInstance(source.type, config), ...{ width: source.width, height: source.height, settings: { ...source.settings } } }; const next = reflowBento([...config, instance], instance.id, bentoArea(canvas)); setConfig(next); setSelected(instance.id); resetSaveState(); };
+  const addWidget = (type: WidgetType) => { const instance = findFreeSlot(config, createWidgetInstance(type, config), bentoArea(canvas)); setConfig([...config, instance]); setSelected(instance.id); resetSaveState(); };
+  const duplicateWidget = (id: string) => { const source = config.find((widget) => widget.id === id); if (!source) return; const instance = findFreeSlot(config, { ...createWidgetInstance(source.type, config), width: source.width, height: source.height, settings: { ...source.settings } }, bentoArea(canvas)); setConfig([...config, instance]); setSelected(instance.id); resetSaveState(); };
   const removeWidget = async (id: string) => {
     const widget = config.find((item) => item.id === id);
     if (!widget) return;
