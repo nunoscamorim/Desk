@@ -342,6 +342,10 @@ button { font: inherit; }
 .usage-row > span { color: var(--muted); font-size: 10px; white-space: nowrap; }
 .usage-row > strong { font-size: 10px; text-align: right; font-variant-numeric: tabular-nums; }
 .usage-row .meter { height: 3px; }
+.usage-card .meter { background: color-mix(in srgb, var(--lime) 20%, transparent); }
+.usage-card .meter span { background: var(--lime); }
+.usage-card .meter.disabled { background: color-mix(in srgb, #000 10%, transparent); }
+.usage-card .meter.disabled span { display: none; }
 .empty-state { margin-top: 26px; color: var(--muted); font-size: 13px; }
 .next-card .empty-state { color: color-mix(in srgb, var(--card-ink, #11120e) 62%, transparent); }
 .state-dashboard { display: grid; place-items: center; }
@@ -537,8 +541,13 @@ button { font: inherit; }
 .habit-widget-countdown em { color: var(--muted); font-size: 11px; font-style: normal; font-weight: 650; }
 .habit-widget-closing-foot { color: var(--muted-2); font-size: 10px; font-variant-numeric: tabular-nums; }
 @keyframes habit-closing-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
-.configured-habits { container: habits-widget / size; }
-@container habits-widget (max-height: 120px) {
+/* Sized on width alone. Height is deliberately not a query axis: how tall the
+   user made the widget says nothing about how much room the text needs across,
+   and keying type off it meant the same card rendered at different sizes purely
+   because it had been dragged shorter. inline-size containment also drops the
+   requirement that the box have a definite height. */
+.configured-habits { container: habits-widget / inline-size; }
+@container habits-widget (max-width: 300px) {
   .habits-card.habit-widget-state { padding: 12px 14px; }
   .habits-card.habit-widget-done { padding: 12px 14px; }
   .habits-card.habit-widget-loading { padding: 12px 14px; }
@@ -551,7 +560,8 @@ button { font: inherit; }
   .habit-widget-row-icon { width: 15px; height: 15px; border-radius: 0; background: transparent; }
   .habit-widget-row-icon svg { width: 11px; height: 11px; }
   .habit-widget-row > strong { font-size: 10px; }
-  .habit-widget-row-time { gap: 5px; font-size: 8.5px; }
+  /* Too narrow for the time and its state side by side. */
+  .habit-widget-row-time { flex-direction: column; align-items: flex-end; gap: 0; font-size: 8.5px; line-height: 1.15; }
   .habit-widget-closing { gap: 2px; padding: 10px 12px; }
   .habit-widget-closing-kicker { font-size: 8px; }
   .habit-widget-closing-name { margin-top: 2px; font-size: 12px; }
@@ -559,7 +569,7 @@ button { font: inherit; }
   .habit-widget-countdown em { font-size: 9px; }
   .habit-widget-closing-foot { font-size: 8.5px; }
 }
-@container habits-widget (min-height: 121px) and (max-height: 190px) {
+@container habits-widget (min-width: 301px) and (max-width: 399px) {
   .habit-widget-agenda { gap: 8px; padding: 13px 15px; }
   .habit-widget-agenda-head > strong { font-size: 16px; }
   .habit-widget-total { font-size: 9px; }
@@ -570,19 +580,15 @@ button { font: inherit; }
   .habit-widget-row-icon svg { width: 13px; height: 13px; }
   .habit-widget-row > strong { font-size: 11px; }
   .habit-widget-row-time { font-size: 9px; }
-  .habit-widget-closing { padding: 13px 15px; }
+  .habit-widget-closing { padding: 10px 15px; }
   .habit-widget-closing-name { font-size: 15px; }
   .habit-widget-countdown > strong { font-size: 32px; }
 }
-@container habits-widget (max-width: 280px) {
-  .habit-widget-agenda { padding-inline: 12px; }
-  .habit-widget-row-time { flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.15; }
-}
-@container habits-widget (min-width: 440px) and (min-height: 191px) {
-  .habit-widget-agenda { padding-inline: 22px; }
+@container habits-widget (min-width: 440px) {
+  .habit-widget-agenda { padding: 13px 22px; }
   .habit-widget-agenda-head > strong { font-size: 21px; }
   .habit-widget-row { padding-inline: 12px 14px; }
-  .habit-widget-closing { padding-inline: 22px; }
+  .habit-widget-closing { padding: 11px 22px; }
   .habit-widget-closing-name { font-size: 20px; }
   .habit-widget-countdown > strong { font-size: 52px; }
 }
