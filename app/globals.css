@@ -38,7 +38,7 @@ button { font: inherit; }
    coordinates — so it never reflows to the screen. .canvas-viewport scales the
    whole canvas to fit instead, which is what lets one saved layout stay true on
    an iPad, in a desktop browser, and in the admin preview. */
-.canvas-viewport, .dashboard-boot { position: fixed; inset: 0; overflow: hidden; background: #1c1b18; }
+.canvas-viewport, .dashboard-boot { position: fixed; inset: 0; overflow: hidden; background: #151412; }
 /* Centred by translate rather than by flex/grid alignment: a transform does not
    change layout size, so an alignment container would still be sizing itself to
    the unscaled canvas and pushing it off-screen whenever the canvas is wider
