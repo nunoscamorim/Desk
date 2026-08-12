@@ -53,7 +53,7 @@ export function Header({ data, screen = "home" }: { data: DashboardData; screen?
     ? meetingStartsIn === 0 ? `Up next now: ${imminentMeeting.title}` : `Up next in ${meetingStartsIn} ${meetingStartsIn === 1 ? "minute" : "minutes"}: ${imminentMeeting.title}`
     : null;
   return <header className="topbar">
-    <div className="greeting-copy"><p className="date-label">{dayFormatter.format(now)} · <time dateTime={now.toISOString()}>{now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</time></p><div className="greeting-quote"><h1>{meetingNotice ?? greeting.message}</h1>{!meetingNotice && <p className="quote-source">{greeting.source}</p>}</div></div>
+    <div className="greeting-copy"><p className="date-label">{dayFormatter.format(now)} · <time dateTime={now.toISOString()}>{now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</time></p><div className="greeting-quote"><h1 className={meetingNotice ? "meeting-notice" : undefined}>{meetingNotice ?? greeting.message}</h1>{!meetingNotice && <p className="quote-source">{greeting.source}</p>}</div></div>
     <WeatherWidget weather={data.weather} />
   </header>;
 }

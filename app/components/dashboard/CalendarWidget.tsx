@@ -32,6 +32,7 @@ export function CalendarWidget({ calendar, settings }: { calendar: TodayCalendar
   const stillOn = (event: CalendarEvent) => new Date(event.endAt).getTime() > now;
 
   let visibleEvents: CalendarEvent[];
+  let tomorrowStartsAt: number | null = null;
   let heading: string;
   let label: string;
   if (settings?.strictDate) {
@@ -40,18 +41,21 @@ export function CalendarWidget({ calendar, settings }: { calendar: TodayCalendar
     heading = settings.dateLabel ?? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(`${calendar.date}T12:00:00`));
     label = "Schedule";
   } else {
-    // The schedule widget is day-based and ignores all-day events: it shows
-    // today's timed events until the last one of the day has ended, then it
-    // flips its heading to "Tomorrow" and shows the next day instead.
+    // Keep the home schedule anchored to today. Tomorrow is appended after
+    // today's last remaining event instead of replacing the whole card.
     const timedEvents = calendar.events.filter((event) => !event.allDay);
     const today = calendar.date;
     const tomorrow = dayKey(today, 1);
     const todaysEvents = timedEvents.filter((event) => event.startAt.slice(0, 10) === today && stillOn(event));
     const tomorrowsEvents = timedEvents.filter((event) => event.startAt.slice(0, 10) === tomorrow);
-    const showingTomorrow = todaysEvents.length === 0;
-    visibleEvents = showingTomorrow ? tomorrowsEvents : todaysEvents;
-    heading = showingTomorrow ? "Tomorrow" : "Today";
-    label = showingTomorrow ? "Schedule · tomorrow" : "Schedule · today";
+    visibleEvents = [...todaysEvents, ...tomorrowsEvents];
+    tomorrowStartsAt = tomorrowsEvents.length > 0 ? todaysEvents.length : null;
+    heading = "Today";
+    label = "Schedule · today";
   }
-  return <article className="card calendar-card"><div className="calendar-heading"><div><span className="card-label">{label}</span><h2>{heading}</h2></div><span className="event-count">{visibleEvents.length}<small>events</small></span></div>{visibleEvents.length ? <ol className="calendar-list" tabIndex={0} aria-label={`${heading} events`}>{visibleEvents.map((event, index) => <CalendarItem key={event.id} event={event} index={index} showLocations={showLocations} />)}</ol> : <div className="empty-state">Nothing scheduled.</div>}</article>;
+  return <article className="card calendar-card"><div className="calendar-heading"><div><span className="card-label">{label}</span><h2>{heading}</h2></div><span className="event-count">{visibleEvents.length}<small>events</small></span></div>{visibleEvents.length ? <ol className="calendar-list" tabIndex={0} aria-label={`${heading} events`}>{visibleEvents.map((event, index) => <CalendarItemWithDayBreak key={event.id} event={event} index={index} showLocations={showLocations} showTomorrow={tomorrowStartsAt === index} />)}</ol> : <div className="empty-state">Nothing scheduled.</div>}</article>;
+}
+
+function CalendarItemWithDayBreak({ showTomorrow, ...props }: { event: CalendarEvent; showLocations: boolean; index: number; showTomorrow: boolean }) {
+  return <>{showTomorrow && <li className="calendar-day-break"><span>Tomorrow</span></li>}<CalendarItem {...props} /></>;
 }
