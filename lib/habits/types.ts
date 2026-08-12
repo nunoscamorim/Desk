@@ -60,6 +60,10 @@ export type HabitsToday = {
   next: HabitOccurrenceView | null;
   completedCount: number;
   plannedCount: number;
+  week: {
+    completedDays: number;
+    days: Array<{ date: string; completed: boolean; isToday: boolean }>;
+  };
 };
 
 export type HabitsStore = { habits: Habit[]; occurrences: HabitOccurrence[] };

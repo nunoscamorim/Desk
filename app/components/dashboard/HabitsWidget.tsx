@@ -33,9 +33,33 @@ function getOccurrenceState(occurrence: HabitOccurrenceView) {
   return null;
 }
 
+/** How long before a habit's window shuts the widget gives itself over to it. */
+const CLOSING_LEAD_MS = 5 * 60_000;
+
+/**
+ * The habit whose window is about to shut, if one is.
+ *
+ * `windowEndsAt` is the real deadline: past it the schedule resolves the
+ * occurrence to `missed`, so nothing has to switch the widget back afterwards —
+ * it stops matching here and the agenda returns on its own.
+ */
+function findClosing(today: HabitsToday, now: number): HabitOccurrenceView | null {
+  const closing = today.occurrences.filter((occurrence) => {
+    if (occurrence.status === "completed" || occurrence.status === "skipped" || occurrence.status === "missed") return false;
+    const remaining = new Date(occurrence.windowEndsAt).getTime() - now;
+    return remaining > 0 && remaining <= CLOSING_LEAD_MS;
+  });
+  // Soonest deadline wins. The day is ordered by start time and windows differ in
+  // length, so the habit that starts first is not always the one that shuts first.
+  return closing.sort((a, b) => new Date(a.windowEndsAt).getTime() - new Date(b.windowEndsAt).getTime())[0] ?? null;
+}
+
+const countdown = (ms: number) => { const seconds = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`; };
+
 export function HabitsWidget() {
   const [today, setToday] = useState<HabitsToday | null>(null);
   const [failed, setFailed] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const load = useCallback(() => void getToday().then((next) => { setToday(next); setFailed(false); }).catch(() => setFailed(true)), []);
 
   useEffect(() => {
@@ -46,12 +70,34 @@ export function HabitsWidget() {
     return () => { window.clearInterval(timer); window.removeEventListener("habits:changed", changed); };
   }, [load]);
 
+  const closing = today ? findClosing(today, now) : null;
+  const isClosing = closing !== null;
+  // A per-second clock only while a countdown is on screen; otherwise a coarse
+  // one, which is still frequent enough to catch the window opening between the
+  // 60s data polls without running a 1s timer on the display all day.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), isClosing ? 1000 : 15_000);
+    return () => window.clearInterval(timer);
+  }, [isClosing]);
+
   const openHabits = () => window.dispatchEvent(new CustomEvent("dashboard:navigate", { detail: "habits" }));
   const openCue = <span className="habit-widget-open">View habits<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></span>;
 
   if (failed) return <button type="button" className="card habits-card habit-widget-state habit-widget-link" onClick={openHabits}><p className="card-label">Habits</p><strong>Habits unavailable</strong><span>Open the page to try again.</span>{openCue}</button>;
   if (!today) return <article className="card habits-card habit-widget-loading" aria-busy="true"><span className="skeleton line small" /><span className="skeleton block" /><span className="skeleton line" /></article>;
   if (!today.plannedCount) return <button type="button" className="card habits-card habit-widget-state habit-widget-link" onClick={openHabits}><p className="card-label">Habits</p><strong>No habits today</strong><span>Set up your schedule in Admin.</span>{openCue}</button>;
+  // The last five minutes of a habit's window: the widget stops being a list of
+  // the day and becomes only this one, until the deadline passes and the
+  // occurrence resolves to missed — at which point the agenda comes back.
+  if (closing) return <button type="button" className="card habits-card habit-widget-closing habit-widget-link" style={{ "--habit-color": closing.habit.color } as React.CSSProperties} onClick={openHabits}>
+    <span className="habit-widget-closing-head"><span className="habit-widget-icon"><HabitIcon name={closing.habit.icon} /></span><span className="habit-widget-closing-kicker">Closing soon</span></span>
+    <strong className="habit-widget-closing-name">{closing.habit.name}</strong>
+    {/* role=timer, and deliberately not a live region: this repaints every second
+        and would otherwise be read aloud each time. */}
+    <span className="habit-widget-countdown" role="timer" aria-label={`${countdown(new Date(closing.windowEndsAt).getTime() - now)} left to complete ${closing.habit.name}`}><strong>{countdown(new Date(closing.windowEndsAt).getTime() - now)}</strong><em>left</em></span>
+    <span className="habit-widget-closing-foot">Until <time dateTime={closing.windowEndsAt}>{formatHabitTime(closing.windowEndsAt)}</time></span>
+  </button>;
+
   const visibleOccurrences = today.occurrences
     .filter((occurrence) => occurrence.status !== "completed" && occurrence.status !== "skipped")
     .slice(0, 3);

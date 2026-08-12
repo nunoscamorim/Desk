@@ -51,7 +51,7 @@ function dueLabel(dueAt: string | null, now: number): string | null {
 
 /**
  * Shared by the light home-widget row and the tasks screen's row — the
- * screen-only bits (a complete checkbox, an expandable detail panel) only
+ * screen-only bits (a mark-as-done button, an expandable detail panel) only
  * ever render when a caller opts in, so the widget's markup is untouched.
  */
 function TaskItem({ task, now, detail: detailProps }: { task: Task; now: number; detail?: { expanded: boolean; onToggleExpand: () => void; completing: boolean; onComplete: () => void } }) {
@@ -68,7 +68,6 @@ function TaskItem({ task, now, detail: detailProps }: { task: Task; now: number;
 
   const { expanded, onToggleExpand, completing, onComplete } = detailProps;
   return <li className={`calendar-item task-item task-item-interactive ${due === "Late" ? "task-overdue" : ""} ${expanded ? "is-expanded" : ""}`} style={{ "--event-color": getListColor(task.project) } as CSSProperties}>
-    <button type="button" className={`task-complete ${completing ? "is-busy" : ""}`} aria-label={`Mark “${task.title}” as done`} disabled={completing} onClick={(event) => { event.stopPropagation(); onComplete(); }}><span /></button>
     <div className="task-item-body" role="button" tabIndex={0} aria-expanded={expanded} onClick={onToggleExpand} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onToggleExpand(); } }}>
       <strong>{task.title}</strong>{summary && <span className="task-detail">{summary}</span>}
       {expanded && <div className="task-detail-panel">
@@ -81,6 +80,10 @@ function TaskItem({ task, now, detail: detailProps }: { task: Task; now: number;
         </dl>
       </div>}
     </div>
+    {/* Named rather than a bare circle: on a wall display the control has to say
+        what it does without being tapped to find out. It sits outside the body so
+        marking a task done never doubles as expanding it. */}
+    <button type="button" className={`task-complete ${completing ? "is-busy" : ""}`} aria-label={`Mark “${task.title}” as done`} disabled={completing} onClick={onComplete}>{completing ? "Marking…" : "Mark as done"}</button>
   </li>;
 }
 
@@ -107,22 +110,24 @@ export function TasksScreen({ tasks }: { tasks: Task[] }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
-  // Local so a completed task can disappear immediately instead of waiting on
-  // the next dashboard poll — synced from props whenever a fresh fetch lands,
-  // same as the admin editor's own local-draft-over-server-state pattern.
-  const [localTasks, setLocalTasks] = useState(tasks);
-  useEffect(() => setLocalTasks(tasks), [tasks]);
+  // A completed task has to disappear immediately rather than wait on the next
+  // dashboard poll, but only the ids cleared here are held locally — the list
+  // itself stays derived from props. Mirroring the whole array into state meant
+  // an effect copying props back over it on every poll, which both trips the
+  // hooks lint and lets a poll in flight during a tap resurrect the row.
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const localTasks = useMemo(() => tasks.filter((task) => !completedIds.includes(task.id)), [tasks, completedIds]);
 
   const complete = async (task: Task) => {
     setCompletingId(task.id);
-    setLocalTasks((current) => current.filter((item) => item.id !== task.id));
+    setCompletedIds((current) => [...current, task.id]);
     try {
       const response = await fetch("/api/tasks/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: task.id, listId: task.listId }) });
       if (!response.ok) throw new Error();
     } catch {
       // The source never actually completed it — put it back rather than
       // leave the display lying about what's still outstanding.
-      setLocalTasks((current) => (current.some((item) => item.id === task.id) ? current : [...current, task]));
+      setCompletedIds((current) => current.filter((id) => id !== task.id));
     } finally {
       setCompletingId((current) => (current === task.id ? null : current));
     }

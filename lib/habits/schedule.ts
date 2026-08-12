@@ -39,6 +39,24 @@ function resolvedStatus(occurrence: HabitOccurrence, now: Date): { status: Habit
   return { status: "missed", timing: "finished" };
 }
 
+function weekSummary(store: HabitsStore, now: Date): HabitsToday["week"] {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  const mondayOffset = (today.getDay() + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - mondayOffset);
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    const dateKey = localDateKey(date);
+    return {
+      date: dateKey,
+      completed: store.occurrences.some((occurrence) => occurrence.date === dateKey && occurrence.status === "completed"),
+      isToday: dateKey === localDateKey(today),
+    };
+  });
+  return { completedDays: days.filter((day) => day.completed).length, days };
+}
+
 export function materializeDay(store: HabitsStore, now = new Date(), dateKey = localDateKey(now)): HabitsToday {
   const [year, month, day] = dateKey.split("-").map(Number);
   const weekday = new Date(year, month - 1, day, 12).getDay();
@@ -50,7 +68,7 @@ export function materializeDay(store: HabitsStore, now = new Date(), dateKey = l
   }).sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor) || a.habit.order - b.habit.order);
   const actionable = occurrences.filter((entry) => !["completed", "skipped", "missed"].includes(entry.status));
   const next = actionable.find((entry) => entry.status === "available") ?? actionable.find((entry) => entry.status === "snoozed") ?? actionable[0] ?? null;
-  return { generatedAt: now.toISOString(), date: dateKey, occurrences, next, completedCount: occurrences.filter((entry) => entry.status === "completed").length, plannedCount: occurrences.length };
+  return { generatedAt: now.toISOString(), date: dateKey, occurrences, next, completedCount: occurrences.filter((entry) => entry.status === "completed").length, plannedCount: occurrences.length, week: weekSummary(store, now) };
 }
 
 export function ensureOccurrence(store: HabitsStore, occurrenceId: string): HabitOccurrence | null {

@@ -298,13 +298,14 @@ button { font: inherit; }
 /* Screen-only: a complete checkbox and an expandable detail panel, both opted
    into via TaskItem's `detail` prop — the light home-widget row never passes
    it, so none of this ever reaches that render path. */
-.task-item-interactive { grid-template-columns: 22px minmax(0, 1fr); align-items: start; gap: 10px; padding: 8px; }
-.task-item-interactive.is-expanded { background: color-mix(in srgb, var(--event-color) 35%, transparent); }
-.task-complete { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px; display: grid; place-items: center; border: 1.5px solid var(--muted); border-radius: 50%; background: transparent; padding: 0; cursor: pointer; touch-action: manipulation; }
-.task-complete:hover { border-color: var(--lime); }
-.task-complete:active span { background: var(--lime); }
-.task-complete.is-busy { opacity: .5; cursor: default; }
-.task-complete span { width: 10px; height: 10px; border-radius: 50%; background: transparent; }
+.task-item.task-item-interactive { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px; }
+.task-item.task-item-interactive.is-expanded { background: color-mix(in srgb, var(--event-color) 35%, transparent); }
+.task-item-interactive.is-expanded .task-complete { align-self: start; }
+.task-complete { flex: 0 0 auto; align-self: center; min-height: 30px; border: 1px solid color-mix(in srgb, var(--event-color) 50%, transparent); border-radius: 8px; padding: 0 12px; background: color-mix(in srgb, var(--event-color) 38%, transparent); color: var(--ink); font-size: 10.5px; font-weight: 650; white-space: nowrap; cursor: pointer; touch-action: manipulation; }
+.task-complete:hover { border-color: color-mix(in srgb, var(--event-color) 75%, transparent); background: color-mix(in srgb, var(--event-color) 58%, transparent); }
+.task-complete:active { background: color-mix(in srgb, var(--event-color) 70%, transparent); }
+.task-complete:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.task-complete.is-busy { opacity: .55; cursor: default; }
 .task-item-body { min-width: 0; cursor: pointer; outline: none; }
 .task-detail-panel { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; gap: 8px; }
 .task-detail-panel p { margin: 0; color: var(--ink); font-size: 11px; line-height: 1.4; white-space: normal; }
@@ -517,6 +518,21 @@ button { font: inherit; }
 .habit-widget-row-time { display: inline-flex; align-items: center; gap: clamp(4px, 1.7cqw, 7px); color: var(--muted); font-size: clamp(9px, 2.8cqw, 11px); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .habit-widget-row-time em { font-style: normal; }
 .habit-widget-row.is-overdue .habit-widget-row-time em { color: var(--warn); font-weight: 700; }
+/* The final five minutes of a habit's window. The card gives itself over to one
+   habit: its own colour tints the whole surface, and the countdown is the largest
+   thing on the display so it reads from across the room. Urgency is carried by
+   the kicker in the warning tone, never by the accent — that stays the habit's,
+   per the note above. */
+.habit-widget-closing { --habit-color: var(--lime); justify-content: center; gap: 4px; padding: 16px 18px; background: color-mix(in srgb, var(--habit-color) 13%, #20201e); }
+.habit-widget-closing-head { display: flex; align-items: center; gap: 8px; }
+.habit-widget-closing-kicker { color: var(--warn); font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.habit-widget-closing .habit-widget-icon { animation: habit-closing-pulse 2s ease-in-out infinite; }
+.habit-widget-closing-name { overflow: hidden; margin-top: 5px; font-size: 17px; font-weight: 650; line-height: 1.1; letter-spacing: -.03em; text-overflow: ellipsis; white-space: nowrap; }
+.habit-widget-countdown { display: flex; align-items: baseline; gap: 6px; }
+.habit-widget-countdown > strong { color: var(--ink); font-size: 40px; font-weight: 750; line-height: 1; letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
+.habit-widget-countdown em { color: var(--muted); font-size: 11px; font-style: normal; font-weight: 650; }
+.habit-widget-closing-foot { color: var(--muted-2); font-size: 10px; font-variant-numeric: tabular-nums; }
+@keyframes habit-closing-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 .configured-habits { container: habits-widget / size; }
 @container habits-widget (max-height: 120px) {
   .habits-card.habit-widget-state { padding: 12px 14px; }
@@ -532,6 +548,12 @@ button { font: inherit; }
   .habit-widget-row-icon svg { width: 11px; height: 11px; }
   .habit-widget-row > strong { font-size: 10px; }
   .habit-widget-row-time { gap: 5px; font-size: 8.5px; }
+  .habit-widget-closing { gap: 2px; padding: 10px 12px; }
+  .habit-widget-closing-kicker { font-size: 8px; }
+  .habit-widget-closing-name { margin-top: 2px; font-size: 12px; }
+  .habit-widget-countdown > strong { font-size: 24px; }
+  .habit-widget-countdown em { font-size: 9px; }
+  .habit-widget-closing-foot { font-size: 8.5px; }
 }
 @container habits-widget (min-height: 121px) and (max-height: 190px) {
   .habit-widget-agenda { gap: 8px; padding: 13px 15px; }
@@ -544,6 +566,9 @@ button { font: inherit; }
   .habit-widget-row-icon svg { width: 13px; height: 13px; }
   .habit-widget-row > strong { font-size: 11px; }
   .habit-widget-row-time { font-size: 9px; }
+  .habit-widget-closing { padding: 13px 15px; }
+  .habit-widget-closing-name { font-size: 15px; }
+  .habit-widget-countdown > strong { font-size: 32px; }
 }
 @container habits-widget (max-width: 280px) {
   .habit-widget-agenda { padding-inline: 12px; }
@@ -553,9 +578,12 @@ button { font: inherit; }
   .habit-widget-agenda { padding-inline: 22px; }
   .habit-widget-agenda-head > strong { font-size: 21px; }
   .habit-widget-row { padding-inline: 12px 14px; }
+  .habit-widget-closing { padding-inline: 22px; }
+  .habit-widget-closing-name { font-size: 20px; }
+  .habit-widget-countdown > strong { font-size: 52px; }
 }
 
-.habits-screen { height: var(--bento-h); min-height: 0; display: flex; flex-direction: column; gap: 13px; }
+.habits-screen { --habit-surface: #211f1c; --habit-surface-raised: #292723; --habit-secondary: #b8b4aa; height: var(--bento-h); min-height: 0; display: flex; flex-direction: column; gap: 13px; }
 .habits-day-head { flex: 0 0 auto; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .habits-day-head h2 { margin: 0 0 3px; font-size: 22px; letter-spacing: -.045em; }.habits-day-head p { margin: 0; color: var(--muted); font-size: 12px; }
 .habit-day-count { color: var(--muted-2); font-size: 26px; font-weight: 700; line-height: 1; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }.habit-day-count span { font-size: 15px; }
@@ -564,25 +592,38 @@ button { font: inherit; }
 .habit-day-progress { flex: 0 0 auto; height: 7px; overflow: hidden; border-radius: 99px; background: #302f2b; }.habit-day-progress span { display: block; height: 100%; border-radius: inherit; background: var(--lime); transition: width .25s ease; }
 .habits-day-layout { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .85fr); gap: 14px; }
 .habit-now-column, .habit-queue-column { min-height: 0; }
-.habit-now { --habit-color: var(--lime); position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; overflow: hidden; border-radius: 17px; padding: 22px 24px; background: color-mix(in srgb, var(--habit-color) 9%, #211f1c); }
+.habit-now-column { display: grid; grid-template-rows: minmax(0, 1fr) 78px; gap: 11px; }
+.habit-now-column.has-next { grid-template-rows: minmax(0, 1fr) minmax(112px, .55fr) 78px; }
+.habit-now { --habit-color: var(--lime); position: relative; height: 100%; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: 17px; padding: 17px 20px; background: color-mix(in srgb, var(--habit-color) 4%, var(--habit-surface)); }
+.habit-now::-webkit-scrollbar { display: none; width: 0; }
 .habit-now::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--habit-color); }
-.habit-now-heading { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 12px; }.habit-now-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: color-mix(in srgb, var(--habit-color) 18%, #292824); color: var(--habit-color); }.habit-now-icon svg { width: 22px; height: 22px; }
-.habit-now-heading p { margin: 0 0 4px; color: color-mix(in srgb, var(--habit-color) 75%, white); font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }.habit-now-heading h3 { margin: 0; font-size: 29px; line-height: 1; letter-spacing: -.045em; }.habit-now-heading time { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+.habit-now-heading { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 11px; }.habit-now-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: color-mix(in srgb, var(--habit-color) 18%, #292824); color: var(--habit-color); }.habit-now-icon svg { width: 19px; height: 19px; }
+.habit-now-heading p { margin: 0 0 3px; color: color-mix(in srgb, var(--habit-color) 75%, white); font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }.habit-now-heading h3 { overflow: hidden; margin: 0; font-size: 24px; line-height: 1; letter-spacing: -.04em; text-overflow: ellipsis; white-space: nowrap; }.habit-now-heading time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 /* Urgency is never the habit's own colour (see above), so lateness speaks in
    the warning tone the home widget already uses for it. */
 .habit-now.is-overdue .habit-now-heading p { color: var(--warn); }
-.habit-now-description { max-width: 52ch; margin: 13px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.habit-now-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 15px; }
-.habit-now-meta span { border-radius: 99px; padding: 4px 10px; background: rgba(17,17,16,.34); color: var(--muted); font-size: 11px; font-weight: 600; }
+.habit-now-description { max-width: 52ch; margin: 9px 0 0; color: var(--habit-secondary); font-size: 11.5px; line-height: 1.45; }
+.habit-now-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 10px; }
+.habit-now-meta span { border-radius: 99px; padding: 3px 8px; background: rgba(17,17,16,.42); color: var(--habit-secondary); font-size: 9.5px; font-weight: 650; }
 .habit-now-category { text-transform: capitalize; }
-.habit-runner-steps { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: 7px; margin-top: 18px; overflow-y: auto; }
-.habit-runner-steps button { min-height: 52px; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 11px; border: 0; border-radius: 11px; padding: 8px 13px; background: rgba(17,17,16,.38); color: var(--ink); text-align: left; cursor: pointer; }.habit-runner-steps button:not(.done):hover { background: rgba(17,17,16,.62); }.habit-runner-steps button > span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #34332f; color: var(--muted); font-size: 12px; font-weight: 700; }.habit-runner-steps button > span svg { width: 15px; height: 15px; }.habit-runner-steps button strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }.habit-runner-steps button em { color: var(--habit-color); font-size: 10.5px; font-style: normal; font-weight: 600; }.habit-runner-steps button.done { opacity: .5; }.habit-runner-steps button.done > span { background: color-mix(in srgb, var(--habit-color) 22%, #34332f); color: var(--habit-color); }
-.habit-now-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; margin-top: 20px; }.habit-now-actions button { min-height: 44px; border: 0; border-radius: 11px; padding: 0 17px; background: #302f2b; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; }.habit-now-actions button:hover { background: #3a3934; color: var(--ink); }.habit-now-actions button.primary { display: inline-flex; align-items: center; gap: 7px; min-width: 124px; justify-content: center; background: var(--habit-color); color: #11120e; font-size: 13px; }.habit-now-actions button.primary:hover { background: color-mix(in srgb, var(--habit-color) 88%, white); }.habit-now-actions button svg { width: 16px; height: 16px; }.habit-now-actions button:disabled { opacity: .5; cursor: default; }
+.habit-runner-steps { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: 5px; margin-top: 11px; }
+.habit-runner-steps button { min-height: 40px; display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 9px; border: 0; border-radius: 9px; padding: 6px 10px; background: rgba(17,17,16,.38); color: var(--ink); text-align: left; cursor: pointer; }.habit-runner-steps button:not(.done):hover { background: rgba(17,17,16,.62); }.habit-runner-steps button > span { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: #34332f; color: var(--muted); font-size: 10px; font-weight: 700; }.habit-runner-steps button > span svg { width: 13px; height: 13px; }.habit-runner-steps button strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }.habit-runner-steps button em { color: var(--habit-color); font-size: 9px; font-style: normal; font-weight: 600; }.habit-runner-steps button.done { opacity: .5; }.habit-runner-steps button.done > span { background: color-mix(in srgb, var(--habit-color) 22%, #34332f); color: var(--habit-color); }
+.habit-now-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin-top: auto; padding-top: 11px; }.habit-now-actions button { min-height: 36px; border: 0; border-radius: 9px; padding: 0 13px; background: #302f2b; color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; touch-action: manipulation; }.habit-now-actions button:hover { background: #3a3934; color: var(--ink); }.habit-now-actions button.primary { display: inline-flex; align-items: center; gap: 6px; min-width: 104px; justify-content: center; background: var(--habit-color); color: #11120e; font-size: 11px; }.habit-now-actions button.primary:hover { background: color-mix(in srgb, var(--habit-color) 88%, white); }.habit-now-actions button svg { width: 14px; height: 14px; }.habit-now-actions button:disabled { opacity: .5; cursor: default; }
+.habit-runner-steps button:focus-visible, .habit-now-actions button:focus-visible { outline: 2px solid var(--habit-color); outline-offset: 2px; }
+.habit-next-preview { --habit-color: var(--lime); position: relative; min-width: 0; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 13px; overflow: hidden; border-radius: 14px; padding: 14px 18px 14px 15px; background: color-mix(in srgb, var(--habit-color) 4%, var(--habit-surface)); }
+.habit-next-preview::before { position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--habit-color); content: ""; }
+.habit-next-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: color-mix(in srgb, var(--habit-color) 15%, #292824); color: var(--habit-color); }.habit-next-icon svg { width: 22px; height: 22px; }
+.habit-next-preview > div { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: 9px; row-gap: 3px; }.habit-next-preview > div > span { color: var(--habit-secondary); font-size: 9.5px; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }.habit-next-preview > div > strong { overflow: hidden; font-size: 15px; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }.habit-next-preview > div > small { grid-column: 1 / -1; color: var(--habit-secondary); font-size: 10px; text-transform: capitalize; }
+.habit-next-preview > div > p { grid-column: 1 / -1; display: -webkit-box; overflow: hidden; margin: 4px 0 0; color: var(--habit-secondary); font-size: 11px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.habit-next-preview > time { align-self: start; margin-top: 2px; color: var(--ink); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.habit-weekly-streak { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 22px; border-radius: 14px; padding: 10px 16px; background: var(--habit-surface); }
+.habit-weekly-streak > div { display: flex; flex-direction: column; gap: 2px; }.habit-weekly-streak > div > span { color: var(--habit-secondary); font-size: 9.5px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }.habit-weekly-streak > div > strong { color: var(--ink); font-size: 20px; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }.habit-weekly-streak > div small { margin-left: 3px; color: var(--habit-secondary); font-size: 9.5px; font-weight: 600; letter-spacing: 0; }
+.habit-weekly-streak ol { min-width: 0; display: grid; grid-template-columns: repeat(7, minmax(18px, 1fr)); gap: 5px; margin: 0; padding: 0; list-style: none; }.habit-weekly-streak li { display: grid; justify-items: center; gap: 5px; color: #a7a39a; font-size: 9px; font-weight: 700; }.habit-weekly-streak li i { position: relative; width: 100%; max-width: 28px; height: 10px; border-radius: 99px; background: #45433e; }.habit-weekly-streak li.is-complete { color: var(--ink); }.habit-weekly-streak li.is-complete i { background: var(--lime); }.habit-weekly-streak li.is-complete i::after { position: absolute; top: 2px; left: 50%; width: 5px; height: 3px; border-bottom: 1.5px solid #11120e; border-left: 1.5px solid #11120e; transform: translateX(-50%) rotate(-45deg); content: ""; }.habit-weekly-streak li.is-today { color: var(--ink); }.habit-weekly-streak li.is-today i { box-shadow: 0 0 0 2px #8f8b83; }
 .habit-queue-column { display: flex; flex-direction: column; overflow: hidden; border-radius: 17px; padding: 17px 17px 13px; background: #1d1c1a; }.habit-queue-head { display: flex; align-items: center; gap: 9px; }.habit-queue-head h3 { margin: 0; font-size: 13px; letter-spacing: -.02em; }.habit-queue-head > span { min-width: 20px; height: 19px; display: grid; place-items: center; border-radius: 99px; padding: 0 6px; background: #2b2a26; color: var(--muted); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }.habit-queue-head.completed { margin-top: 15px; padding-top: 13px; border-top: 1px solid #34322e; }
 .habit-queue { min-height: 0; display: flex; flex-direction: column; gap: 5px; margin-top: 9px; overflow-y: auto; }.habit-queue > p { margin: 9px 0; color: var(--muted-2); font-size: 11px; }
 .habit-queue article { min-height: 46px; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; border-radius: 10px; padding: 5px 9px 5px 6px; background: #232220; }
 .habit-queue-icon { --habit-color: var(--muted); width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: color-mix(in srgb, var(--habit-color) 15%, #292824); color: var(--habit-color); }.habit-queue-icon svg { width: 16px; height: 16px; }
-.habit-queue article > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }.habit-queue article strong { overflow: hidden; font-size: 12.5px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }.habit-queue article > div > span { color: var(--muted-2); font-size: 10.5px; }
+.habit-queue article > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }.habit-queue article strong { overflow: hidden; font-size: 12.5px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }.habit-queue article > div > span { color: var(--muted); font-size: 10.5px; }
 .habit-queue article > time { color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .habit-finished article { background: transparent; padding-left: 6px; }.habit-finished article strong { color: var(--muted); font-weight: 600; }.habit-finished article.is-done .habit-queue-icon { background: color-mix(in srgb, var(--lime) 13%, #262521); color: var(--lime); }
 .habit-day-complete { height: 100%; align-items: center; justify-content: center; text-align: center; }.habit-day-complete > svg { width: 38px; height: 38px; color: var(--lime); }.habit-day-complete h3 { margin: 12px 0 5px; font-size: 21px; }.habit-day-complete p { max-width: 310px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
@@ -597,4 +638,4 @@ button { font: inherit; }
 .habit-section { margin-top: var(--sp-6); padding-top: var(--sp-5); border-top: 1px solid var(--line); }.habit-section > div:first-child > h3, .habit-section-title h3 { margin: 0 0 4px; font-size: var(--fs-lg); }.habit-section > div:first-child > p, .habit-section-title p { margin: 0; color: var(--muted-2); font-size: var(--fs-xs); }.habit-section-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }.habit-section-title > div:last-child { display: flex; gap: 6px; }.habit-days { display: flex; gap: 6px; margin: 13px 0; }.habit-days button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--muted); font-size: var(--fs-xs); font-weight: 700; cursor: pointer; }.habit-days button.selected { border-color: var(--lime); background: var(--lime); color: #111; }
 .habit-step-editor { display: flex; flex-direction: column; gap: 6px; margin-top: 13px; }.habit-step-editor > div { display: grid; grid-template-columns: 24px 80px minmax(0, 1fr) 58px 28px; align-items: center; gap: 6px; }.habit-step-editor > div > span:first-child { color: var(--muted-2); font-size: var(--fs-xs); text-align: center; }.habit-step-editor select, .habit-step-editor input { min-width: 0; height: 32px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; background: var(--surface-0); color: var(--ink); font: inherit; font-size: var(--fs-xs); }.habit-step-editor .step-minutes { padding: 0 5px; }.step-minutes-placeholder { width: 58px; }.habit-step-editor > div > button { width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted-2); font-size: 17px; cursor: pointer; }.habit-no-steps { margin: 13px 0 0; color: var(--muted-2); font-size: var(--fs-xs); }.habit-switch { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: var(--fs-xs); cursor: pointer; }.habit-switch input { position: absolute; opacity: 0; }.habit-switch span { width: 30px; height: 17px; display: block; border-radius: 99px; padding: 2px; background: #383733; }.habit-switch span::after { content: ""; display: block; width: 13px; height: 13px; border-radius: 50%; background: #96948e; transition: transform .15s ease; }.habit-switch input:checked + span { background: var(--lime); }.habit-switch input:checked + span::after { transform: translateX(13px); background: #111; }.habit-reminders .habit-form-grid { margin-top: 13px; }
 .habit-history { grid-column: 1 / -1; padding: var(--sp-5); }.habit-history-list { display: flex; flex-direction: column; margin-top: var(--sp-4); }.habit-history-list > div { min-height: 37px; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto 70px; align-items: center; gap: 10px; border-top: 1px solid color-mix(in srgb, var(--line) 65%, transparent); }.habit-history-list > div:first-child { border-top: 0; }.habit-history-list > div > span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2); }.habit-history-list > div > span.completed { background: var(--lime); }.habit-history-list > div > span.skipped { background: var(--warn); }.habit-history-list strong { font-size: var(--fs-base); }.habit-history-list time { color: var(--muted); font-size: var(--fs-xs); }.habit-history-list em { color: var(--muted-2); font-size: var(--fs-xs); font-style: normal; text-transform: capitalize; }
-@media (prefers-reduced-motion: reduce) { .habit-day-progress span, .habit-switch span::after { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .habit-day-progress span, .habit-switch span::after { transition: none; } .habit-widget-closing .habit-widget-icon { animation: none; } }

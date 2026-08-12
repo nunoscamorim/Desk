@@ -13,7 +13,7 @@ export const habitIconOptions = [
 
 export function HabitIcon({ name, ...props }: { name: string } & SVGProps<SVGSVGElement>) {
   const common = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true, ...props };
-  if (name === "pill") return <svg {...common}><path d="M8.2 19.8a5.1 5.1 0 0 1-7.2-7.2L10.6 3a5.1 5.1 0 0 1 7.2 7.2Z" /><path d="m6 7 7 7" /></svg>;
+  if (name === "pill") return <svg {...common}><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" /><path d="M12 8.5v7" /></g></svg>;
   if (name === "stretch") return <svg {...common}><circle cx="12" cy="4" r="2" /><path d="m7 21 3-7-3-3m10 10-3-7 3-3M7 8l5 3 5-3" /></svg>;
   if (name === "focus") return <svg {...common}><circle cx="12" cy="12" r="7" /><path d="M12 9v3l2 2M5 5l2 2m12-2-2 2" /></svg>;
   if (name === "workout") return <svg {...common}><path d="M3 9v6m3-8v10m12-8v6m-3-8v10M6 12h9" /></svg>;

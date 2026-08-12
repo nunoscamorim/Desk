@@ -64,6 +64,8 @@ export function HabitsScreen({ onStartFocus }: { onStartFocus?: (context: HabitF
   if (!today.plannedCount) return <section className="habits-screen habit-screen-message"><HabitIcon name="sun" /><h2>Your day is open</h2><p>No habits are scheduled for today. Add one in Admin when you are ready.</p></section>;
 
   const current = today.next;
+  const nextHabit = current ? grouped.later[0] ?? null : null;
+  const laterHabits = nextHabit ? grouped.later.slice(1) : grouped.later;
   const completeCurrent = () => {
     if (!current) return;
     if (current.habit.category === "medication" && confirmingMedication !== current.id) { setConfirmingMedication(current.id); return; }
@@ -74,9 +76,9 @@ export function HabitsScreen({ onStartFocus }: { onStartFocus?: (context: HabitF
     <div className="habits-day-head"><div><h2>Today’s habits</h2><p>{today.completedCount} of {today.plannedCount} completed</p></div><strong className="habit-day-count">{today.completedCount}<span>/{today.plannedCount}</span></strong></div>
     <div className="habit-day-progress" aria-label={`${today.completedCount} of ${today.plannedCount} habits completed`}><span style={{ width: `${today.plannedCount ? today.completedCount / today.plannedCount * 100 : 0}%` }} /></div>
     <div className="habits-day-layout">
-      <div className="habit-now-column">
+      <div className={`habit-now-column${nextHabit ? " has-next" : ""}`}>
         {current ? <article className={`habit-now${current.timing === "overdue" ? " is-overdue" : ""}`} style={{ "--habit-color": current.habit.color } as React.CSSProperties}>
-          <div className="habit-now-heading"><span className="habit-now-icon"><HabitIcon name={current.habit.icon} /></span><div><p>{current.timing === "overdue" ? "Ready when you are" : current.status === "snoozed" ? "Saved for later" : "Now"}</p><h3>{current.habit.name}</h3></div><time dateTime={current.scheduledFor}>{formatHabitTime(current.scheduledFor)}</time></div>
+          <div className="habit-now-heading"><span className="habit-now-icon"><HabitIcon name={current.habit.icon} /></span><div><p>{current.timing === "overdue" ? "Overdue" : current.status === "snoozed" ? "Saved for later" : "Now"}</p><h3>{current.habit.name}</h3></div><time dateTime={current.scheduledFor}>{formatHabitTime(current.scheduledFor)}</time></div>
           {/* How long the habit stays open is the question the card was silent on,
               and it is the one that decides whether to do it now or tap Later. */}
           <div className="habit-now-meta">
@@ -88,10 +90,19 @@ export function HabitsScreen({ onStartFocus }: { onStartFocus?: (context: HabitF
           {current.habit.steps.length > 0 && <div className="habit-runner-steps">{current.habit.steps.map((step, index) => { const done = current.completedStepIds.includes(step.id); return <button type="button" className={done ? "done" : ""} disabled={done || busy !== null} key={step.id} onClick={() => completeStep(current, step)}><span>{done ? <HabitIcon name="check" /> : index + 1}</span><strong>{step.title}</strong>{step.type === "focus" && <em>{step.targetMinutes} min · Open Focus</em>}</button>; })}</div>}
           <div className="habit-now-actions"><button type="button" disabled={busy !== null} onClick={() => { setConfirmingMedication(null); void act(current.id, "skip"); }}>Skip today</button><button type="button" disabled={busy !== null} onClick={() => { setConfirmingMedication(null); void act(current.id, "snooze", { minutes: current.habit.reminders.defaultSnoozeMinutes }); }}>Later</button><button className="primary" type="button" disabled={busy !== null} onClick={completeCurrent}><HabitIcon name="check" />{confirmingMedication === current.id ? "Confirm taken" : "Done"}</button></div>
         </article> : <article className="habit-now habit-day-complete"><HabitIcon name="check" /><h3>All clear for today</h3><p>You can come back tomorrow without doing anything else here.</p></article>}
+        {nextHabit && <article className="habit-next-preview" style={{ "--habit-color": nextHabit.habit.color } as React.CSSProperties}>
+          <span className="habit-next-icon"><HabitIcon name={nextHabit.habit.icon} /></span>
+          <div><span>Next habit</span><strong>{nextHabit.habit.name}</strong><small>{queueMeta(nextHabit)} · {nextHabit.habit.category}</small>{nextHabit.habit.description && <p>{nextHabit.habit.description}</p>}</div>
+          <time dateTime={queueTime(nextHabit)}>{formatHabitTime(queueTime(nextHabit))}</time>
+        </article>}
+        <article className="habit-weekly-streak" aria-label={`${today.week.completedDays} active days this week`}>
+          <div><span>Weekly streak</span><strong>{today.week.completedDays}<small>/7 days</small></strong></div>
+          <ol>{today.week.days.map((day) => { const weekday = new Intl.DateTimeFormat(undefined, { weekday: "long", timeZone: "UTC" }).format(new Date(`${day.date}T12:00:00Z`)); return <li aria-label={`${weekday}: ${day.completed ? "completed" : "not completed"}${day.isToday ? ", today" : ""}`} className={`${day.completed ? "is-complete" : ""}${day.isToday ? " is-today" : ""}`} key={day.date}><span aria-hidden="true">{weekday.slice(0, 1)}</span><i aria-hidden="true" /></li>; })}</ol>
+        </article>
       </div>
       <div className="habit-queue-column">
-        <div className="habit-queue-head"><h3>Later today</h3><span>{grouped.later.length}</span></div>
-        <div className="habit-queue">{grouped.later.length ? grouped.later.map((occurrence) => <article key={occurrence.id}><span className="habit-queue-icon" style={{ "--habit-color": occurrence.habit.color } as React.CSSProperties}><HabitIcon name={occurrence.habit.icon} /></span><div><strong>{occurrence.habit.name}</strong><span>{queueMeta(occurrence)}</span></div><time dateTime={queueTime(occurrence)}>{formatHabitTime(queueTime(occurrence))}</time></article>) : <p>Nothing else is waiting.</p>}</div>
+        <div className="habit-queue-head"><h3>Later today</h3><span>{laterHabits.length}</span></div>
+        <div className="habit-queue">{laterHabits.length ? laterHabits.map((occurrence) => <article key={occurrence.id}><span className="habit-queue-icon" style={{ "--habit-color": occurrence.habit.color } as React.CSSProperties}><HabitIcon name={occurrence.habit.icon} /></span><div><strong>{occurrence.habit.name}</strong><span>{queueMeta(occurrence)}</span></div><time dateTime={queueTime(occurrence)}>{formatHabitTime(queueTime(occurrence))}</time></article>) : <p>Nothing else is waiting.</p>}</div>
         <div className="habit-queue-head completed"><h3>Finished</h3><span>{grouped.completed.length}</span></div>
         <div className="habit-queue habit-finished">{grouped.completed.map((occurrence) => <article key={occurrence.id} className={occurrence.status === "completed" ? "is-done" : ""}><span className="habit-queue-icon"><HabitIcon name={occurrence.status === "completed" ? "check" : occurrence.habit.icon} /></span><div><strong>{occurrence.habit.name}</strong><span>{statusCopy(occurrence)}</span></div></article>)}</div>
       </div>
