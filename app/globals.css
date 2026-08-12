@@ -32,6 +32,7 @@ button { font: inherit; }
 .date-label, .card-label { margin: 0 0 7px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .date-label { color: var(--lime); font-size: 18px; }
 .topbar h1 { max-width: 720px; margin: 0; font-size: 28px; line-height: 1.08; letter-spacing: -.04em; }
+.topbar h1.meeting-notice { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .quote-source { margin: 1px 0 0; color: var(--muted); font-size: 10px; line-height: 1.1; }
 .weather { width: 252px; height: 68px; flex: 0 0 auto; padding-top: 4px; text-align: right; }
 .weather-reading { min-width: 0; flex: 1; }
@@ -190,6 +191,7 @@ button { font: inherit; }
 .calendar-list { display: grid; flex: 1; align-content: start; gap: 8px; min-height: 0; padding-bottom: 28px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .calendar-list:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .calendar-list::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.calendar-day-break { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }.calendar-day-break::after { height: 1px; flex: 1; background: var(--line); content: ""; }
 .calendar-item { display: grid; grid-template-columns: 42px 3px minmax(0, 1fr); gap: 8px; min-height: 44px; padding: 6px; align-items: center; border-radius: 8px; background: color-mix(in srgb, var(--event-color) 25%, transparent); }
 .calendar-item time { color: var(--ink); font-size: 13px; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
 /* "All day" replaces a clock reading, and has to wrap inside the same 42px column. */
@@ -277,6 +279,25 @@ button { font: inherit; }
 .task-item.calendar-item .event-line { display: none; }
 .task-overdue .task-detail { color: #ff936f; }
 .task-item div span { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
+
+/* Screen-only: a complete checkbox and an expandable detail panel, both opted
+   into via TaskItem's `detail` prop — the light home-widget row never passes
+   it, so none of this ever reaches that render path. */
+.task-item-interactive { grid-template-columns: 22px minmax(0, 1fr); align-items: start; gap: 10px; padding: 8px; }
+.task-item-interactive.is-expanded { background: color-mix(in srgb, var(--event-color) 35%, transparent); }
+.task-complete { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px; display: grid; place-items: center; border: 1.5px solid var(--muted); border-radius: 50%; background: transparent; padding: 0; cursor: pointer; touch-action: manipulation; }
+.task-complete:hover { border-color: var(--lime); }
+.task-complete:active span { background: var(--lime); }
+.task-complete.is-busy { opacity: .5; cursor: default; }
+.task-complete span { width: 10px; height: 10px; border-radius: 50%; background: transparent; }
+.task-item-body { min-width: 0; cursor: pointer; outline: none; }
+.task-detail-panel { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; gap: 8px; }
+.task-detail-panel p { margin: 0; color: var(--ink); font-size: 11px; line-height: 1.4; white-space: normal; }
+.task-detail-panel p.task-detail-empty { color: var(--muted); font-style: italic; }
+.task-detail-panel dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+.task-detail-panel dl > div { display: flex; flex-direction: column; gap: 2px; }
+.task-detail-panel dt { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.task-detail-panel dd { margin: 0; color: var(--ink); font-size: 11px; text-transform: capitalize; }
 
 .tasks-screen { display: grid; grid-template-columns: 1fr 220px; gap: 16px; height: 400px; }
 /* .tasks-screen-main also carries .tasks-card for its base card look, but that

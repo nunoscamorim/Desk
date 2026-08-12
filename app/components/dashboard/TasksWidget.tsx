@@ -49,16 +49,38 @@ function dueLabel(dueAt: string | null, now: number): string | null {
   return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(due);
 }
 
-function TaskItem({ task, index, now }: { task: Task; index: number; now: number }) {
+/**
+ * Shared by the light home-widget row and the tasks screen's row — the
+ * screen-only bits (a complete checkbox, an expandable detail panel) only
+ * ever render when a caller opts in, so the widget's markup is untouched.
+ */
+function TaskItem({ task, now, detail: detailProps }: { task: Task; now: number; detail?: { expanded: boolean; onToggleExpand: () => void; completing: boolean; onComplete: () => void } }) {
   const due = dueLabel(task.dueAt, now);
   // No dedicated due column — Schedule keeps its clock-time column since a
   // meeting time is exact, but a task's due date is a rough label ("Tmrw",
   // "Late") that doesn't earn the same fixed-width space. It rides in the
   // subtitle instead, next to whichever list the task came from.
-  const detail = [due, task.project ?? task.priority].filter(Boolean).join(" · ");
-  return <li className={`calendar-item task-item ${due === "Late" ? "task-overdue" : ""}`} style={{ "--event-color": getListColor(task.project) } as CSSProperties}>
+  const summary = [due, task.project ?? task.priority].filter(Boolean).join(" · ");
+  if (!detailProps) return <li className={`calendar-item task-item ${due === "Late" ? "task-overdue" : ""}`} style={{ "--event-color": getListColor(task.project) } as CSSProperties}>
     <span className="event-line" />
-    <div><strong>{task.title}</strong>{detail && <span className="task-detail">{detail}</span>}</div>
+    <div><strong>{task.title}</strong>{summary && <span className="task-detail">{summary}</span>}</div>
+  </li>;
+
+  const { expanded, onToggleExpand, completing, onComplete } = detailProps;
+  return <li className={`calendar-item task-item task-item-interactive ${due === "Late" ? "task-overdue" : ""} ${expanded ? "is-expanded" : ""}`} style={{ "--event-color": getListColor(task.project) } as CSSProperties}>
+    <button type="button" className={`task-complete ${completing ? "is-busy" : ""}`} aria-label={`Mark “${task.title}” as done`} disabled={completing} onClick={(event) => { event.stopPropagation(); onComplete(); }}><span /></button>
+    <div className="task-item-body" role="button" tabIndex={0} aria-expanded={expanded} onClick={onToggleExpand} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onToggleExpand(); } }}>
+      <strong>{task.title}</strong>{summary && <span className="task-detail">{summary}</span>}
+      {expanded && <div className="task-detail-panel">
+        <p className={task.notes ? undefined : "task-detail-empty"}>{task.notes || "No additional details."}</p>
+        <dl>
+          <div><dt>List</dt><dd>{task.project ?? "—"}</dd></div>
+          <div><dt>Due</dt><dd>{task.dueAt ? new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short" }).format(new Date(task.dueAt)) : "No due date"}</dd></div>
+          <div><dt>Status</dt><dd>{task.status === "in_progress" ? "In progress" : "To do"}</dd></div>
+          {task.priority && <div><dt>Priority</dt><dd>{task.priority}</dd></div>}
+        </dl>
+      </div>}
+    </div>
   </li>;
 }
 
@@ -71,7 +93,7 @@ function useToday() {
 
 export function TasksWidget({ tasks }: { tasks: Task[] }) {
   const now = useToday();
-  return <article className="card tasks-card"><div className="card-title-row"><h2>Tasks</h2><span>{tasks.filter((task) => task.status !== "done").length} open</span></div>{tasks.length ? <ul className="task-list">{tasks.slice(0, 3).map((task, index) => <TaskItem key={task.id} task={task} index={index} now={now} />)}</ul> : <div className="empty-state">All caught up.</div>}</article>;
+  return <article className="card tasks-card"><div className="card-title-row"><h2>Tasks</h2><span>{tasks.filter((task) => task.status !== "done").length} open</span></div>{tasks.length ? <ul className="task-list">{tasks.slice(0, 3).map((task) => <TaskItem key={task.id} task={task} now={now} />)}</ul> : <div className="empty-state">All caught up.</div>}</article>;
 }
 
 /**
@@ -83,27 +105,49 @@ export function TasksWidget({ tasks }: { tasks: Task[] }) {
 export function TasksScreen({ tasks }: { tasks: Task[] }) {
   const now = useToday();
   const [selected, setSelected] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  // Local so a completed task can disappear immediately instead of waiting on
+  // the next dashboard poll — synced from props whenever a fresh fetch lands,
+  // same as the admin editor's own local-draft-over-server-state pattern.
+  const [localTasks, setLocalTasks] = useState(tasks);
+  useEffect(() => setLocalTasks(tasks), [tasks]);
+
+  const complete = async (task: Task) => {
+    setCompletingId(task.id);
+    setLocalTasks((current) => current.filter((item) => item.id !== task.id));
+    try {
+      const response = await fetch("/api/tasks/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: task.id, listId: task.listId }) });
+      if (!response.ok) throw new Error();
+    } catch {
+      // The source never actually completed it — put it back rather than
+      // leave the display lying about what's still outstanding.
+      setLocalTasks((current) => (current.some((item) => item.id === task.id) ? current : [...current, task]));
+    } finally {
+      setCompletingId((current) => (current === task.id ? null : current));
+    }
+  };
 
   const lists = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const task of tasks) if (task.project) counts.set(task.project, (counts.get(task.project) ?? 0) + 1);
+    for (const task of localTasks) if (task.project) counts.set(task.project, (counts.get(task.project) ?? 0) + 1);
     return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [tasks]);
+  }, [localTasks]);
 
   // A filter naming a list that no longer has tasks would show an empty screen
   // with no clue why, so it falls back to everything.
   const active = selected && lists.some((list) => list.name === selected) ? selected : null;
-  const visible = active ? tasks.filter((task) => task.project === active) : tasks;
+  const visible = active ? localTasks.filter((task) => task.project === active) : localTasks;
 
   return <section className="tasks-screen">
     <article className="card tasks-card tasks-screen-main">
       <div className="card-title-row"><h2>{active ?? "All tasks"}</h2><span>{visible.length} open</span></div>
-      {visible.length ? <ul className="task-list task-list-scroll">{visible.map((task, index) => <TaskItem key={task.id} task={task} index={index} now={now} />)}</ul> : <div className="empty-state">All caught up.</div>}
+      {visible.length ? <ul className="task-list task-list-scroll">{visible.map((task) => <TaskItem key={task.id} task={task} now={now} detail={{ expanded: expandedId === task.id, onToggleExpand: () => setExpandedId((current) => (current === task.id ? null : task.id)), completing: completingId === task.id, onComplete: () => void complete(task) }} />)}</ul> : <div className="empty-state">All caught up.</div>}
     </article>
     <aside className="task-filters" aria-label="Filter by list">
       <p className="card-label">Lists</p>
       <button type="button" className={`task-filter ${active === null ? "active" : ""}`} aria-pressed={active === null} onClick={() => setSelected(null)}>
-        <span>All tasks</span><strong>{tasks.length}</strong>
+        <span>All tasks</span><strong>{localTasks.length}</strong>
       </button>
       {lists.map((list) => <button key={list.name} type="button" className={`task-filter ${active === list.name ? "active" : ""}`} aria-pressed={active === list.name} style={{ "--event-color": getListColor(list.name) } as CSSProperties} onClick={() => setSelected(list.name)}>
         <span><i />{list.name}</span><strong>{list.count}</strong>

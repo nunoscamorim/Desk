@@ -19,7 +19,7 @@ const REQUEST_BUDGET_MS = 9000;
 const LIST_TTL_MS = 10 * 60 * 1000;
 
 type TaskList = { id: string; title: string };
-type GoogleTask = { id?: string; title?: string; status?: string; due?: string; parent?: string; position?: string };
+type GoogleTask = { id?: string; title?: string; status?: string; due?: string; notes?: string; parent?: string; position?: string };
 
 let cachedLists: { expiresAt: number; key: string; lists: TaskList[] } | null = null;
 
@@ -35,10 +35,10 @@ export class GoogleTasksApiService implements TasksRemindersService {
   constructor(private readonly getAccessToken: (options?: { forceRefresh?: boolean }) => Promise<string | null>, private readonly listNames: string[] = []) {}
 
   /** Mirrors the calendar's handling: a 401 buys one forced re-mint and retry. */
-  private async request(path: string): Promise<unknown> {
+  private async request(path: string, init?: { method?: string; body?: unknown }): Promise<unknown> {
     const token = await this.getAccessToken();
     if (!token) throw new Error("Google Tasks is not connected");
-    const call = (accessToken: string) => fetchWithRetry(`${TASKS_API}${path}`, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }, { label: "google-tasks", timeoutMs: REQUEST_TIMEOUT_MS, budgetMs: REQUEST_BUDGET_MS });
+    const call = (accessToken: string) => fetchWithRetry(`${TASKS_API}${path}`, { method: init?.method, headers: { Authorization: `Bearer ${accessToken}`, ...(init?.body ? { "Content-Type": "application/json" } : {}) }, body: init?.body ? JSON.stringify(init.body) : undefined, cache: "no-store" }, { label: "google-tasks", timeoutMs: REQUEST_TIMEOUT_MS, budgetMs: REQUEST_BUDGET_MS });
 
     let response = await call(token);
     if (response.status === 401) {
@@ -92,6 +92,8 @@ export class GoogleTasksApiService implements TasksRemindersService {
           status: "todo",
           dueAt: due && !Number.isNaN(due.getTime()) ? due.toISOString() : null,
           project: list.title,
+          notes: task.notes?.trim() || null,
+          listId: list.id,
         }];
       });
     }));
@@ -111,5 +113,15 @@ export class GoogleTasksApiService implements TasksRemindersService {
       if (b.dueAt) return 1;
       return a.title.localeCompare(b.title);
     });
+  }
+
+  /**
+   * PATCH rather than DELETE: Google Tasks treats completion as a status
+   * change, and a deleted task can't be un-completed from the Tasks app the
+   * way a completed one can.
+   */
+  async completeTask(taskId: string, listId: string | null): Promise<void> {
+    if (!listId) throw new Error("This task has no list to complete it in");
+    await this.request(`/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`, { method: "PATCH", body: { status: "completed" } });
   }
 }

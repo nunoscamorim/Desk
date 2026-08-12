@@ -113,6 +113,8 @@ export class MockDashboardProvider implements DashboardProvider {
       priority: priorities[i % priorities.length],
       dueAt: i % 3 === 0 ? inMinutes(this.now, (i + 1) * 60) : i % 3 === 1 ? inMinutes(this.now, (i + 1) * 1440) : null,
       project: projects[i % projects.length],
+      notes: null,
+      listId: null,
     }));
   }
 

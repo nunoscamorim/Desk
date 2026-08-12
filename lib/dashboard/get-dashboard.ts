@@ -70,7 +70,7 @@ export async function buildSpotifyService(configuration: ReturnType<typeof getSe
  * of their own, so connecting the account once covers both. Without that
  * connection there is nothing to read and the mock stays in place.
  */
-async function buildTasksService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<TasksRemindersService> {
+export async function buildTasksService(configuration: ReturnType<typeof getServiceConfiguration>): Promise<TasksRemindersService> {
   const credentials = await readServiceCredentials();
   if (!credentials.googleRefreshToken) return new MockTasksRemindersService();
   return new GoogleTasksApiService((options) => getGoogleAccessToken(options), configuration.googleTasks.lists);

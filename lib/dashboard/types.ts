@@ -56,6 +56,11 @@ export type Task = {
   priority?: "low" | "medium" | "high";
   dueAt: string | null;
   project: string | null;
+  /** The task's own description/notes, when the source carries one. */
+  notes: string | null;
+  /** The source list this task belongs to — opaque, carried through only so
+   *  a task can be completed against the right list; never displayed. */
+  listId: string | null;
 };
 
 export type AiUsage = {
