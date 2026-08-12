@@ -433,7 +433,11 @@ button { font: inherit; }
 .tv-panel-actions { display: inline-flex; align-items: center; gap: var(--sp-3); }
 .tv-panel-actions button:disabled { opacity: .5; cursor: default; }
 .tv-diagnosis { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); max-width: 460px; margin-top: var(--sp-1); border: 1px solid #4a3a24; border-radius: var(--r-md); padding: var(--sp-3); background: #241d12; color: #e0b877; font-size: var(--fs-sm); line-height: 1.45; }
+.tv-diagnosis.is-info { border-color: color-mix(in srgb, var(--lime) 25%, #302f2a); background: color-mix(in srgb, var(--lime) 8%, #1c1c19); color: var(--muted); }
 .tv-signin { display: inline-flex; align-items: center; height: 34px; border: 1px solid var(--lime); border-radius: var(--r-md); padding: 0 15px; background: var(--lime); color: #11120e; font-size: var(--fs-sm); font-weight: 700; text-decoration: none; touch-action: manipulation; }
+.tv-empty-icon { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin-bottom: var(--sp-1); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted-2); }
+.tv-empty-icon svg { width: 24px; height: 24px; }
+.tv-empty-icon.is-warn { background: color-mix(in srgb, var(--warn) 18%, var(--surface-2)); color: var(--warn); }
 
 /* Toasts */
 .toast-stack { position: fixed; right: var(--sp-5); bottom: var(--sp-5); z-index: 40; display: flex; flex-direction: column; gap: var(--sp-2); width: min(320px, calc(100vw - var(--sp-8))); }

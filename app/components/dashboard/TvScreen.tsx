@@ -16,18 +16,39 @@ type LoadState =
  * Provider logos are arbitrary remote images. Sample their dominant colour when
  * possible so each compact tile gets a subtle branded wash without depending on
  * the image being served with permissive CORS headers.
+ *
+ * Cached by URL at module scope: many tiles share the same provider logo, and
+ * the grid re-mounts tiles as the list scrolls/filters, so without a cache the
+ * same image would get fetched onto a canvas and re-scanned pixel-by-pixel
+ * over and over. Each URL is decoded and sampled exactly once for the life of
+ * the page; every other tile with that logo just reads the cached result.
  */
+const logoColorCache = new Map<string, string | null>();
+
 function useLogoColor(logo: string | null): string | null {
-  const [color, setColor] = useState<string | null>(null);
+  const [color, setColor] = useState<string | null>(() => (logo ? (logoColorCache.get(logo) ?? null) : null));
   useEffect(() => {
-    if (!logo) return;
+    if (!logo) { setColor(null); return; }
+    if (logoColorCache.has(logo)) { setColor(logoColorCache.get(logo) ?? null); return; }
     let cancelled = false;
     const image = new Image(); image.crossOrigin = "anonymous"; image.src = logo;
     image.onload = () => {
       if (cancelled) return;
       const canvas = document.createElement("canvas"); canvas.width = 16; canvas.height = 16;
       const context = canvas.getContext("2d", { willReadFrequently: true }); if (!context) return;
-      try { context.drawImage(image, 0, 0, 16, 16); const pixels = context.getImageData(0, 0, 16, 16).data; let red = 0; let green = 0; let blue = 0; let count = 0; for (let index = 0; index < pixels.length; index += 16) { if (pixels[index + 3] < 128) continue; red += pixels[index]; green += pixels[index + 1]; blue += pixels[index + 2]; count += 1; } if (count && !cancelled) setColor(`rgb(${Math.round(red / count)}, ${Math.round(green / count)}, ${Math.round(blue / count)})`); } catch { /* Cross-origin logos may not expose pixels. */ }
+      try {
+        context.drawImage(image, 0, 0, 16, 16);
+        const pixels = context.getImageData(0, 0, 16, 16).data;
+        let red = 0; let green = 0; let blue = 0; let count = 0;
+        for (let index = 0; index < pixels.length; index += 16) { if (pixels[index + 3] < 128) continue; red += pixels[index]; green += pixels[index + 1]; blue += pixels[index + 2]; count += 1; }
+        const sampled = count ? `rgb(${Math.round(red / count)}, ${Math.round(green / count)}, ${Math.round(blue / count)})` : null;
+        logoColorCache.set(logo, sampled);
+        if (!cancelled) setColor(sampled);
+      } catch {
+        // Cross-origin logos may not expose pixels — cache the miss too, so a
+        // logo that can't be sampled isn't retried by every tile that shows it.
+        logoColorCache.set(logo, null);
+      }
     };
     return () => { cancelled = true; };
   }, [logo]);
@@ -68,28 +89,38 @@ const demoChannels: Channel[] = [...demoGeneralNames.map((name, index) => ({ id:
  * it — so "open /admin" was advice this screen made impossible to follow.
  * Every other case ends here, in server or admin configuration, so text is all
  * there is to give.
+ *
+ * `tone` separates "nothing is broken, this is just unconfigured" (an
+ * expected state on a device that hasn't been set up yet) from an actual
+ * fault — the empty screen shouldn't look alarmed about the former.
  */
-function explain(diagnosis: Diagnosis | null): { text: string; needsSignIn?: boolean } | null {
+function explain(diagnosis: Diagnosis | null): { text: string; tone: "info" | "warn"; needsSignIn?: boolean } | null {
   if (!diagnosis) return null;
   const { environment = {}, request = {}, playlists = {} } = diagnosis;
-  if (environment.authSecretSet === false) return { text: "AUTH_SECRET is not set on the server, so saved playlists cannot be read. Set it and redeploy." };
-  if (request.canReadChannels === false) return { text: "This device isn’t signed in.", needsSignIn: true };
-  if (playlists.error) return { text: playlists.error };
-  if (environment.dataDirWritable === false) return { text: "The server cannot write to data/. Mount a persistent volume at /app/data." };
-  if (playlists.stored === 0) return { text: "No playlist is saved yet. Add one in /admin — paste a URL or upload a file." };
+  if (environment.authSecretSet === false) return { text: "AUTH_SECRET is not set on the server, so saved playlists cannot be read. Set it and redeploy.", tone: "warn" };
+  if (request.canReadChannels === false) return { text: "This device isn’t signed in.", tone: "info", needsSignIn: true };
+  if (playlists.error) return { text: playlists.error, tone: "warn" };
+  if (environment.dataDirWritable === false) return { text: "The server cannot write to data/. Mount a persistent volume at /app/data.", tone: "warn" };
+  if (playlists.stored === 0) return { text: "No playlist is saved yet. Add one in /admin — paste a URL or upload a file.", tone: "info" };
   return null;
 }
 
 function DiagnosisNote({ diagnosis }: { diagnosis: Diagnosis | null }) {
   const explained = explain(diagnosis);
   if (!explained) return null;
-  return <span className="tv-diagnosis">
+  return <span className={`tv-diagnosis ${explained.tone === "info" ? "is-info" : ""}`}>
     {explained.text}
     {explained.needsSignIn &&
       // In-app navigation, not a URL the user has to type — the address bar
       // does not exist in the standalone launch this kiosk uses.
       <Link href="/admin" className="tv-signin">Sign in →</Link>}
   </span>;
+}
+
+function TvIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2.5" /><path d="m8 2 4 3 4-3" /><path d="M9 22h6" />
+  </svg>;
 }
 
 export function TvScreen() {
@@ -162,7 +193,12 @@ export function TvScreen() {
 
   if (channels.length === 0) {
     const explained = explain(diagnosis);
+    // Unconfigured is the expected state on a device nobody has set up yet —
+    // the icon badge only reads as a warning once something has actually
+    // gone wrong, not the moment a playlist simply hasn't been added.
+    const tone = explained?.tone ?? (state.playlists.length === 0 ? "info" : "warn");
     return <section className="tv-screen tv-message">
+      <span className={`tv-empty-icon ${tone === "warn" ? "is-warn" : ""}`}><TvIcon /></span>
       <strong>No channels yet</strong>
       {explained
         ? <DiagnosisNote diagnosis={diagnosis} />
