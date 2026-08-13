@@ -21,7 +21,12 @@ const SPOTIFY_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function CredentialsPanel() {
-  const showToast = useToast();
+    const showToast = useToast();
+  const copyToClipboard = (text: string, message: string) => {
+    navigator.clipboard.writeText(text).then(() => showToast(message, "success")).catch(() => showToast("Could not copy to clipboard", "error"));
+  };
+
+
   const [googleId, setGoogleId] = useState(""); const [googleSecret, setGoogleSecret] = useState(""); const [spotifyId, setSpotifyId] = useState(""); const [spotifySecret, setSpotifySecret] = useState(""); const [status, setStatus] = useState(""); const [googleConfigured, setGoogleConfigured] = useState(false); const [googleConnected, setGoogleConnected] = useState(false); const [googleMessage, setGoogleMessage] = useState(""); const [spotifyConfigured, setSpotifyConfigured] = useState(false); const [spotifyConnected, setSpotifyConnected] = useState(false); const [spotifyMessage, setSpotifyMessage] = useState("");
 
   const refreshStatus = () => fetch("/api/config/credentials").then((r) => r.json()).then((v: { google?: boolean; googleConnected?: boolean; spotify?: boolean; spotifyConnected?: boolean }) => { setGoogleConfigured(Boolean(v.google)); setGoogleConnected(Boolean(v.googleConnected)); setSpotifyConfigured(Boolean(v.spotify)); setSpotifyConnected(Boolean(v.spotifyConnected)); setStatus(`${v.google ? "Google configured" : "Google not configured"} · ${v.spotify ? "Spotify configured" : "Spotify not configured"}`); }).catch(() => setStatus("Unable to read status"));
@@ -79,11 +84,12 @@ export function CredentialsPanel() {
           {googleConnected ? "Reconnect Google Calendar" : "Connect Google Calendar"}
         </a>
         {googleMessage && <p className="settings-note">{googleMessage}</p>}
-        <p className="settings-note">
-          If the Google Cloud project&apos;s OAuth consent screen is still in &quot;Testing&quot; status, Google force-expires
-          this connection after 7 days regardless of activity. Move it to &quot;In production&quot; (or &quot;Internal&quot; for a
-          personal Workspace account) under OAuth consent screen settings for it to actually stay connected.
-        </p>
+          <p className="settings-note">
+            If the Google Cloud project&apos;s OAuth consent screen is still in &quot;Testing&quot; status, Google force-expires
+            this connection after 7 days regardless of activity. Move it to &quot;In production&quot; (or &quot;Internal&quot; for a
+            personal Workspace account) under OAuth consent screen settings for it to actually stay connected.
+          </p>
+          <button type="button" className="btn btn-block" onClick={() => copyToClipboard(window.location.origin + "/api/auth/google-calendar/callback", "Google redirect URI copied")}>Copy redirect URI</button>
       </div>
       <div className="credentials-panel">
         <p className="admin-eyebrow">Spotify</p>
@@ -101,9 +107,10 @@ export function CredentialsPanel() {
           {spotifyConnected ? "Reconnect Spotify" : "Connect Spotify"}
         </a>
         {spotifyMessage && <p className="settings-note">{spotifyMessage}</p>}
-        <p className="settings-note">
-          Register <code>&lt;your-domain&gt;/api/auth/spotify/callback</code> as an exact redirect URI in the Spotify Developer Dashboard.
-        </p>
+          <p className="settings-note">
+            Register <code>&lt;your-domain&gt;/api/auth/spotify/callback</code> as an exact redirect URI in the Spotify Developer Dashboard.
+          </p>
+          <button type="button" className="btn btn-block" onClick={() => copyToClipboard(window.location.origin + "/api/auth/spotify/callback", "Spotify redirect URI copied")}>Copy redirect URI</button>
       </div>
     </>
   );

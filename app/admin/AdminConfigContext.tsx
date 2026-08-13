@@ -36,21 +36,22 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<WidgetConfig[]>(defaultWidgetConfig);
   const [accentColor, setAccentColorState] = useState("#c9ff52");
   const [fontFamily, setFontFamilyState] = useState("Arial");
-  const [canvas, setCanvas] = useState<CanvasSize>(defaultCanvas);
+    const [canvas, setCanvasState] = useState<CanvasSize>(defaultCanvas);
   const [saved, setSaved] = useState<SavedConfig | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+   const [dirty, setDirty] = useState(false);
 
-  const dirty = saved !== null && JSON.stringify({ widgets: config, accentColor, fontFamily, canvas }) !== JSON.stringify(saved);
+  
 
   // Load the saved server config as the source of truth. localStorage is only an
   // offline fallback for when the config endpoint is unreachable.
   useEffect(() => {
     void fetch("/api/config").then((response) => response.json()).then((serverConfig: { widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string; canvas?: CanvasSize }) => {
       const next = { widgets: serverConfig.widgets ?? defaultWidgetConfig, accentColor: serverConfig.accentColor ?? "#c9ff52", fontFamily: serverConfig.fontFamily ?? "Arial", canvas: normalizeCanvas(serverConfig.canvas) ?? defaultCanvas };
-      queueMicrotask(() => { setConfigState(next.widgets); setAccentColorState(next.accentColor); setFontFamilyState(next.fontFamily); setCanvas(next.canvas); setSaved(next); });
+      queueMicrotask(() => { setConfigState(next.widgets); setAccentColorState(next.accentColor); setFontFamilyState(next.fontFamily); setCanvasState(next.canvas); setSaved(next); setDirty(false); });
     }).catch(() => {
       const next = { widgets: readWidgetConfig(window.localStorage.getItem("desk-dashboard-widgets")), accentColor: window.localStorage.getItem("desk-dashboard-accent") || "#c9ff52", fontFamily: window.localStorage.getItem("desk-dashboard-font") || "Arial", canvas: defaultCanvas };
-      queueMicrotask(() => { setConfigState(next.widgets); setAccentColorState(next.accentColor); setFontFamilyState(next.fontFamily); setCanvas(next.canvas); setSaved(next); });
+      queueMicrotask(() => { setConfigState(next.widgets); setAccentColorState(next.accentColor); setFontFamilyState(next.fontFamily); setCanvasState(next.canvas); setSaved(next); setDirty(false); });
     });
   }, []);
 
@@ -64,30 +65,36 @@ export function AdminConfigProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error("Save failed");
       const persisted = await response.json() as { widgets?: WidgetConfig[]; accentColor?: string; fontFamily?: string; canvas?: CanvasSize };
       const next = { widgets: persisted.widgets ?? config, accentColor: persisted.accentColor ?? accentColor, fontFamily: persisted.fontFamily ?? fontFamily, canvas: normalizeCanvas(persisted.canvas) ?? canvas };
-      setConfigState(next.widgets); setAccentColorState(next.accentColor); setFontFamilyState(next.fontFamily); setCanvas(next.canvas); setSaved(next);
+      setConfigState(next.widgets); setAccentColorState(next.accentColor); setFontFamilyState(next.fontFamily); setCanvasState(next.canvas); setSaved(next);
       window.localStorage.setItem("desk-dashboard-widgets", JSON.stringify(next.widgets));
       window.localStorage.setItem("desk-dashboard-accent", next.accentColor);
       window.localStorage.setItem("desk-dashboard-font", next.fontFamily);
       window.localStorage.setItem("desk-dashboard-canvas", JSON.stringify(next.canvas));
       setSaveState("saved");
+      setDirty(false);
       return true;
     } catch { setSaveState("error"); return false; }
   };
 
-  const revert = () => { if (!saved) return; setConfigState(saved.widgets); setAccentColorState(saved.accentColor); setFontFamilyState(saved.fontFamily); setCanvas(saved.canvas); setSaveState("idle"); };
+  const revert = () => { if (!saved) return; setConfigState(saved.widgets); setAccentColorState(saved.accentColor); setFontFamilyState(saved.fontFamily); setCanvasState(saved.canvas); setSaveState("idle"); setDirty(false); };
+
+  const setConfig = (config: WidgetConfig[]) => { setConfigState(config); setDirty(true); };
+  const setAccentColor = (color: string) => { setAccentColorState(color); setDirty(true); };
+  const setFontFamily = (font: string) => { setFontFamilyState(font); setDirty(true); };
+  
 
   // Carries the arranged layout onto the new canvas rather than leaving it
   // pinned to the old one's coordinates, then reflows so nothing lands out of
   // bounds or on top of a neighbour.
-  const changeCanvas = (next: CanvasSize) => { const moved = rescaleWidgetGeometry(config, canvas, next); setConfigState(reflowBento(moved, moved[0]?.id ?? "", bentoArea(next))); setCanvas(next); setSaveState("idle"); };
+    const changeCanvas = (next: CanvasSize) => { const moved = rescaleWidgetGeometry(config, canvas, next); setConfigState(reflowBento(moved, moved[0]?.id ?? "", bentoArea(next))); setCanvasState(next); setSaveState("idle"); setDirty(true); };
 
-  const value: AdminConfigValue = {
+    const value: AdminConfigValue = {
     config,
-    setConfig: setConfigState,
+    setConfig,
     accentColor,
-    setAccentColor: setAccentColorState,
+    setAccentColor,
     fontFamily,
-    setFontFamily: setFontFamilyState,
+    setFontFamily,
     canvas,
     changeCanvas,
     loaded: saved !== null,
