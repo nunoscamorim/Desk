@@ -25,7 +25,7 @@ const TOKEN_BUDGET_MS = 6000;
 // added holds a calendar-only refresh token and Google will refuse tasks reads
 // with 403 until the connect flow is run again — adding a scope does not widen
 // a grant that already exists.
-const GOOGLE_SCOPE = ["https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/tasks.readonly"].join(" ");
+const GOOGLE_SCOPE = ["https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/tasks.readonly", "https://www.googleapis.com/auth/cloud-billing.readonly"].join(" ");
 const AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
