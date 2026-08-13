@@ -541,7 +541,7 @@ button { font: inherit; }
 .habit-widget-link:focus-visible { outline: 2px solid color-mix(in srgb, var(--widget-ink, var(--lime)) 72%, transparent); outline-offset: 3px; }
 .habit-widget-open { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--w-gap-2); color: color-mix(in srgb, var(--habit-color) 78%, white); font-size: var(--w-fs-meta); font-weight: 700; white-space: nowrap; }
 .habit-widget-open svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.habit-widget-state { align-items: flex-start; justify-content: center; gap: var(--w-gap-4); }.habit-widget-state strong { font-size: var(--w-fs-title); }
+.habit-widget-state { align-items: center; justify-content: center; text-align: center; gap: var(--w-gap-4); }.habit-widget-state strong { font-size: var(--w-fs-title); }
 .habit-widget-state .habit-widget-open { position: absolute; right: 14px; bottom: 12px; }
 .habit-widget-done { flex-direction: row; align-items: center; justify-content: flex-start; gap: var(--w-gap-5); }.habit-widget-done .card-label { margin-bottom: var(--w-gap-2); }.habit-widget-done strong { display: block; margin-bottom: var(--w-gap-2); font-size: var(--w-fs-title); }
 .habit-widget-loading .skeleton.block { flex: 1; margin: 10px 0; }
@@ -552,7 +552,7 @@ button { font: inherit; }
    thing on the display so it reads from across the room. Urgency is carried by
    the kicker in the warning tone, never by the accent — that stays the habit's,
    per the note above. */
-.habit-widget-closing { --habit-color: var(--lime); justify-content: center; gap: var(--w-gap-2); padding: var(--w-pad); background: color-mix(in srgb, var(--habit-color) 13%, var(--panel)); }
+.habit-widget-closing { --habit-color: var(--lime); justify-content: center; align-items: center; text-align: center; gap: var(--w-gap-2); padding: var(--w-pad); background: color-mix(in srgb, var(--habit-color) 13%, var(--panel)); }
 .habit-widget-closing-head { display: flex; align-items: center; gap: 8px; }
 .habit-widget-closing-kicker { color: var(--warn); font-size: var(--w-fs-meta); font-weight: 800; letter-spacing: var(--w-ls-label); text-transform: uppercase; }
 .habit-widget-closing .habit-widget-icon { animation: habit-closing-pulse 2s ease-in-out infinite; }
