@@ -64,6 +64,12 @@ export const opencodeStoreAvailable = (): boolean => existsSync(resolveDbPath())
  * each session records, summed over the current period. No token/pricing table
  * is maintained here: opencode already writes the billed dollar value per
  * session, which is why this stays accurate as models and prices change.
+ *
+ * The percentage is measured against the Go subscription's dollar caps — $30 for
+ * a weekly window, $60 for a monthly one (per opencode.ai/docs/go). Both the
+ * period and each budget can be overridden with OPENCODE_GO_PERIOD and the
+ * OPENCODE_GO_*_BUDGET_USD variables, so a host that negotiates a different
+ * allowance doesn't have to edit code to match it.
  */
 export class OpencodeGoUsageService implements OpencodeUsageService {
   private readonly period: GoPeriod;
