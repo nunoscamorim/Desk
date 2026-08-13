@@ -1,10 +1,10 @@
-import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, EmptyCalendarService, GoogleTasksApiService, IcalCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type IcalCalendarService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
+import { CoolifyApiService, getServiceConfiguration, GoogleCalendarApiService, EmptyCalendarService, GoogleTasksApiService, IcalCalendarApiService, MockAppleCalendarService, MockClaudeCodeUsageService, MockCodexUsageService, MockCoolifyService, MockGoogleCalendarService, MockOpencodeUsageService, MockSpotifyService, MockTasksRemindersService, MockWeatherService, OpenMeteoApiService, OpencodeGoUsageService, SpotifyApiService, type AppleCalendarService, type ClaudeCodeUsageService, type CodexUsageService, type CoolifyService, type GoogleCalendarService, type IcalCalendarService, type OpencodeUsageService, type SpotifyService, type TasksRemindersService, type WeatherService } from "@/lib/services";
 import { readServiceCredentials } from "@/lib/services/credential-store";
 import { getGoogleAccessToken } from "@/lib/services/google-oauth";
 import { getSpotifyAccessToken } from "@/lib/services/spotify-oauth";
 import type { DashboardData } from "./types";
 
-export type DashboardServices = { weather: WeatherService; googleCalendar: GoogleCalendarService; appleCalendar: AppleCalendarService; icalCalendar: IcalCalendarService; spotify: SpotifyService; tasks: TasksRemindersService; codexUsage: CodexUsageService; claudeCodeUsage: ClaudeCodeUsageService; coolify: CoolifyService };
+export type DashboardServices = { weather: WeatherService; googleCalendar: GoogleCalendarService; appleCalendar: AppleCalendarService; icalCalendar: IcalCalendarService; spotify: SpotifyService; tasks: TasksRemindersService; codexUsage: CodexUsageService; claudeCodeUsage: ClaudeCodeUsageService; opencodeUsage: OpencodeUsageService; coolify: CoolifyService };
 
 // A calendar call may have to mint a fresh access token before it can fetch, so
 // it gets a wider budget than a plain single-request service — otherwise the one
@@ -91,6 +91,7 @@ export const buildDashboardServices = async (): Promise<DashboardServices> => {
     tasks: await buildTasksService(configuration),
     codexUsage: new MockCodexUsageService(),
     claudeCodeUsage: new MockClaudeCodeUsageService(),
+    opencodeUsage: new OpencodeGoUsageService(),
     coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService(),
   };
 };
@@ -98,7 +99,7 @@ export const buildDashboardServices = async (): Promise<DashboardServices> => {
 // Kept for anything still constructing services synchronously (e.g. ad hoc scripts);
 // the real dashboard route always awaits buildDashboardServices() instead so the
 // OAuth-backed calendar is available.
-export const mockDashboardServices = (): DashboardServices => { const configuration = getServiceConfiguration(); return { weather: new OpenMeteoApiService(configuration.weather.location, configuration.weather.latitude, configuration.weather.longitude), googleCalendar: configuration.googleCalendar.accessToken ? new GoogleCalendarApiService(async () => configuration.googleCalendar.accessToken ?? null, configuration.googleCalendar.calendarId) : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), icalCalendar: configuration.icalCalendar.feedUrls.length > 0 ? new IcalCalendarApiService(configuration.icalCalendar.feedUrls) : new EmptyCalendarService(), spotify: configuration.spotify.accessToken ? new SpotifyApiService(async () => configuration.spotify.accessToken ?? null) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService() }; };
+export const mockDashboardServices = (): DashboardServices => { const configuration = getServiceConfiguration(); return { weather: new OpenMeteoApiService(configuration.weather.location, configuration.weather.latitude, configuration.weather.longitude), googleCalendar: configuration.googleCalendar.accessToken ? new GoogleCalendarApiService(async () => configuration.googleCalendar.accessToken ?? null, configuration.googleCalendar.calendarId) : new MockGoogleCalendarService(), appleCalendar: new MockAppleCalendarService(), icalCalendar: configuration.icalCalendar.feedUrls.length > 0 ? new IcalCalendarApiService(configuration.icalCalendar.feedUrls) : new EmptyCalendarService(), spotify: configuration.spotify.accessToken ? new SpotifyApiService(async () => configuration.spotify.accessToken ?? null) : new MockSpotifyService(), tasks: new MockTasksRemindersService(), codexUsage: new MockCodexUsageService(), claudeCodeUsage: new MockClaudeCodeUsageService(), opencodeUsage: new MockOpencodeUsageService(), coolify: configuration.coolify.url ? new CoolifyApiService(configuration.coolify.url, configuration.coolify.token) : new MockCoolifyService() }; };
 
 export async function getDashboard(services?: DashboardServices): Promise<DashboardData> {
   const resolvedServices = services ?? (await buildDashboardServices());
@@ -106,7 +107,7 @@ export async function getDashboard(services?: DashboardServices): Promise<Dashbo
 }
 
 async function getDashboardWithServices(services: DashboardServices): Promise<DashboardData> {
-  const [weather, googleCalendar, appleCalendar, icalCalendar, spotifyNowPlaying, spotifyRecentlyPlayed, tasks, codexUsage, claudeCodeUsage, coolify] = await Promise.all([
+  const [weather, googleCalendar, appleCalendar, icalCalendar, spotifyNowPlaying, spotifyRecentlyPlayed, tasks, codexUsage, claudeCodeUsage, opencodeUsage, coolify] = await Promise.all([
     withFallback("weather", services.weather.getCurrentWeather(), await new MockWeatherService().getCurrentWeather()),
     // Falls back to an empty schedule rather than mock events: a broken calendar
     // should read as "nothing scheduled", never as invented meetings that look
@@ -121,6 +122,7 @@ async function getDashboardWithServices(services: DashboardServices): Promise<Da
     withFallback("tasks", services.tasks.getTasks(), [], CALENDAR_TIMEOUT_MS),
     withFallback("codex-usage", services.codexUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
     withFallback("claude-code-usage", services.claudeCodeUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
+    withFallback("opencode-usage", services.opencodeUsage.getUsage(), { usedPercent: 0, period: "weekly" as const, resetsAt: new Date().toISOString() }),
     withFallback("coolify", services.coolify.getStatus(), { status: "unknown", version: null, checkedAt: new Date().toISOString() }),
   ]);
   // Ordered by instant rather than as text: these feeds do not agree on whether
@@ -150,6 +152,7 @@ async function getDashboardWithServices(services: DashboardServices): Promise<Da
     tasks,
     codexUsage,
     claudeCodeUsage,
+    opencodeUsage,
     coolify,
   };
 }

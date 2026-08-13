@@ -106,11 +106,11 @@ export const widgetRegistry: Record<WidgetType, WidgetDefinition> = {
   },
   usage: {
     label: "AI usage",
-    description: "Codex and Claude limits",
+    description: "Codex, Claude and Opencode limits",
     symbol: "◒",
     cardClassName: "usage-card",
-    defaultSize: { width: 288, height: 112 },
-    minSize: { width: 224, height: 112 },
+    defaultSize: { width: 288, height: 144 },
+    minSize: { width: 224, height: 120 },
     aspectLock: false,
     defaultSettings: { label: "AI usage", background: "" },
     settingsFields: [{ key: "label", type: "text", label: "Label" }, backgroundField],
@@ -129,7 +129,7 @@ export const defaultWidgetConfig: WidgetConfig[] = [
   { id: "today-calendar", type: "calendar", enabled: true, x: 304, y: 0, width: 352, height: 400, settings: { label: "Today", showLocations: true } },
   { id: "spotify", type: "music", enabled: true, x: 768, y: 0, width: 192, height: 192, settings: { label: "Now playing" } },
   { id: "tasks", type: "tasks", enabled: true, x: 0, y: 208, width: 288, height: 192, settings: { label: "Tasks" } },
-  { id: "ai-usage", type: "usage", enabled: true, x: 672, y: 208, width: 288, height: 112, settings: { label: "AI usage" } },
+  { id: "ai-usage", type: "usage", enabled: true, x: 672, y: 208, width: 288, height: 144, settings: { label: "AI usage" } },
   { id: "habits", type: "habits", enabled: true, x: 304, y: 416, width: 352, height: 192, settings: { label: "Habits" } },
 ];
 

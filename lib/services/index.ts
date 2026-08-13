@@ -7,6 +7,7 @@ export * from "./spotify";
 export * from "./tasks-reminders";
 export * from "./codex-usage";
 export * from "./claude-code-usage";
+export * from "./opencode-usage";
 export * from "./coolify";
 export * from "./production";
 export * from "./config";

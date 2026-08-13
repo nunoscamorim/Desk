@@ -1,3 +1,5 @@
+import { opencodeStoreAvailable } from "./opencode-usage";
+
 export type ServiceConfiguration = {
   weather: { location: string; latitude: number; longitude: number };
   googleCalendar: { accessToken?: string; calendarId: string };
@@ -44,6 +46,7 @@ export function getServiceConfigurationStatus() {
     tasksReminders: { configured: false },
     codexUsage: { configured: false },
     claudeCodeUsage: { configured: false },
+    opencodeUsage: { configured: opencodeStoreAvailable() },
     coolify: { configured: Boolean(configuration.coolify.url), url: configuration.coolify.url ?? null },
   };
 }

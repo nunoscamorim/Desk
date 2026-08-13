@@ -68,6 +68,7 @@ function TaskItem({ task, now, detail: detailProps }: { task: Task; now: number;
 
   const { expanded, onToggleExpand, completing, onComplete } = detailProps;
   return <li className={`calendar-item task-item task-item-interactive ${due === "Late" ? "task-overdue" : ""} ${expanded ? "is-expanded" : ""}`} style={{ "--event-color": getListColor(task.project) } as CSSProperties}>
+    <span className="event-line" />
     <div className="task-item-body" role="button" tabIndex={0} aria-expanded={expanded} onClick={onToggleExpand} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onToggleExpand(); } }}>
       <strong>{task.title}</strong>{summary && <span className="task-detail">{summary}</span>}
       {expanded && <div className="task-detail-panel">
@@ -96,7 +97,8 @@ function useToday() {
 
 export function TasksWidget({ tasks }: { tasks: Task[] }) {
   const now = useToday();
-  return <article className="card tasks-card"><div className="card-title-row"><h2>Tasks</h2><span>{tasks.filter((task) => task.status !== "done").length} open</span></div>{tasks.length ? <ul className="task-list">{tasks.slice(0, 3).map((task) => <TaskItem key={task.id} task={task} now={now} />)}</ul> : <div className="empty-state">All caught up.</div>}</article>;
+  const openTasks = tasks.filter((task) => task.status !== "done");
+  return <article className="card tasks-card"><div className="calendar-heading"><div><span className="card-label">Tasks · today</span><h2 className="card-title">Tasks</h2></div><span className="event-count">{openTasks.length}<small>open</small></span></div>{openTasks.length ? <ul className="task-list">{openTasks.slice(0, 3).map((task) => <TaskItem key={task.id} task={task} now={now} />)}</ul> : <div className="empty-state">All caught up.</div>}</article>;
 }
 
 /**
@@ -146,7 +148,7 @@ export function TasksScreen({ tasks }: { tasks: Task[] }) {
 
   return <section className="tasks-screen">
     <article className="card tasks-card tasks-screen-main">
-      <div className="card-title-row"><h2>{active ?? "All tasks"}</h2><span>{visible.length} open</span></div>
+      <div className="calendar-heading"><div><span className="card-label">Tasks</span><h2 className="card-title">{active ?? "All tasks"}</h2></div><span className="event-count">{visible.length}<small>open</small></span></div>
       {visible.length ? <ul className="task-list task-list-scroll">{visible.map((task) => <TaskItem key={task.id} task={task} now={now} detail={{ expanded: expandedId === task.id, onToggleExpand: () => setExpandedId((current) => (current === task.id ? null : task.id)), completing: completingId === task.id, onComplete: () => void complete(task) }} />)}</ul> : <div className="empty-state">All caught up.</div>}
     </article>
     <aside className="task-filters" aria-label="Filter by list">
