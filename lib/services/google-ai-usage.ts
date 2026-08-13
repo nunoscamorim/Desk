@@ -34,9 +34,13 @@ export class GoogleAiUsageGoService implements GoogleAiUsageService {
     }
 
     try {
-      const response = await fetchWithRetry(BILLING_API_ENDPOINT, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+            const response = await fetchWithRetry(
+        BILLING_API_ENDPOINT,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+        { label: "google-ai-usage" },
+      );
 
       const data = await response.json();
 
