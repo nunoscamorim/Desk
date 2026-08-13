@@ -47,7 +47,7 @@
       "x": 720,
       "y": 0,
       "width": 320,
-      "height": 480,
+      "height": 448,
       "settings": {
         "label": "Tasks",
         "background": ""
@@ -58,9 +58,9 @@
       "type": "usage",
       "enabled": true,
       "x": 720,
-      "y": 496,
+      "y": 464,
       "width": 320,
-      "height": 112,
+      "height": 144,
       "settings": {
         "label": "AI usage",
         "background": ""

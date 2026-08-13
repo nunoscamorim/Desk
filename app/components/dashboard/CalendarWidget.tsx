@@ -53,7 +53,7 @@ export function CalendarWidget({ calendar, settings }: { calendar: TodayCalendar
     heading = "Today";
     label = "Schedule · today";
   }
-  return <article className="card calendar-card"><div className="calendar-heading"><div><span className="card-label">{label}</span><h2>{heading}</h2></div><span className="event-count">{visibleEvents.length}<small>events</small></span></div>{visibleEvents.length ? <ol className="calendar-list" tabIndex={0} aria-label={`${heading} events`}>{visibleEvents.map((event, index) => <CalendarItemWithDayBreak key={event.id} event={event} index={index} showLocations={showLocations} showTomorrow={tomorrowStartsAt === index} />)}</ol> : <div className="empty-state">Nothing scheduled.</div>}</article>;
+  return <article className="card calendar-card"><div className="calendar-heading"><div><span className="card-label">{label}</span><h2 className="card-title">{heading}</h2></div><span className="event-count">{visibleEvents.length}<small>events</small></span></div>{visibleEvents.length ? <ol className="calendar-list" tabIndex={0} aria-label={`${heading} events`}>{visibleEvents.map((event, index) => <CalendarItemWithDayBreak key={event.id} event={event} index={index} showLocations={showLocations} showTomorrow={tomorrowStartsAt === index} />)}</ol> : <div className="empty-state">Nothing scheduled.</div>}</article>;
 }
 
 function CalendarItemWithDayBreak({ showTomorrow, ...props }: { event: CalendarEvent; showLocations: boolean; index: number; showTomorrow: boolean }) {

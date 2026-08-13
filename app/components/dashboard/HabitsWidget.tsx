@@ -99,18 +99,27 @@ export function HabitsWidget() {
   </button>;
 
   const visibleOccurrences = today.occurrences
-    .filter((occurrence) => occurrence.status !== "completed" && occurrence.status !== "skipped")
+    .filter((occurrence) => !["completed", "skipped", "missed"].includes(occurrence.status))
     .slice(0, 3);
   if (!visibleOccurrences.length) return <button type="button" className="card habits-card habit-widget-done habit-widget-link" onClick={openHabits}><span className="habit-widget-check"><HabitIcon name="check" /></span><span><span className="card-label">Habits</span><strong>Done for today</strong><span>{today.completedCount} completed</span></span>{openCue}</button>;
   return <button type="button" className="card habits-card habit-widget-agenda habit-widget-link" onClick={openHabits}>
-    <span className="habit-widget-agenda-head"><strong>Habits</strong><span className="habit-widget-total"><strong>{today.plannedCount}</strong> today</span></span>
-    <span className="habit-widget-list">
+    <span className="calendar-heading">
+      <span className="calendar-heading-stack">
+        <span className="card-label">Habits · today</span>
+        <span className="card-title">Habits</span>
+      </span>
+      <span className="event-count">{today.plannedCount}<small>today</small></span>
+    </span>
+    <span className="task-list habit-widget-list">
       {visibleOccurrences.map((occurrence) => {
         const state = getOccurrenceState(occurrence);
-        return <span className={`habit-widget-row${state === "Overdue" ? " is-overdue" : ""}`} key={occurrence.id}>
-          <span className="habit-widget-row-icon"><HabitIcon name={occurrence.habit.icon} /></span>
-          <strong>{occurrence.habit.name}</strong>
-          <span className="habit-widget-row-time"><time dateTime={occurrence.status === "snoozed" && occurrence.snoozedUntil ? occurrence.snoozedUntil : occurrence.scheduledFor}>{getOccurrenceTime(occurrence)}</time>{state && <em>{state}</em>}</span>
+        return <span className={`calendar-item habit-item${state === "Overdue" ? " is-overdue" : ""}`} style={{ "--event-color": occurrence.habit.color } as React.CSSProperties} key={occurrence.id}>
+          <span className="habit-item-icon"><HabitIcon name={occurrence.habit.icon} /></span>
+          <span className="event-line" />
+          <span className="habit-item-content">
+            <strong>{occurrence.habit.name}</strong>
+            <span><time dateTime={occurrence.status === "snoozed" && occurrence.snoozedUntil ? occurrence.snoozedUntil : occurrence.scheduledFor}>{getOccurrenceTime(occurrence)}</time>{state && <em>{state}</em>}</span>
+          </span>
         </span>;
       })}
     </span>

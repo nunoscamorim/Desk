@@ -21,7 +21,7 @@ const widgetViews: Record<WidgetType, (data: DashboardData, settings: WidgetSett
   music: (data) => <SpotifyWidget nowPlaying={data.spotifyNowPlaying} />,
   tasks: (data) => <TasksWidget tasks={data.tasks} />,
   habits: () => <HabitsWidget />,
-  usage: (data) => <AiUsageWidget codex={data.codexUsage} claudeCode={data.claudeCodeUsage} />,
+  usage: (data) => <AiUsageWidget codex={data.codexUsage} claudeCode={data.claudeCodeUsage} opencode={data.opencodeUsage} />,
 };
 
 export function renderWidget(type: WidgetType, data: DashboardData, settings: WidgetSettings): ReactNode {

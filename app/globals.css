@@ -219,9 +219,9 @@ button { font: inherit; }
 .meeting-rail { position: relative; flex: 1; height: 1px; background: color-mix(in srgb, var(--card-ink, #11120e) 30%, transparent); }
 .meeting-rail i { position: absolute; top: 50%; right: 0; width: 7px; height: 7px; border: 2px solid var(--widget-bg, var(--lime)); border-radius: 50%; background: var(--card-ink, #11120e); transform: translateY(-50%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--card-ink, #11120e) 15%, transparent); }
 .meeting-empty { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: var(--w-gap-2); }.meeting-empty strong { font-size: var(--w-fs-hero); }.meeting-empty span { color: color-mix(in srgb, var(--card-ink, #11120e) 62%, transparent); font-size: var(--w-fs-sub); }
-.calendar-card { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; padding: var(--w-pad); background: var(--panel); }
-.calendar-card::after { content: ""; position: absolute; z-index: 2; right: var(--w-pad); bottom: var(--w-pad); left: var(--w-pad); height: 34px; pointer-events: none; background: linear-gradient(180deg, transparent, var(--widget-bg, var(--panel)) 92%); }
-.calendar-heading { display: flex; align-items: center; justify-content: space-between; }.calendar-heading .card-label { margin-bottom: var(--w-gap-2); color: #8f8b83; }.calendar-heading h2 { font-size: var(--w-fs-title); }.event-count { display: flex; align-items: baseline; gap: var(--w-gap-2); color: var(--ink); font-size: var(--w-fs-hero); font-weight: 700; }.event-count small { color: var(--muted); font-size: var(--w-fs-meta); font-weight: 400; }
+.calendar-card { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; padding: 28px var(--w-pad) 20px; background: var(--panel); }
+.calendar-card::after { content: ""; position: absolute; z-index: 2; right: var(--w-pad); bottom: 20px; left: var(--w-pad); height: 34px; pointer-events: none; background: linear-gradient(180deg, transparent, var(--widget-bg, var(--panel)) 92%); }
+.calendar-heading { display: flex; align-items: center; justify-content: space-between; }.calendar-heading > div, .calendar-heading > .calendar-heading-stack { display: flex; flex-direction: column; }.calendar-heading .card-label { margin-bottom: var(--w-gap-2); color: #8f8b83; }.calendar-heading .card-title { font-size: var(--w-fs-title); letter-spacing: -.025em; }.event-count { display: flex; align-items: baseline; gap: var(--w-gap-2); color: var(--ink); font-size: var(--w-fs-hero); font-weight: 700; }.event-count small { color: var(--muted); font-size: var(--w-fs-meta); font-weight: 400; }
 .card-title-row { display: flex; align-items: baseline; justify-content: space-between; }
 .card-title-row h2 { font-size: var(--w-fs-title); }
 .card-title-row > span { color: var(--muted); font-size: var(--w-fs-sub); }
@@ -308,22 +308,23 @@ button { font: inherit; }
    keep following the configurable accent. */
 .music-card .track-progress { background: rgba(255,255,255,.24); }
 .music-card .track-progress-fill { background: var(--spotify-green); }
-.tasks-card { grid-column: 1; grid-row: 2; padding: var(--w-pad); }
+.tasks-card { grid-column: 1; grid-row: 2; padding: 28px var(--w-pad) 20px; }
 .task-list { margin-top: 12px; display: grid; align-content: start; gap: 8px; }
 /* Reuses the calendar's event-card look — a colored tint, an accent rail —
    rather than a checklist row, so a task and a meeting read as the same kind
    of thing on the same display. No leading time column, unlike the calendar's:
    a task's due date is a rough label, not a clock time, so it rides in the
    subtitle instead of claiming its own fixed-width space. */
-.task-item.calendar-item { grid-template-columns: minmax(0, 1fr); }
-.task-item.calendar-item .event-line { display: none; }
+.task-item.calendar-item { grid-template-columns: 3px minmax(0, 1fr); }
+.task-item.calendar-item .event-line { align-self: center; }
 .task-overdue .task-detail { color: #ff936f; }
 .task-item div span { overflow: hidden; color: var(--muted); font-size: var(--w-fs-sub); text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
 
 /* Screen-only: a complete checkbox and an expandable detail panel, both opted
    into via TaskItem's `detail` prop — the light home-widget row never passes
    it, so none of this ever reaches that render path. */
-.task-item.task-item-interactive { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--w-gap-4); padding: var(--w-gap-4); }
+.task-item.task-item-interactive { grid-template-columns: 3px minmax(0, 1fr) auto; align-items: center; gap: var(--w-gap-4); padding: var(--w-gap-4); }
+.task-item.task-item-interactive .event-line { align-self: center; }
 .task-item.task-item-interactive.is-expanded { background: color-mix(in srgb, var(--event-color) 35%, transparent); }
 .task-item-interactive.is-expanded .task-complete { align-self: start; }
 .task-complete { flex: 0 0 auto; align-self: center; min-height: 30px; border: 1px solid color-mix(in srgb, var(--event-color) 50%, transparent); border-radius: 8px; padding: 0 12px; background: color-mix(in srgb, var(--event-color) 38%, transparent); color: var(--ink); font-size: var(--w-fs-sub); font-weight: 650; white-space: nowrap; cursor: pointer; touch-action: manipulation; }
@@ -340,12 +341,23 @@ button { font: inherit; }
 .task-detail-panel dt { color: var(--muted); font-size: var(--w-fs-micro); text-transform: uppercase; letter-spacing: var(--w-ls-label); }
 .task-detail-panel dd { margin: 0; color: var(--ink); font-size: var(--w-fs-sub); text-transform: capitalize; }
 
+/* Habits agenda rows share the same card-row language as schedule and tasks:
+   the habit colour tints the surface and drives a left accent rail. */
+.habit-item.calendar-item { grid-template-columns: 28px 3px minmax(0, 1fr); }
+.habit-item-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--w-radius-sm); background: color-mix(in srgb, var(--event-color) 28%, transparent); color: var(--event-color); }
+.habit-item-icon svg { width: 16px; height: 16px; }
+.habit-item-content { display: flex; min-width: 0; flex-direction: column; gap: var(--w-gap-1); }
+.habit-item-content strong { overflow: hidden; font-size: var(--w-fs-body); line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+.habit-item-content > span { display: flex; align-items: center; gap: var(--w-gap-3); overflow: hidden; color: var(--muted); font-size: var(--w-fs-sub); text-overflow: ellipsis; white-space: nowrap; }
+.habit-item-content > span em { font-style: normal; }
+.habit-item.is-overdue .habit-item-content > span em { color: var(--warn); font-weight: 700; }
+
 .tasks-screen { display: grid; grid-template-columns: 1fr 220px; gap: 16px; height: 400px; }
 /* .tasks-screen-main also carries .tasks-card for its base card look, but that
    class pins grid-column/grid-row for its other job placing the small widget in
    the home dashboard-grid. Left alone here, that stale placement would win over
    this container's own two-column layout and collapse it to a stack. */
-.tasks-screen-main { grid-column: auto; grid-row: auto; display: flex; flex-direction: column; min-height: 0; padding: 18px 20px; }
+.tasks-screen-main { grid-column: auto; grid-row: auto; display: flex; flex-direction: column; min-height: 0; padding: 28px 20px 20px; }
 .tasks-screen-main .task-list-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding-right: 2px; }
 .tasks-screen-main .task-list-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .task-filters { display: flex; flex-direction: column; gap: var(--w-gap-4); min-height: 0; padding: var(--w-pad); overflow-y: auto; scrollbar-width: none; background: var(--panel); border-radius: var(--w-radius); }
@@ -515,7 +527,7 @@ button { font: inherit; }
 
 /* Habits — a quiet daily cue on the display, with the denser configuration
    work kept in Admin. Accent color belongs to the habit, never to urgency. */
-.habits-card { --habit-color: var(--lime); display: flex; flex-direction: column; justify-content: space-between; padding: var(--w-pad); background: var(--panel); }
+.habits-card { --habit-color: var(--lime); display: flex; flex-direction: column; justify-content: space-between; padding: 28px var(--w-pad) 20px; background: var(--panel); }
 .habit-widget-top { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; }
 .habit-widget-top .card-label { margin: 0; color: color-mix(in srgb, var(--habit-color) 76%, white); }
 .habit-widget-icon, .habit-widget-check { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--w-radius-inner); background: color-mix(in srgb, var(--habit-color) 18%, var(--panel)); color: var(--habit-color); }
@@ -534,18 +546,7 @@ button { font: inherit; }
 .habit-widget-done { flex-direction: row; align-items: center; justify-content: flex-start; gap: var(--w-gap-5); }.habit-widget-done .card-label { margin-bottom: var(--w-gap-2); }.habit-widget-done strong { display: block; margin-bottom: var(--w-gap-2); font-size: var(--w-fs-title); }
 .habit-widget-loading .skeleton.block { flex: 1; margin: 10px 0; }
 .habit-widget-agenda { align-items: stretch; justify-content: flex-start; gap: var(--w-gap-5); padding: var(--w-pad); }
-.habit-widget-agenda-head { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--ink); }
-.habit-widget-agenda-head > strong { font-size: var(--w-fs-title); font-weight: 650; letter-spacing: -.025em; }
-.habit-widget-total { margin-left: auto; display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 4px; color: var(--muted); font-size: var(--w-fs-meta); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.habit-widget-total > strong { color: var(--ink); font-size: var(--w-fs-body); font-weight: 700; }
-.habit-widget-list { width: 100%; flex: 1 1 auto; min-width: 0; min-height: 0; display: grid; grid-auto-rows: minmax(0, 1fr); align-items: stretch; gap: var(--w-gap-4); }
-.habit-widget-row { width: 100%; min-width: 0; min-height: 0; display: grid; grid-template-columns: clamp(22px, 8cqw, 28px) minmax(0, 1fr) max-content; align-items: center; gap: clamp(7px, 2.5cqw, 11px); border-radius: clamp(6px, 2.3cqw, 10px); padding: clamp(3px, 1.8cqw, 8px) clamp(7px, 2.8cqw, 12px); background: color-mix(in srgb, var(--widget-bg, var(--panel)) 84%, var(--ink) 16%); }
-.habit-widget-row-icon { width: clamp(22px, 8cqw, 28px); height: clamp(22px, 8cqw, 28px); display: grid; place-items: center; border-radius: clamp(6px, 2cqw, 8px); background: color-mix(in srgb, var(--widget-bg, var(--panel)) 72%, var(--ink) 28%); color: var(--ink); }
-.habit-widget-row-icon svg { width: clamp(13px, 4.3cqw, 17px); height: clamp(13px, 4.3cqw, 17px); }
-.habit-widget-row > strong { overflow: hidden; font-size: clamp(11px, 3.7cqw, 14px); font-weight: 650; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.habit-widget-row-time { display: inline-flex; align-items: center; gap: clamp(4px, 1.7cqw, 7px); color: var(--muted); font-size: clamp(9px, 2.8cqw, 11px); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.habit-widget-row-time em { font-style: normal; }
-.habit-widget-row.is-overdue .habit-widget-row-time em { color: var(--warn); font-weight: 700; }
+.habit-widget-list { width: 100%; flex: 1 1 auto; min-width: 0; min-height: 0; display: grid; grid-auto-rows: minmax(44px, max-content); align-items: stretch; gap: var(--w-gap-4); }
 /* The final five minutes of a habit's window. The card gives itself over to one
    habit: its own colour tints the whole surface, and the countdown is the largest
    thing on the display so it reads from across the room. Urgency is carried by
@@ -570,16 +571,15 @@ button { font: inherit; }
 @container habits-widget (max-width: 300px) {
   .habits-card.habit-widget-state, .habits-card.habit-widget-done, .habits-card.habit-widget-loading { padding: var(--w-gap-5); }
   .habit-widget-agenda { gap: var(--w-gap-3); padding: var(--w-gap-5); }
-  .habit-widget-agenda-head > strong { font-size: var(--w-fs-body); letter-spacing: -.02em; }
-  .habit-widget-total { font-size: var(--w-fs-micro); }
-  .habit-widget-total > strong { font-size: var(--w-fs-meta); }
+  .habit-widget-agenda .calendar-heading .card-title { font-size: var(--w-fs-body); letter-spacing: -.02em; }
+  .habit-widget-agenda .event-count { font-size: var(--w-fs-body); }
+  .habit-widget-agenda .event-count small { font-size: var(--w-fs-micro); }
   .habit-widget-list { gap: var(--w-gap-1); }
-  .habit-widget-row { grid-template-columns: 15px minmax(0, 1fr) auto; gap: var(--w-gap-3); border-radius: var(--w-radius-sm); padding: var(--w-gap-1) var(--w-gap-3); }
-  .habit-widget-row-icon { width: 15px; height: 15px; border-radius: 0; background: transparent; }
-  .habit-widget-row-icon svg { width: 11px; height: 11px; }
-  .habit-widget-row > strong { font-size: var(--w-fs-meta); }
-  /* Too narrow for the time and its state side by side. */
-  .habit-widget-row-time { flex-direction: column; align-items: flex-end; gap: 0; font-size: var(--w-fs-micro); line-height: 1.15; }
+  .habit-item.calendar-item { grid-template-columns: 15px 3px minmax(0, 1fr); gap: var(--w-gap-3); border-radius: var(--w-radius-sm); padding: var(--w-gap-2) var(--w-gap-3); }
+  .habit-item-icon { width: 15px; height: 15px; border-radius: 0; background: transparent; }
+  .habit-item-icon svg { width: 11px; height: 11px; }
+  .habit-item-content strong { font-size: var(--w-fs-meta); }
+  .habit-item-content > span { font-size: var(--w-fs-micro); }
   .habit-widget-closing { gap: var(--w-gap-1); padding: var(--w-gap-5); }
   .habit-widget-closing-kicker { font-size: var(--w-fs-micro); }
   .habit-widget-closing-name { margin-top: var(--w-gap-1); font-size: var(--w-fs-body); }
@@ -588,21 +588,21 @@ button { font: inherit; }
 }
 @container habits-widget (min-width: 301px) and (max-width: 399px) {
   .habit-widget-agenda { gap: var(--w-gap-4); padding: var(--w-gap-5) var(--w-pad); }
-  .habit-widget-agenda-head > strong { font-size: var(--w-fs-lead); }
-  .habit-widget-total { font-size: var(--w-fs-micro); }
-  .habit-widget-total > strong { font-size: var(--w-fs-sub); }
+  .habit-widget-agenda .calendar-heading .card-title { font-size: var(--w-fs-lead); }
+  .habit-widget-agenda .event-count { font-size: var(--w-fs-lead); }
+  .habit-widget-agenda .event-count small { font-size: var(--w-fs-micro); }
   .habit-widget-list { gap: var(--w-gap-2); }
-  .habit-widget-row { grid-template-columns: 22px minmax(0, 1fr) auto; gap: var(--w-gap-4); padding: var(--w-gap-2) var(--w-gap-4); }
-  .habit-widget-row-icon { width: 22px; height: 22px; }
-  .habit-widget-row-icon svg { width: 13px; height: 13px; }
-  .habit-widget-row > strong { font-size: var(--w-fs-sub); }
-  .habit-widget-row-time { font-size: var(--w-fs-micro); }
+  .habit-item.calendar-item { grid-template-columns: 22px 3px minmax(0, 1fr); gap: var(--w-gap-4); padding: var(--w-gap-2) var(--w-gap-4); }
+  .habit-item-icon { width: 22px; height: 22px; }
+  .habit-item-icon svg { width: 13px; height: 13px; }
+  .habit-item-content strong { font-size: var(--w-fs-sub); }
+  .habit-item-content > span { font-size: var(--w-fs-micro); }
   .habit-widget-closing { padding: var(--w-gap-5) var(--w-pad); }
 }
 @container habits-widget (min-width: 440px) {
   .habit-widget-agenda { padding: var(--w-gap-5) var(--w-gap-6); }
-  .habit-widget-agenda-head > strong { font-size: var(--w-fs-hero); }
-  .habit-widget-row { padding-inline: 12px 14px; }
+  .habit-widget-agenda .calendar-heading .card-title { font-size: var(--w-fs-hero); }
+  .habit-item.calendar-item { padding-inline: 12px 14px; }
   .habit-widget-closing { padding: var(--w-gap-5) var(--w-gap-6); }
   .habit-widget-closing-name { font-size: var(--w-fs-title); }
 }

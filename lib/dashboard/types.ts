@@ -79,6 +79,7 @@ export type DashboardData = {
   tasks: Task[];
   codexUsage: AiUsage;
   claudeCodeUsage: AiUsage;
+  opencodeUsage: AiUsage;
   coolify: { status: "online" | "offline" | "unknown"; version: string | null; checkedAt: string };
 };
 
@@ -91,4 +92,5 @@ export interface DashboardProvider {
   getTasks(): Promise<Task[]>;
   getCodexUsage(): Promise<AiUsage>;
   getClaudeCodeUsage(): Promise<AiUsage>;
+  getOpencodeUsage(): Promise<AiUsage>;
 }

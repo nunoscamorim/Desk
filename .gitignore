@@ -47,3 +47,6 @@ data/habits.json
 next-env.d.ts
 data/tv-uploads/
 data/tv-epg-uploads/
+
+# ShipStudio metadata
+.shipstudio/

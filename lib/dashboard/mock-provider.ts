@@ -133,4 +133,12 @@ export class MockDashboardProvider implements DashboardProvider {
       resetsAt: inMinutes(this.now, 4_320),
     };
   }
+
+  async getOpencodeUsage(): Promise<AiUsage> {
+    return {
+      usedPercent: 32,
+      period: "weekly",
+      resetsAt: inMinutes(this.now, 4_800),
+    };
+  }
 }
