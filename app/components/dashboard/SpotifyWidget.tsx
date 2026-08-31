@@ -11,28 +11,30 @@ function SpotifyLabel() {
   return <span className="card-label"><SpotifyMark /><span>Now</span></span>;
 }
 
-function TransportIcon({ name }: { name: "previous" | "play" | "pause" | "next" | "shuffle" | "repeat" }) {
-  if (name === "play") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" /></svg>;
-  if (name === "pause") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" /></svg>;
-  if (name === "next") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 9 7-9 7V5Zm10 0h4v14h-4V5Z" /></svg>;
-  if (name === "shuffle") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5h-2V6.4l-3.3 3.3-1.4-1.4L17.6 5H16V3ZM3 6h3.2c1.1 0 2.2.5 3 1.4l6.6 7.3c.4.4.9.7 1.5.7H19v-2h2v4h-5v-2h1.3c-1.1 0-2.2-.5-3-1.4L7.7 8.7c-.4-.4-.9-.7-1.5-.7H3V6Zm0 12v-2h3.2c.6 0 1.1-.2 1.5-.7l1.2-1.3 1.4 1.4-1.2 1.3c-.8.9-1.9 1.3-3 1.3H3Zm11.1-8.6 1.4-1.4 2 2H21v2h-4.3l-2.6-2.6Z" /></svg>;
-  if (name === "repeat") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h10l-2-2 1.4-1.4L21.8 7l-5.4 5.4L15 11l2-2H7a2 2 0 0 0-2 2v1H3v-1a4 4 0 0 1 4-4Zm10 14H7l2 2-1.4 1.4L2.2 17l5.4-5.4L9 13l-2 2h10a2 2 0 0 0 2-2v-1h2v1a4 4 0 0 1-4 4Z" /></svg>;
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19 5-9 7 9 7V5ZM5 5h4v14H5V5Z" /></svg>;
+function TransportIcon({ name }: { name: "previous" | "play" | "pause" | "next" | "shuffle" | "repeat" | "repeatOne" }) {
+  const props = { className: `transport-icon ${name}`, viewBox: "0 0 24 24", "aria-hidden": true } as const;
+  if (name === "play") return <svg {...props}><path d="m8 5 11 7-11 7V5Z" /></svg>;
+  if (name === "pause") return <svg {...props}><path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" /></svg>;
+  if (name === "next") return <svg {...props}><path d="m5 5 9 7-9 7V5Zm10 0h4v14h-4V5Z" /></svg>;
+  if (name === "shuffle") return <svg {...props}><path d="M3 6h1.5a4 4 0 0 1 3 1.4l9 9.2a4 4 0 0 0 3 1.4H21M18 14l3 3-3 3M3 18h1.5a4 4 0 0 0 3-1.4l9-9.2a4 4 0 0 1 3-1.4H21M18 4l3 3-3 3" /></svg>;
+  if (name === "repeat") return <svg {...props}><path d="m17 3 4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 21l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" /></svg>;
+  if (name === "repeatOne") return <svg {...props}><path d="m17 3 4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 21l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3M12 9v5l-1.5-1" /></svg>;
+  return <svg {...props}><path d="m19 5-9 7 9 7V5ZM5 5h4v14H5V5Z" /></svg>;
 }
 
 function SpotifyControls({ isPlaying }: { isPlaying: boolean }) {
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [shuffle, setShuffle] = useState(false);
-  const [repeat, setRepeat] = useState(false);
-  const send = async (action: "play" | "pause" | "next" | "previous" | "shuffle" | "repeat", value?: boolean | "context" | "off") => {
+  const [repeat, setRepeat] = useState<"off" | "context" | "track">("off");
+  const send = async (action: "play" | "pause" | "next" | "previous" | "shuffle" | "repeat", value?: boolean | "context" | "track" | "off") => {
     setPending(action);
     setError(false);
     try {
       const response = await fetch("/api/spotify/control", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, value }) });
       if (!response.ok) throw new Error();
       if (action === "shuffle") setShuffle(value === true);
-      if (action === "repeat") setRepeat(value === "context");
+      if (action === "repeat" && (value === "off" || value === "context" || value === "track")) setRepeat(value);
       window.dispatchEvent(new CustomEvent("spotify:refresh"));
     } catch {
       setError(true);
@@ -40,6 +42,8 @@ function SpotifyControls({ isPlaying }: { isPlaying: boolean }) {
   };
   const busy = pending !== null;
   const toggleAction: "play" | "pause" = isPlaying ? "pause" : "play";
+  const nextRepeat = repeat === "off" ? "context" : repeat === "context" ? "track" : "off";
+  const repeatLabel = repeat === "off" ? "Turn loop on" : repeat === "context" ? "Loop playlist; switch to loop track" : "Looping this track; turn loop off";
   return <div className="spotify-controls" aria-label="Playback controls">
     <button type="button" className={`spotify-control utility ${shuffle ? "active" : ""}`} aria-label={shuffle ? "Turn shuffle off" : "Turn shuffle on"} aria-pressed={shuffle} disabled={busy} onClick={() => void send("shuffle", !shuffle)}><TransportIcon name="shuffle" /></button>
     <div className="spotify-transport">
@@ -47,7 +51,7 @@ function SpotifyControls({ isPlaying }: { isPlaying: boolean }) {
       <button type="button" className="spotify-control primary" aria-label={isPlaying ? "Pause" : "Play"} disabled={busy} onClick={() => void send(toggleAction)}><TransportIcon name={toggleAction} /></button>
       <button type="button" className="spotify-control secondary" aria-label="Next track" disabled={busy} onClick={() => void send("next")}><TransportIcon name="next" /></button>
     </div>
-    <button type="button" className={`spotify-control utility ${repeat ? "active" : ""}`} aria-label={repeat ? "Turn repeat off" : "Turn repeat on"} aria-pressed={repeat} disabled={busy} onClick={() => void send("repeat", repeat ? "off" : "context")}><TransportIcon name="repeat" /></button>
+    <button type="button" className={`spotify-control utility repeat-control ${repeat !== "off" ? "active" : ""}`} aria-label={repeatLabel} title={repeat === "track" ? "Looping this track" : repeat === "context" ? "Looping playlist" : "Loop off"} aria-pressed={repeat !== "off"} disabled={busy} onClick={() => void send("repeat", nextRepeat)}><TransportIcon name={repeat === "track" ? "repeatOne" : "repeat"} /><span className="repeat-badge" aria-hidden="true">{repeat === "track" ? "1" : ""}</span></button>
     {error && <span className="spotify-control-error" role="status">Couldn’t control Spotify</span>}
   </div>;
 }
@@ -94,7 +98,9 @@ function useAlbumTint(artworkUrl: string | null | undefined, expanded: boolean):
     let cancelled = false;
     const image = new Image();
     image.crossOrigin = "anonymous";
-    image.src = artworkUrl;
+    // Spotify artwork is remote and may not grant canvas access. Sampling the
+    // same image through our own route keeps the visual fallback reliable.
+    image.src = `/api/spotify/artwork?url=${encodeURIComponent(artworkUrl)}`;
     image.onload = () => {
       if (cancelled) return;
       const canvas = document.createElement("canvas");
