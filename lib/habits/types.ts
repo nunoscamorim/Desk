@@ -9,7 +9,6 @@ export type Habit = {
   name: string;
   description: string;
   icon: string;
-  color: string;
   category: HabitCategory;
   enabled: boolean;
   order: number;

@@ -82,3 +82,32 @@ export function ensureOccurrence(store: HabitsStore, occurrenceId: string): Habi
   }
   return occurrence;
 }
+
+/**
+ * How much of an occurrence's open window has gone, 0–100, or null when the
+ * window is a single instant and there is nothing to fill.
+ *
+ * The bar this drives answers what "Open until 23:59" only half answers: a habit
+ * open all day is not urgent at noon and is very urgent at eleven, and the clock
+ * time alone makes those two look the same.
+ */
+export function windowProgress(occurrence: Pick<HabitOccurrence, "windowStartsAt" | "windowEndsAt">, now: number): number | null {
+  const start = new Date(occurrence.windowStartsAt).getTime();
+  const end = new Date(occurrence.windowEndsAt).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  return Math.min(100, Math.max(0, Math.round((now - start) / (end - start) * 100)));
+}
+
+/**
+ * Which habits show a window bar: hydration, and only hydration.
+ *
+ * Drinking is the one habit here that is genuinely a thing you are part-way
+ * through rather than a thing you either did or did not do, and its window runs
+ * the whole day, so "Open until 11:00" is the line that says least about it.
+ * Every other habit already reads clearly from its time and state, and a bar on
+ * all of them turned the card into a wall of part-full boxes.
+ *
+ * Keyed on the water icon: the model has no notion of what a habit is *about*,
+ * and the icon is the closest thing it carries.
+ */
+export const tracksHydration = (habit: Pick<Habit, "icon">) => habit.icon === "water";
