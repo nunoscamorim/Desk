@@ -1,5 +1,5 @@
 import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
-import type { SpotifyNowPlaying, SpotifyRecentTrack, Weather } from "@/lib/dashboard/types";
+import type { SpotifyNowPlaying, SpotifyPlaylist, SpotifyRecentTrack, Weather } from "@/lib/dashboard/types";
 import type { CoolifyService, CoolifyStatus } from "./coolify";
 import type { SpotifyPlaybackAction, SpotifyPlaybackValue, SpotifyService } from "./spotify";
 import type { WeatherService } from "./weather";
@@ -85,7 +85,16 @@ export class SpotifyApiService implements SpotifyService {
     return tracks;
   }
 
-  async controlPlayback(action: SpotifyPlaybackAction, value?: SpotifyPlaybackValue): Promise<void> {
+  async getPlaylists(): Promise<SpotifyPlaylist[]> {
+    const accessToken = await this.getAccessToken();
+    if (!accessToken) return [];
+    const response = await fetchWithRetry("https://api.spotify.com/v1/me/playlists?limit=50", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }, { label: "spotify-playlists" });
+    if (!response.ok) throw new Error(`Spotify request failed (${response.status})`);
+    const data = await response.json() as { items?: Array<{ id: string; name: string; images?: Array<{ url: string }>; items?: { total?: number }; tracks?: { total?: number } }> };
+    return (data.items ?? []).map((playlist) => ({ id: playlist.id, name: playlist.name, artworkUrl: playlist.images?.[0]?.url ?? null, trackCount: playlist.items?.total ?? playlist.tracks?.total ?? 0 }));
+  }
+
+  async controlPlayback(action: SpotifyPlaybackAction, value?: SpotifyPlaybackValue, contextUri?: string): Promise<void> {
     const accessToken = await this.getAccessToken();
     if (!accessToken) throw new Error("Spotify is not connected");
     const endpoints: Record<Exclude<SpotifyPlaybackAction, "seek" | "shuffle" | "repeat">, { method: "POST" | "PUT"; path: string }> = {
@@ -98,7 +107,9 @@ export class SpotifyApiService implements SpotifyService {
         ? { method: "PUT" as const, path: `shuffle?state=${value === true}`, body: undefined }
         : action === "repeat"
           ? { method: "PUT" as const, path: `repeat?state=${value === "track" || value === "context" ? value : "off"}`, body: undefined }
-          : { ...endpoints[action], body: undefined };
+      : action === "play" && contextUri
+        ? { ...endpoints[action], body: JSON.stringify({ context_uri: contextUri }) }
+        : { ...endpoints[action], body: undefined };
     const response = await fetchWithRetry(`https://api.spotify.com/v1/me/player/${request.path}`, {
       method: request.method,
       headers: { Authorization: `Bearer ${accessToken}`, ...(request.body ? { "Content-Type": "application/json" } : {}) },

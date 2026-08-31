@@ -20,7 +20,7 @@ export function DashboardScreenContent({ screen, data, widgets = defaultWidgetCo
   const calendarDays = [0, 1, 2].map((offset) => { const date = new Date(); date.setDate(date.getDate() + offset); const key = date.toISOString().slice(0, 10); const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(date); return { key, label, events: data.todaysCalendar.events.filter((event) => event.startAt.slice(0, 10) === key) }; });
   return screen === "home" ? <section className="dashboard-grid">{widgets.map((widget) => <WidgetRenderer key={widget.id} widget={widget} data={data} />)}</section>
     : screen === "calendar" ? <section className="calendar-days-screen">{calendarDays.map((day) => <CalendarWidget key={day.key} calendar={{ date: day.key, events: day.events }} settings={{ strictDate: true, dateLabel: day.label }} />)}</section>
-    : screen === "music" ? <MusicScreen nowPlaying={data.spotifyNowPlaying} recentlyPlayed={data.spotifyRecentlyPlayed} />
+    : screen === "music" ? <MusicScreen nowPlaying={data.spotifyNowPlaying} playlists={data.spotifyPlaylists} />
     : screen === "tv" ? <TvScreen />
     : screen === "tasks" ? <TasksScreen tasks={data.tasks} />
     : screen === "habits" ? <HabitsScreen onStartFocus={onStartFocus} />
@@ -33,7 +33,7 @@ export function DashboardShell({ data, widgets = defaultWidgetConfig, accentColo
   const [screen, setScreen] = useState<DashboardScreen>("home");
   const [focusHabit, setFocusHabit] = useState<HabitFocusContext | null>(null);
   useEffect(() => {
-    const navigate = (event: Event) => { const next = (event as CustomEvent<DashboardScreen>).detail; if (next === "habits") setScreen(next); };
+    const navigate = (event: Event) => { const next = (event as CustomEvent<DashboardScreen>).detail; if (next) setScreen(next); };
     window.addEventListener("dashboard:navigate", navigate);
     return () => window.removeEventListener("dashboard:navigate", navigate);
   }, []);

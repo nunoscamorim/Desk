@@ -48,6 +48,13 @@ export type SpotifyRecentTrack = {
   playedAt: string;
 };
 
+export type SpotifyPlaylist = {
+  id: string;
+  name: string;
+  artworkUrl: string | null;
+  trackCount: number;
+};
+
 export type Task = {
   id: string;
   title: string;
@@ -76,6 +83,7 @@ export type DashboardData = {
   todaysCalendar: TodayCalendar;
   spotifyNowPlaying: SpotifyNowPlaying | null;
   spotifyRecentlyPlayed: SpotifyRecentTrack[];
+  spotifyPlaylists: SpotifyPlaylist[];
   tasks: Task[];
   codexUsage: AiUsage;
   claudeCodeUsage: AiUsage;

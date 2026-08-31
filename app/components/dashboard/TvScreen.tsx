@@ -200,13 +200,20 @@ export function TvScreen() {
     // the icon badge only reads as a warning once something has actually
     // gone wrong, not the moment a playlist simply hasn't been added.
     const tone = explained?.tone ?? (state.playlists.length === 0 ? "info" : "warn");
-    return <section className="tv-screen tv-message">
-      <span className={`tv-empty-icon ${tone === "warn" ? "is-warn" : ""}`}><TvIcon /></span>
-      <strong>No channels yet</strong>
-      {explained
-        ? <DiagnosisNote diagnosis={diagnosis} />
-        : <span>{state.playlists.length === 0 ? "Add an M3U playlist in /admin — paste a URL or upload a file." : "Every configured playlist failed to load."}</span>}
-      {failed.map((playlist) => <span key={playlist.id} className="tv-warning">{playlist.name}: {playlist.error}</span>)}
+    return <section className={`tv-screen tv-message tv-empty-state ${tone === "warn" ? "is-warn" : ""}`}>
+      <div className="tv-empty-visual" aria-hidden="true">
+        <div className="tv-empty-screen"><TvIcon /><span className="tv-empty-dot" /><span className="tv-empty-signal signal-one" /><span className="tv-empty-signal signal-two" /><span className="tv-empty-signal signal-three" /></div>
+        <span className="tv-empty-stand" />
+      </div>
+      <div className="tv-empty-copy">
+        <span className="tv-empty-kicker">TV</span>
+        <h2>{tone === "warn" ? "Signal interrupted" : "Nothing on air yet"}</h2>
+        {explained
+          ? <DiagnosisNote diagnosis={diagnosis} />
+          : <p>{state.playlists.length === 0 ? "Add an M3U playlist to bring your channels here." : "Every configured playlist failed to load."}</p>}
+        {!explained?.needsSignIn && <Link href="/admin/tv" className="tv-empty-action">Open TV settings <span aria-hidden="true">→</span></Link>}
+        {failed.map((playlist) => <span key={playlist.id} className="tv-warning">{playlist.name}: {playlist.error}</span>)}
+      </div>
     </section>;
   }
 

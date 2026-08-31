@@ -5,12 +5,13 @@ import type { SpotifyPlaybackAction } from "@/lib/services/spotify";
 const ACTIONS = new Set<SpotifyPlaybackAction>(["play", "pause", "next", "previous", "seek", "shuffle", "repeat"]);
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({})) as { action?: string; positionMs?: number; value?: boolean | "track" | "context" | "off" };
+  const body = await request.json().catch(() => ({})) as { action?: string; positionMs?: number; value?: boolean | "track" | "context" | "off"; contextUri?: string };
   if (!body.action || !ACTIONS.has(body.action as SpotifyPlaybackAction)) return Response.json({ error: "Unknown Spotify playback action" }, { status: 400 });
   if (body.action === "seek" && (!Number.isFinite(body.positionMs) || (body.positionMs ?? 0) < 0)) return Response.json({ error: "positionMs must be a non-negative number" }, { status: 400 });
+  if (body.contextUri && (body.action !== "play" || !/^spotify:playlist:[A-Za-z0-9]+$/.test(body.contextUri))) return Response.json({ error: "Invalid Spotify playlist context" }, { status: 400 });
   try {
     const service = await buildSpotifyService(getServiceConfiguration());
-    await service.controlPlayback(body.action as SpotifyPlaybackAction, body.action === "seek" ? body.positionMs : body.value);
+    await service.controlPlayback(body.action as SpotifyPlaybackAction, body.action === "seek" ? body.positionMs : body.value, body.contextUri);
     return Response.json({ ok: true });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Spotify playback command failed" }, { status: 502 });

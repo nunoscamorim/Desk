@@ -1,5 +1,6 @@
 import type { SpotifyNowPlaying } from "@/lib/dashboard/types";
 import { useEffect, useState } from "react";
+import type { KeyboardEvent } from "react";
 import type { CSSProperties } from "react";
 import { formatDuration } from "./utils";
 
@@ -140,7 +141,9 @@ function useAlbumTint(artworkUrl: string | null | undefined, expanded: boolean):
 
 export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: SpotifyNowPlaying | null; expanded?: boolean }) {
   const albumTint = useAlbumTint(nowPlaying?.artworkUrl, expanded);
-  return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`} style={expanded ? { "--album-tint": albumTint } as CSSProperties : undefined}>{nowPlaying ? <>
+  const openMusic = () => { if (!expanded) window.dispatchEvent(new CustomEvent("dashboard:navigate", { detail: "music" })); };
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => { if (!expanded && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); openMusic(); } };
+  return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`} style={expanded ? { "--album-tint": albumTint } as CSSProperties : undefined} onClick={openMusic} onKeyDown={handleKeyDown} role={expanded ? undefined : "button"} tabIndex={expanded ? undefined : 0} aria-label={expanded ? undefined : "Open Spotify music"}>{nowPlaying ? <>
     {expanded ? <div className="music-artwork-frame"><div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div></div> : <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div>}<div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
     {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Live" : "Paused"}</span></div>}{expanded && <SpotifyControls isPlaying={nowPlaying.isPlaying} />}<TrackProgress key={`${nowPlaying.track}|${nowPlaying.progressMs}|${nowPlaying.isPlaying}`} progressMs={nowPlaying.progressMs} durationMs={nowPlaying.durationMs} isPlaying={nowPlaying.isPlaying} expanded={expanded} /></div>
   </> : <div className="spotify-empty"><SpotifyLabel /><div className="spotify-empty-copy"><SpotifyMark className="spotify-empty-mark" /><strong>No track</strong><span>Spotify is quiet right now.</span></div></div>}</article>;

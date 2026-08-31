@@ -8,6 +8,8 @@ const SPOTIFY_SCOPE = [
   "user-read-playback-state",
   "user-read-recently-played",
   "user-modify-playback-state",
+  "playlist-read-private",
+  "playlist-read-collaborative",
 ].join(" ");
 const AUTHORIZE_ENDPOINT = "https://accounts.spotify.com/authorize";
 const TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
