@@ -30,9 +30,11 @@ export function useNowPlaying(enabled = true): SpotifyNowPlaying | null | undefi
       .then((value) => { if (active) setNowPlaying(value); })
       .catch(() => undefined);
 
+    const refresh = () => load();
+    window.addEventListener("spotify:refresh", refresh);
     load();
     const timer = window.setInterval(load, POLL_MS);
-    return () => { active = false; controller.abort(); window.clearInterval(timer); };
+    return () => { active = false; controller.abort(); window.clearInterval(timer); window.removeEventListener("spotify:refresh", refresh); };
   }, [enabled]);
 
   return nowPlaying;
