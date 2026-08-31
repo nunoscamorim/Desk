@@ -1,7 +1,7 @@
 import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import type { SpotifyNowPlaying, SpotifyRecentTrack, Weather } from "@/lib/dashboard/types";
 import type { CoolifyService, CoolifyStatus } from "./coolify";
-import type { SpotifyService } from "./spotify";
+import type { SpotifyPlaybackAction, SpotifyPlaybackValue, SpotifyService } from "./spotify";
 import type { WeatherService } from "./weather";
 
 const weatherCondition = (code: number) => {
@@ -83,6 +83,29 @@ export class SpotifyApiService implements SpotifyService {
       if (tracks.length >= 8) break;
     }
     return tracks;
+  }
+
+  async controlPlayback(action: SpotifyPlaybackAction, value?: SpotifyPlaybackValue): Promise<void> {
+    const accessToken = await this.getAccessToken();
+    if (!accessToken) throw new Error("Spotify is not connected");
+    const endpoints: Record<Exclude<SpotifyPlaybackAction, "seek" | "shuffle" | "repeat">, { method: "POST" | "PUT"; path: string }> = {
+      play: { method: "PUT", path: "play" }, pause: { method: "PUT", path: "pause" },
+      next: { method: "POST", path: "next" }, previous: { method: "POST", path: "previous" },
+    };
+    const request = action === "seek"
+      ? { method: "PUT" as const, path: "seek", body: JSON.stringify({ position_ms: Math.max(0, Math.round(typeof value === "number" ? value : 0)) }) }
+      : action === "shuffle"
+        ? { method: "PUT" as const, path: `shuffle?state=${value === true}`, body: undefined }
+        : action === "repeat"
+          ? { method: "PUT" as const, path: `repeat?state=${value === "track" || value === "context" ? value : "off"}`, body: undefined }
+          : { ...endpoints[action], body: undefined };
+    const response = await fetchWithRetry(`https://api.spotify.com/v1/me/player/${request.path}`, {
+      method: request.method,
+      headers: { Authorization: `Bearer ${accessToken}`, ...(request.body ? { "Content-Type": "application/json" } : {}) },
+      body: request.body,
+      cache: "no-store",
+    }, { label: `spotify-${action}` });
+    if (!response.ok) throw new Error(`Spotify playback command failed (${response.status})`);
   }
 }
 

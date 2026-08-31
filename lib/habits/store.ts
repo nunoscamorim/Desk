@@ -11,7 +11,6 @@ let writeQueue = Promise.resolve();
 const categories = new Set<HabitCategory>(["medication", "movement", "focus", "workout", "morning", "evening", "self-care", "custom"]);
 const clamp = (value: unknown, fallback: number, minimum: number, maximum: number) => typeof value === "number" && Number.isFinite(value) ? Math.min(maximum, Math.max(minimum, Math.round(value))) : fallback;
 const safeTime = (value: unknown) => typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : "09:00";
-const safeColor = (value: unknown) => typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : "#c9ff52";
 
 function normalizeStep(value: unknown): HabitStep | null {
   if (!value || typeof value !== "object") return null;
@@ -31,7 +30,6 @@ export function normalizeHabit(value: unknown, existing?: Habit): Habit {
     name: typeof input.name === "string" && input.name.trim() ? input.name.trim().slice(0, 80) : existing?.name ?? "Untitled habit",
     description: typeof input.description === "string" ? input.description.trim().slice(0, 180) : existing?.description ?? "",
     icon: typeof input.icon === "string" && input.icon ? input.icon.slice(0, 24) : existing?.icon ?? "check",
-    color: safeColor(input.color ?? existing?.color),
     category: categories.has(input.category as HabitCategory) ? input.category as HabitCategory : existing?.category ?? "custom",
     enabled: typeof input.enabled === "boolean" ? input.enabled : existing?.enabled ?? true,
     order: clamp(input.order, existing?.order ?? 0, 0, 10_000),

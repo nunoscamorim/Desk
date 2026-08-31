@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { HabitIcon } from "@/app/components/habits/HabitIcon";
+import { habitColor } from "@/lib/habits/categories";
+import { tracksHydration, windowProgress } from "@/lib/habits/schedule";
 import type { HabitOccurrenceView, HabitsToday } from "@/lib/habits/types";
 
 async function getToday(): Promise<HabitsToday> {
@@ -89,7 +91,7 @@ export function HabitsWidget() {
   // The last five minutes of a habit's window: the widget stops being a list of
   // the day and becomes only this one, until the deadline passes and the
   // occurrence resolves to missed — at which point the agenda comes back.
-  if (closing) return <button type="button" className="card habits-card habit-widget-closing habit-widget-link" style={{ "--habit-color": closing.habit.color } as React.CSSProperties} onClick={openHabits}>
+  if (closing) return <button type="button" className="card habits-card habit-widget-closing habit-widget-link" style={{ "--habit-color": habitColor(closing.habit.category) } as React.CSSProperties} onClick={openHabits}>
     <span className="habit-widget-closing-head"><span className="habit-widget-icon"><HabitIcon name={closing.habit.icon} /></span><span className="habit-widget-closing-kicker">Closing soon</span></span>
     <strong className="habit-widget-closing-name">{closing.habit.name}</strong>
     {/* role=timer, and deliberately not a live region: this repaints every second
@@ -113,12 +115,18 @@ export function HabitsWidget() {
     <span className="task-list habit-widget-list">
       {visibleOccurrences.map((occurrence) => {
         const state = getOccurrenceState(occurrence);
-        return <span className={`calendar-item habit-item${state === "Overdue" ? " is-overdue" : ""}`} style={{ "--event-color": occurrence.habit.color } as React.CSSProperties} key={occurrence.id}>
+        // The same window fill the habits screen puts behind its open card, at
+        // row scale. Nothing is drawn until the window actually opens: a bare 0%
+        // on a habit still hours away is a figure to read for no reason.
+        const raw = tracksHydration(occurrence.habit) ? windowProgress(occurrence, now) : null;
+        const progress = raw !== null && raw > 0 ? raw : null;
+        return <span className={`calendar-item habit-item${state === "Overdue" ? " is-overdue" : ""}${progress !== null ? " has-progress" : ""}`} style={{ "--event-color": habitColor(occurrence.habit.category), "--habit-progress": `${progress ?? 0}%` } as React.CSSProperties} key={occurrence.id}>
+          {progress !== null && <span className="habit-item-fill" aria-hidden="true" />}
           <span className="habit-item-icon"><HabitIcon name={occurrence.habit.icon} /></span>
           <span className="event-line" />
           <span className="habit-item-content">
             <strong>{occurrence.habit.name}</strong>
-            <span><time dateTime={occurrence.status === "snoozed" && occurrence.snoozedUntil ? occurrence.snoozedUntil : occurrence.scheduledFor}>{getOccurrenceTime(occurrence)}</time>{state && <em>{state}</em>}</span>
+            <span><time dateTime={occurrence.status === "snoozed" && occurrence.snoozedUntil ? occurrence.snoozedUntil : occurrence.scheduledFor}>{getOccurrenceTime(occurrence)}</time>{state && <em>{state}</em>}{progress !== null && <em className="habit-item-progress" aria-label={`${progress}% of the window elapsed`}>{progress}%</em>}</span>
           </span>
         </span>;
       })}

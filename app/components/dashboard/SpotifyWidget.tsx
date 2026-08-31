@@ -8,7 +8,48 @@ function SpotifyMark({ className }: { className?: string }) {
 }
 
 function SpotifyLabel() {
-  return <span className="card-label"><SpotifyMark /><span>Now playing</span></span>;
+  return <span className="card-label"><SpotifyMark /><span>Now</span></span>;
+}
+
+function TransportIcon({ name }: { name: "previous" | "play" | "pause" | "next" | "shuffle" | "repeat" }) {
+  if (name === "play") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" /></svg>;
+  if (name === "pause") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" /></svg>;
+  if (name === "next") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 9 7-9 7V5Zm10 0h4v14h-4V5Z" /></svg>;
+  if (name === "shuffle") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5h-2V6.4l-3.3 3.3-1.4-1.4L17.6 5H16V3ZM3 6h3.2c1.1 0 2.2.5 3 1.4l6.6 7.3c.4.4.9.7 1.5.7H19v-2h2v4h-5v-2h1.3c-1.1 0-2.2-.5-3-1.4L7.7 8.7c-.4-.4-.9-.7-1.5-.7H3V6Zm0 12v-2h3.2c.6 0 1.1-.2 1.5-.7l1.2-1.3 1.4 1.4-1.2 1.3c-.8.9-1.9 1.3-3 1.3H3Zm11.1-8.6 1.4-1.4 2 2H21v2h-4.3l-2.6-2.6Z" /></svg>;
+  if (name === "repeat") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h10l-2-2 1.4-1.4L21.8 7l-5.4 5.4L15 11l2-2H7a2 2 0 0 0-2 2v1H3v-1a4 4 0 0 1 4-4Zm10 14H7l2 2-1.4 1.4L2.2 17l5.4-5.4L9 13l-2 2h10a2 2 0 0 0 2-2v-1h2v1a4 4 0 0 1-4 4Z" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19 5-9 7 9 7V5ZM5 5h4v14H5V5Z" /></svg>;
+}
+
+function SpotifyControls({ isPlaying }: { isPlaying: boolean }) {
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+  const send = async (action: "play" | "pause" | "next" | "previous" | "shuffle" | "repeat", value?: boolean | "context" | "off") => {
+    setPending(action);
+    setError(false);
+    try {
+      const response = await fetch("/api/spotify/control", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, value }) });
+      if (!response.ok) throw new Error();
+      if (action === "shuffle") setShuffle(value === true);
+      if (action === "repeat") setRepeat(value === "context");
+      window.dispatchEvent(new CustomEvent("spotify:refresh"));
+    } catch {
+      setError(true);
+    } finally { setPending(null); }
+  };
+  const busy = pending !== null;
+  const toggleAction: "play" | "pause" = isPlaying ? "pause" : "play";
+  return <div className="spotify-controls" aria-label="Playback controls">
+    <button type="button" className={`spotify-control utility ${shuffle ? "active" : ""}`} aria-label={shuffle ? "Turn shuffle off" : "Turn shuffle on"} aria-pressed={shuffle} disabled={busy} onClick={() => void send("shuffle", !shuffle)}><TransportIcon name="shuffle" /></button>
+    <div className="spotify-transport">
+      <button type="button" className="spotify-control secondary" aria-label="Previous track" disabled={busy} onClick={() => void send("previous")}><TransportIcon name="previous" /></button>
+      <button type="button" className="spotify-control primary" aria-label={isPlaying ? "Pause" : "Play"} disabled={busy} onClick={() => void send(toggleAction)}><TransportIcon name={toggleAction} /></button>
+      <button type="button" className="spotify-control secondary" aria-label="Next track" disabled={busy} onClick={() => void send("next")}><TransportIcon name="next" /></button>
+    </div>
+    <button type="button" className={`spotify-control utility ${repeat ? "active" : ""}`} aria-label={repeat ? "Turn repeat off" : "Turn repeat on"} aria-pressed={repeat} disabled={busy} onClick={() => void send("repeat", repeat ? "off" : "context")}><TransportIcon name="repeat" /></button>
+    {error && <span className="spotify-control-error" role="status">Couldn’t control Spotify</span>}
+  </div>;
 }
 
 /**
@@ -80,7 +121,7 @@ function useAlbumTint(artworkUrl: string | null | undefined, expanded: boolean):
           buckets.set(key, bucket);
         }
         const dominant = [...buckets.values()].sort((left, right) => right.count - left.count)[0];
-        const color = dominant ? `rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.2)` : DEFAULT_ALBUM_TINT;
+        const color = dominant ? `rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.72)` : DEFAULT_ALBUM_TINT;
         if (!cancelled) setTint({ artworkUrl, expanded, color });
       } catch {
         if (!cancelled) setTint({ artworkUrl, expanded, color: DEFAULT_ALBUM_TINT });
@@ -95,6 +136,6 @@ export function SpotifyWidget({ nowPlaying, expanded = false }: { nowPlaying: Sp
   const albumTint = useAlbumTint(nowPlaying?.artworkUrl, expanded);
   return <article className={`card music-card ${expanded ? "music-screen-card" : ""}`} style={expanded ? { "--album-tint": albumTint } as CSSProperties : undefined}>{nowPlaying ? <>
     {expanded ? <div className="music-artwork-frame"><div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div></div> : <div className={`album-art ${nowPlaying.artworkUrl ? "has-artwork" : ""}`} aria-label={`${nowPlaying.album} album cover`} style={nowPlaying.artworkUrl ? { backgroundImage: `url(${nowPlaying.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div>}<div className="spotify-info"><SpotifyLabel /><div className="track-copy"><h2>{nowPlaying.track}</h2><p>{nowPlaying.artist}</p></div>
-    {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Playing" : "Paused"}</span></div>}<TrackProgress key={`${nowPlaying.track}|${nowPlaying.progressMs}|${nowPlaying.isPlaying}`} progressMs={nowPlaying.progressMs} durationMs={nowPlaying.durationMs} isPlaying={nowPlaying.isPlaying} expanded={expanded} /></div>
-  </> : <div className="spotify-empty"><SpotifyLabel /><div className="spotify-empty-copy"><SpotifyMark className="spotify-empty-mark" /><strong>Nothing playing</strong><span>Spotify is quiet right now.</span></div></div>}</article>;
+    {expanded && <div className="music-screen-details"><span>{nowPlaying.album}</span><span>{nowPlaying.isPlaying ? "Live" : "Paused"}</span></div>}{expanded && <SpotifyControls isPlaying={nowPlaying.isPlaying} />}<TrackProgress key={`${nowPlaying.track}|${nowPlaying.progressMs}|${nowPlaying.isPlaying}`} progressMs={nowPlaying.progressMs} durationMs={nowPlaying.durationMs} isPlaying={nowPlaying.isPlaying} expanded={expanded} /></div>
+  </> : <div className="spotify-empty"><SpotifyLabel /><div className="spotify-empty-copy"><SpotifyMark className="spotify-empty-mark" /><strong>No track</strong><span>Spotify is quiet right now.</span></div></div>}</article>;
 }

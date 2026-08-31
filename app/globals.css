@@ -28,7 +28,10 @@
   /* One tracking step for every uppercase label; these ran .04em–.1em before. */
   --w-ls-label: .09em;
   --surface-0: #111110; --surface-1: #171716; --surface-2: #181817; --surface-3: #222220; --surface-4: #252522; --label: #b5b2aa;
-  --danger: #e79191; --danger-border: #5a2b2b; --warn: #e3c766; --warn-border: #4a4327; --success: #b8d977; --success-border: #303c1e;
+  --danger: #e79191; --danger-border: #5a2b2b;
+  /* Alert fill, not text: the one colour a whole card is flooded with. --danger
+     is a pale pink tuned for text on dark surfaces and fails under white. */
+  --alert: #c0271d; --warn: #e3c766; --warn-border: #4a4327; --success: #b8d977; --success-border: #303c1e;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: #1c1b18; }
@@ -219,6 +222,28 @@ button { font: inherit; }
 .meeting-rail { position: relative; flex: 1; height: 1px; background: color-mix(in srgb, var(--card-ink, #11120e) 30%, transparent); }
 .meeting-rail i { position: absolute; top: 50%; right: 0; width: 7px; height: 7px; border: 2px solid var(--widget-bg, var(--lime)); border-radius: 50%; background: var(--card-ink, #11120e); transform: translateY(-50%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--card-ink, #11120e) 15%, transparent); }
 .meeting-empty { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: var(--w-gap-2); }.meeting-empty strong { font-size: var(--w-fs-hero); }.meeting-empty span { color: color-mix(in srgb, var(--card-ink, #11120e) 62%, transparent); font-size: var(--w-fs-sub); }
+/* The last five minutes. The card stops being a countdown and becomes a warning:
+   flooded red with white text, so it reads as "leave now" from across the room
+   rather than as one more lime card among several.
+
+   Written to outrank `.configured-widget.has-widget-bg > .card` — a background
+   picked in admin is a preference, and this is not. */
+.next-card.is-imminent, .configured-widget.has-widget-bg > .next-card.is-imminent {
+  --card-ink: #fff;
+  /* The rail dot rings itself in the card's own colour; without this it keeps
+     drawing a lime (or configured) ring on red. */
+  --widget-bg: var(--alert);
+  color: #fff;
+  background-color: var(--alert);
+  transition: background-color .45s ease;
+}
+/* The secondary tones are mixed toward transparent at percentages chosen for
+   near-black ink on lime; the same percentages as white on red land near 3:1 at
+   10px. Lifted to 86% here — 4.7:1, slightly better than the lime card's own —
+   rather than left to fade on the one card that has to be readable. */
+.next-card.is-imminent .meeting-kicker, .next-card.is-imminent .meeting-copy p, .next-card.is-imminent .meeting-countdown small, .next-card.is-imminent .meeting-footer { color: color-mix(in srgb, #fff 86%, transparent); }
+.next-card.is-imminent .meeting-rail { background: color-mix(in srgb, #fff 38%, transparent); }
+@media (prefers-reduced-motion: reduce) { .next-card.is-imminent { transition: none; } }
 .calendar-card { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; padding: 28px var(--w-pad) 20px; background: var(--panel); }
 .calendar-card::after { content: ""; position: absolute; z-index: 2; right: var(--w-pad); bottom: 20px; left: var(--w-pad); height: 34px; pointer-events: none; background: linear-gradient(180deg, transparent, var(--widget-bg, var(--panel)) 92%); }
 .calendar-heading { display: flex; align-items: center; justify-content: space-between; }.calendar-heading > div, .calendar-heading > .calendar-heading-stack { display: flex; flex-direction: column; }.calendar-heading .card-label { margin-bottom: var(--w-gap-2); color: #8f8b83; }.calendar-heading .card-title { font-size: var(--w-fs-title); letter-spacing: -.025em; }.event-count { display: flex; align-items: baseline; gap: var(--w-gap-2); color: var(--ink); font-size: var(--w-fs-hero); font-weight: 700; }.event-count small { color: var(--muted); font-size: var(--w-fs-meta); font-weight: 400; }
@@ -275,15 +300,16 @@ button { font: inherit; }
    full screen height, so the card wraps the album art instead of leaving a
    dead expanse of background to its right and below — that freed height is
    what .recently-played, below it in .music-screen, renders into. */
-.music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: linear-gradient(var(--album-tint), var(--album-tint)), color-mix(in srgb, var(--spotify-green) 20%, var(--spotify-black)); }
+.music-screen-card { width: 100%; max-width: none; display: grid; grid-template-columns: 400px minmax(0, 1fr); background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(8,8,7,.58)), var(--album-tint), color-mix(in srgb, var(--spotify-green) 20%, var(--spotify-black)); }
 .music-artwork-frame { width: 400px; height: 400px; padding: 16px; align-self: center; }
 .music-screen-card .album-art { position: relative; inset: auto; width: 100%; height: 100%; border-radius: 10px; }
 .music-screen-card .spotify-info { position: relative; padding: 16px; background: none; }
 .music-screen-card .spotify-empty { grid-column: 1 / -1; height: 432px; padding: 16px; }
 .music-screen-card .spotify-empty-copy { inset: 70px 34px 34px; }
-.music-screen-card .track-copy { margin-top: auto; padding-bottom: 16px; }
-.music-screen-card .track-copy h2 { font-size: 30px; line-height: 1; }
-.music-screen-card .track-copy p { margin-top: 9px; font-size: 16px; }
+.music-screen-card .track-copy { margin-top: 28px; padding-bottom: 0; }
+.music-screen-card .track-copy h2 { font-size: 38px; line-height: 1; }
+.music-screen-card .track-copy p { margin-top: 11px; font-size: 19px; }
+.music-screen-card .spotify-controls { margin-top: auto; }
 .music-screen { display: flex; flex-direction: column; gap: 20px; height: var(--bento-h); }
 .recently-played { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .recently-played-row { flex: 1 1 auto; min-height: 0; display: flex; align-items: flex-start; gap: 14px; overflow-x: auto; overscroll-behavior: contain; scrollbar-width: none; padding-bottom: 2px; }
@@ -297,7 +323,21 @@ button { font: inherit; }
 .recent-track-art span { color: #1ed760; font-size: 20px; }
 .recent-track-name { overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .recent-track-artist { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.music-screen-details { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; color: var(--muted); font-size: 11px; }
+.music-screen-details { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; color: var(--muted); font-size: 13px; }
+.spotify-controls { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin-top: 0; }
+.spotify-transport { display: flex; align-items: center; gap: 10px; }
+.spotify-controls > .utility:last-of-type { justify-self: start; }
+.spotify-controls > .utility:first-child { justify-self: end; }
+.spotify-control { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 50%; color: var(--ink); background: rgba(255,255,255,.12); cursor: pointer; }
+.spotify-control:hover:not(:disabled) { background: rgba(255,255,255,.22); }
+.spotify-control:focus-visible { outline: 2px solid var(--spotify-green); outline-offset: 3px; }
+.spotify-control.primary { width: 42px; height: 42px; color: var(--spotify-black); background: var(--spotify-green); }
+.spotify-control.utility { background: transparent; color: var(--muted); }
+.spotify-control.utility.active { color: var(--spotify-green); background: rgba(30,215,96,.12); }
+.spotify-control:disabled { cursor: wait; opacity: .55; }
+.spotify-control svg { width: 16px; height: 16px; fill: currentColor; }
+.spotify-control.primary svg { width: 19px; height: 19px; }
+.spotify-control-error { margin-left: 8px; color: #ffb19a; font-size: 10px; }
 .music-screen-times { display: flex; justify-content: space-between; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .music-screen-card .track-progress { height: 5px; }
 .track-progress, .meter { overflow: hidden; height: 4px; border-radius: var(--w-radius-sm); background: #353431; }
@@ -343,14 +383,21 @@ button { font: inherit; }
 
 /* Habits agenda rows share the same card-row language as schedule and tasks:
    the habit colour tints the surface and drives a left accent rail. */
-.habit-item.calendar-item { grid-template-columns: 28px 3px minmax(0, 1fr); }
+/* Rows carry the window fill too, so the home card says the same thing the
+   habits screen does. Clipped to the row's own radius, and isolated so the
+   negative layer lands above the row's tint and below its text. */
+.habit-item.calendar-item { position: relative; isolation: isolate; overflow: hidden; grid-template-columns: 28px 3px minmax(0, 1fr); }
+.habit-item-fill { position: absolute; z-index: -1; inset: 0 auto 0 0; width: var(--habit-progress, 0%); pointer-events: none; background: linear-gradient(90deg, color-mix(in srgb, var(--event-color) 5%, transparent), color-mix(in srgb, var(--event-color) 20%, transparent)); transition: width .6s ease; }
+.habit-item.has-progress .habit-item-content { padding-right: 42px; }
+.habit-item-progress { position: absolute; top: 50%; right: var(--w-gap-4); margin: 0; color: var(--event-color); font-size: var(--w-fs-lead); font-weight: 800; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; transform: translateY(-50%); }
+@media (prefers-reduced-motion: reduce) { .habit-item-fill { transition: none; } }
 .habit-item-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--w-radius-sm); background: color-mix(in srgb, var(--event-color) 28%, transparent); color: var(--event-color); }
 .habit-item-icon svg { width: 16px; height: 16px; }
 .habit-item-content { display: flex; min-width: 0; flex-direction: column; gap: var(--w-gap-1); }
 .habit-item-content strong { overflow: hidden; font-size: var(--w-fs-body); line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
 .habit-item-content > span { display: flex; align-items: center; gap: var(--w-gap-3); overflow: hidden; color: var(--muted); font-size: var(--w-fs-sub); text-overflow: ellipsis; white-space: nowrap; }
 .habit-item-content > span em { font-style: normal; }
-.habit-item.is-overdue .habit-item-content > span em { color: var(--warn); font-weight: 700; }
+.habit-item.is-overdue .habit-item-content > span em:not(.habit-item-progress) { color: var(--warn); font-weight: 700; }
 
 .tasks-screen { display: grid; grid-template-columns: 1fr 220px; gap: 16px; height: 400px; }
 /* .tasks-screen-main also carries .tasks-card for its base card look, but that
@@ -618,8 +665,17 @@ button { font: inherit; }
 .habit-now-column, .habit-queue-column { min-height: 0; }
 .habit-now-column { display: grid; grid-template-rows: minmax(0, 1fr) 78px; gap: 11px; }
 .habit-now-column.has-next { grid-template-rows: minmax(0, 1fr) minmax(112px, .55fr) 78px; }
-.habit-now { --habit-color: var(--lime); position: relative; height: 100%; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: var(--w-radius); padding: 17px 20px; background: color-mix(in srgb, var(--habit-color) 4%, var(--habit-surface)); }
+.habit-now { --habit-color: var(--lime); position: relative; isolation: isolate; height: 100%; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: var(--w-radius); padding: 17px 20px; background: color-mix(in srgb, var(--habit-color) 4%, var(--habit-surface)); }
 .habit-now::-webkit-scrollbar { display: none; width: 0; }
+/* The window, drawn rather than described. Painted behind the content — the card
+   isolates so the negative layer lands above its own background and below the
+   text — and kept faint: it is a glance at how much time is left, not a second
+   thing to read. Deepening toward the leading edge gives it an edge to find
+   without a hard line across the card. */
+.habit-now-fill { position: absolute; z-index: -1; inset: 0 auto 0 0; width: var(--habit-progress, 0%); pointer-events: none; background: linear-gradient(90deg, color-mix(in srgb, var(--habit-color) 3%, transparent), color-mix(in srgb, var(--habit-color) 13%, transparent)); transition: width .6s ease; }
+.habit-now-clock { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.habit-now-clock em { color: var(--habit-color); font-size: 22px; font-weight: 800; font-style: normal; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .habit-now-fill { transition: none; } }
 .habit-now::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--habit-color); }
 .habit-now-heading { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 11px; }.habit-now-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: color-mix(in srgb, var(--habit-color) 18%, #292824); color: var(--habit-color); }.habit-now-icon svg { width: 19px; height: 19px; }
 .habit-now-heading p { margin: 0 0 3px; color: color-mix(in srgb, var(--habit-color) 75%, white); font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }.habit-now-heading h3 { overflow: hidden; margin: 0; font-size: 24px; line-height: 1; letter-spacing: -.04em; text-overflow: ellipsis; white-space: nowrap; }.habit-now-heading time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -629,7 +685,7 @@ button { font: inherit; }
 .habit-now-description { max-width: 52ch; margin: 9px 0 0; color: var(--habit-secondary); font-size: 11.5px; line-height: 1.45; }
 .habit-now-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 10px; }
 .habit-now-meta span { border-radius: 99px; padding: 3px 8px; background: rgba(17,17,16,.42); color: var(--habit-secondary); font-size: 9.5px; font-weight: 650; }
-.habit-now-category { text-transform: capitalize; }
+.habit-now-category { text-transform: none; }
 .habit-runner-steps { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: 5px; margin-top: 11px; }
 .habit-runner-steps button { min-height: 40px; display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 9px; border: 0; border-radius: 9px; padding: 6px 10px; background: rgba(17,17,16,.38); color: var(--ink); text-align: left; cursor: pointer; }.habit-runner-steps button:not(.done):hover { background: rgba(17,17,16,.62); }.habit-runner-steps button > span { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: #34332f; color: var(--muted); font-size: 10px; font-weight: 700; }.habit-runner-steps button > span svg { width: 13px; height: 13px; }.habit-runner-steps button strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }.habit-runner-steps button em { color: var(--habit-color); font-size: 9px; font-style: normal; font-weight: 600; }.habit-runner-steps button.done { opacity: .5; }.habit-runner-steps button.done > span { background: color-mix(in srgb, var(--habit-color) 22%, #34332f); color: var(--habit-color); }
 .habit-now-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin-top: auto; padding-top: 11px; }.habit-now-actions button { min-height: 36px; border: 0; border-radius: 9px; padding: 0 13px; background: #302f2b; color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; touch-action: manipulation; }.habit-now-actions button:hover { background: #3a3934; color: var(--ink); }.habit-now-actions button.primary { display: inline-flex; align-items: center; gap: 6px; min-width: 104px; justify-content: center; background: var(--habit-color); color: #11120e; font-size: 11px; }.habit-now-actions button.primary:hover { background: color-mix(in srgb, var(--habit-color) 88%, white); }.habit-now-actions button svg { width: 14px; height: 14px; }.habit-now-actions button:disabled { opacity: .5; cursor: default; }
@@ -637,12 +693,15 @@ button { font: inherit; }
 .habit-next-preview { --habit-color: var(--lime); position: relative; min-width: 0; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 13px; overflow: hidden; border-radius: 14px; padding: 14px 18px 14px 15px; background: color-mix(in srgb, var(--habit-color) 4%, var(--habit-surface)); }
 .habit-next-preview::before { position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--habit-color); content: ""; }
 .habit-next-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: color-mix(in srgb, var(--habit-color) 15%, #292824); color: var(--habit-color); }.habit-next-icon svg { width: 22px; height: 22px; }
-.habit-next-preview > div { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: 9px; row-gap: 3px; }.habit-next-preview > div > span { color: var(--habit-secondary); font-size: 9.5px; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }.habit-next-preview > div > strong { overflow: hidden; font-size: 15px; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }.habit-next-preview > div > small { grid-column: 1 / -1; color: var(--habit-secondary); font-size: 10px; text-transform: capitalize; }
+.habit-next-preview > div { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: 9px; row-gap: 3px; }.habit-next-preview > div > span { color: var(--habit-secondary); font-size: 9.5px; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }.habit-next-preview > div > strong { overflow: hidden; font-size: 15px; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }.habit-next-preview > div > small { grid-column: 1 / -1; color: var(--habit-secondary); font-size: 10px; }
 .habit-next-preview > div > p { grid-column: 1 / -1; display: -webkit-box; overflow: hidden; margin: 4px 0 0; color: var(--habit-secondary); font-size: 11px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .habit-next-preview > time { align-self: start; margin-top: 2px; color: var(--ink); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .habit-weekly-streak { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 22px; border-radius: 14px; padding: 10px 16px; background: var(--habit-surface); }
 .habit-weekly-streak > div { display: flex; flex-direction: column; gap: 2px; }.habit-weekly-streak > div > span { color: var(--habit-secondary); font-size: 9.5px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }.habit-weekly-streak > div > strong { color: var(--ink); font-size: 20px; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }.habit-weekly-streak > div small { margin-left: 3px; color: var(--habit-secondary); font-size: 9.5px; font-weight: 600; letter-spacing: 0; }
 .habit-weekly-streak ol { min-width: 0; display: grid; grid-template-columns: repeat(7, minmax(18px, 1fr)); gap: 5px; margin: 0; padding: 0; list-style: none; }.habit-weekly-streak li { display: grid; justify-items: center; gap: 5px; color: #a7a39a; font-size: 9px; font-weight: 700; }.habit-weekly-streak li i { position: relative; width: 100%; max-width: 28px; height: 10px; border-radius: 99px; background: #45433e; }.habit-weekly-streak li.is-complete { color: var(--ink); }.habit-weekly-streak li.is-complete i { background: var(--lime); }.habit-weekly-streak li.is-complete i::after { position: absolute; top: 2px; left: 50%; width: 5px; height: 3px; border-bottom: 1.5px solid #11120e; border-left: 1.5px solid #11120e; transform: translateX(-50%) rotate(-45deg); content: ""; }.habit-weekly-streak li.is-today { color: var(--ink); }.habit-weekly-streak li.is-today i { box-shadow: 0 0 0 2px #8f8b83; }
+/* The category rides the meta line rather than taking a row of its own: the
+   colour says which one at a glance, this is what the colour means. */
+.habit-queue-category { font-style: normal; }
 .habit-queue-column { display: flex; flex-direction: column; overflow: hidden; border-radius: var(--w-radius); padding: 17px 17px 13px; background: #1d1c1a; }.habit-queue-head { display: flex; align-items: center; gap: 9px; }.habit-queue-head h3 { margin: 0; font-size: 13px; letter-spacing: -.02em; }.habit-queue-head > span { min-width: 20px; height: 19px; display: grid; place-items: center; border-radius: 99px; padding: 0 6px; background: #2b2a26; color: var(--muted); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }.habit-queue-head.completed { margin-top: 15px; padding-top: 13px; border-top: 1px solid #34322e; }
 .habit-queue { min-height: 0; display: flex; flex-direction: column; gap: 5px; margin-top: 9px; overflow-y: auto; }.habit-queue > p { margin: 9px 0; color: var(--muted-2); font-size: 11px; }
 .habit-queue article { min-height: 46px; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; border-radius: 10px; padding: 5px 9px 5px 6px; background: #232220; }
