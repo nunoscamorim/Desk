@@ -4,6 +4,16 @@ import type { CoolifyService, CoolifyStatus } from "./coolify";
 import type { SpotifyPlaybackAction, SpotifyPlaybackValue, SpotifyService } from "./spotify";
 import type { WeatherService } from "./weather";
 
+type SpotifyImage = { url: string; width?: number | null; height?: number | null };
+
+// Album artwork in Spotify's playback payload is square. Some media responses
+// can include a non-square still, so never promote one of those to the player.
+const coverImageUrl = (images?: SpotifyImage[]): string | null => {
+  if (!images?.length) return null;
+  const square = images.find((image) => image.width != null && image.height != null && image.width > 0 && image.width === image.height);
+  return square?.url ?? (images.every((image) => image.width == null || image.height == null) ? images[0].url : null);
+};
+
 const weatherCondition = (code: number) => {
   if (code === 0) return "Clear";
   if (code <= 2) return "Partly cloudy";
@@ -60,9 +70,9 @@ export class SpotifyApiService implements SpotifyService {
     const response = await fetchWithRetry("https://api.spotify.com/v1/me/player/currently-playing", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }, { label: "spotify-now-playing" });
     if (response.status === 204) return null;
     if (!response.ok) throw new Error(`Spotify request failed (${response.status})`);
-    const data = await response.json() as { is_playing: boolean; progress_ms: number; item?: { name: string; duration_ms: number; artists?: Array<{ name: string }>; album?: { name: string; images?: Array<{ url: string }> } } };
+    const data = await response.json() as { is_playing: boolean; progress_ms: number; item?: { name: string; duration_ms: number; artists?: Array<{ name: string }>; album?: { name: string; images?: SpotifyImage[] } } };
     if (!data.item) return null;
-    return { isPlaying: data.is_playing, track: data.item.name, artist: data.item.artists?.map((artist) => artist.name).join(", ") ?? "Unknown artist", album: data.item.album?.name ?? "", progressMs: data.progress_ms, durationMs: data.item.duration_ms, artworkUrl: data.item.album?.images?.[0]?.url ?? null };
+    return { isPlaying: data.is_playing, track: data.item.name, artist: data.item.artists?.map((artist) => artist.name).join(", ") ?? "Unknown artist", album: data.item.album?.name ?? "", progressMs: data.progress_ms, durationMs: data.item.duration_ms, artworkUrl: coverImageUrl(data.item.album?.images) };
   }
 
   // Spotify can list the same track more than once if it was replayed; deduped
@@ -73,13 +83,13 @@ export class SpotifyApiService implements SpotifyService {
     if (!accessToken) return [];
     const response = await fetchWithRetry("https://api.spotify.com/v1/me/player/recently-played?limit=10", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }, { label: "spotify-recently-played" });
     if (!response.ok) throw new Error(`Spotify request failed (${response.status})`);
-    const data = await response.json() as { items?: Array<{ played_at: string; track: { id: string; name: string; artists?: Array<{ name: string }>; album?: { images?: Array<{ url: string }> } } }> };
+    const data = await response.json() as { items?: Array<{ played_at: string; track: { id: string; name: string; artists?: Array<{ name: string }>; album?: { images?: SpotifyImage[] } } }> };
     const seen = new Set<string>();
     const tracks: SpotifyRecentTrack[] = [];
     for (const item of data.items ?? []) {
       if (seen.has(item.track.id)) continue;
       seen.add(item.track.id);
-      tracks.push({ id: item.track.id, track: item.track.name, artist: item.track.artists?.map((artist) => artist.name).join(", ") ?? "Unknown artist", artworkUrl: item.track.album?.images?.[0]?.url ?? null, playedAt: item.played_at });
+      tracks.push({ id: item.track.id, track: item.track.name, artist: item.track.artists?.map((artist) => artist.name).join(", ") ?? "Unknown artist", artworkUrl: coverImageUrl(item.track.album?.images), playedAt: item.played_at });
       if (tracks.length >= 8) break;
     }
     return tracks;
@@ -90,8 +100,8 @@ export class SpotifyApiService implements SpotifyService {
     if (!accessToken) return [];
     const response = await fetchWithRetry("https://api.spotify.com/v1/me/playlists?limit=50", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }, { label: "spotify-playlists" });
     if (!response.ok) throw new Error(`Spotify request failed (${response.status})`);
-    const data = await response.json() as { items?: Array<{ id: string; name: string; images?: Array<{ url: string }>; items?: { total?: number }; tracks?: { total?: number } }> };
-    return (data.items ?? []).map((playlist) => ({ id: playlist.id, name: playlist.name, artworkUrl: playlist.images?.[0]?.url ?? null, trackCount: playlist.items?.total ?? playlist.tracks?.total ?? 0 }));
+    const data = await response.json() as { items?: Array<{ id: string; name: string; images?: SpotifyImage[]; items?: { total?: number }; tracks?: { total?: number } }> };
+    return (data.items ?? []).map((playlist) => ({ id: playlist.id, name: playlist.name, artworkUrl: coverImageUrl(playlist.images), trackCount: playlist.items?.total ?? playlist.tracks?.total ?? 0 }));
   }
 
   async controlPlayback(action: SpotifyPlaybackAction, value?: SpotifyPlaybackValue, contextUri?: string): Promise<void> {

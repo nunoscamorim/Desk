@@ -23,18 +23,22 @@ export function useNowPlaying(enabled = true): SpotifyNowPlaying | null | undefi
   useEffect(() => {
     if (!enabled) return;
     let active = true;
-    const controller = new AbortController();
+    let requestController: AbortController | null = null;
 
-    const load = () => void fetch("/api/spotify", { cache: "no-store", signal: controller.signal })
+    const load = () => {
+      requestController?.abort();
+      requestController = new AbortController();
+      void fetch("/api/spotify", { cache: "no-store", signal: requestController.signal })
       .then((response) => response.json() as Promise<SpotifyNowPlaying | null>)
       .then((value) => { if (active) setNowPlaying(value); })
       .catch(() => undefined);
+    };
 
     const refresh = () => load();
     window.addEventListener("spotify:refresh", refresh);
     load();
     const timer = window.setInterval(load, POLL_MS);
-    return () => { active = false; controller.abort(); window.clearInterval(timer); window.removeEventListener("spotify:refresh", refresh); };
+    return () => { active = false; requestController?.abort(); window.clearInterval(timer); window.removeEventListener("spotify:refresh", refresh); };
   }, [enabled]);
 
   return nowPlaying;

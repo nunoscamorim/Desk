@@ -329,7 +329,7 @@ button { font: inherit; }
 .playlist-art { position: relative; width: 100%; aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; background-position: center; background-size: cover; background-image: radial-gradient(circle at 70% 22%, rgba(30,215,96,.45), transparent 58%), linear-gradient(150deg, #1db954 0%, #12602f 38%, #191414 100%); transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; }
 .playlist-art.has-artwork span { display: none; }
 .playlist-art span { color: #1ed760; font-size: 20px; }
-.playlist-name { overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.playlist-name { max-width: 100%; overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .playlist-count { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .playlist-error { margin-top: 8px; color: #ffb19a; font-size: 10px; }
 .music-screen-details { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; color: var(--muted); font-size: 13px; }

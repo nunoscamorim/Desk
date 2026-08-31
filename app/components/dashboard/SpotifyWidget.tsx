@@ -112,23 +112,36 @@ function useAlbumTint(artworkUrl: string | null | undefined, expanded: boolean):
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       try {
         const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-        const buckets = new Map<string, { count: number; red: number; green: number; blue: number }>();
+        const buckets = new Map<string, { count: number; red: number; green: number; blue: number; saturation: number }>();
         for (let index = 0; index < pixels.length; index += 16) {
           const alpha = pixels[index + 3];
           if (alpha < 128) continue;
           const red = pixels[index];
           const green = pixels[index + 1];
           const blue = pixels[index + 2];
+          const brightest = Math.max(red, green, blue);
+          const darkest = Math.min(red, green, blue);
+          const saturation = brightest === 0 ? 0 : (brightest - darkest) / brightest;
+          const lightness = (brightest + darkest) / 510;
+          // Album covers often have a large black/white border. Keep those
+          // pixels available for monochrome art, but stop them winning over a
+          // smaller, clearly intentional color field.
+          if (lightness < 0.08 || lightness > 0.94) continue;
           const key = `${red >> 5}-${green >> 5}-${blue >> 5}`;
-          const bucket = buckets.get(key) ?? { count: 0, red: 0, green: 0, blue: 0 };
+          const bucket = buckets.get(key) ?? { count: 0, red: 0, green: 0, blue: 0, saturation: 0 };
           bucket.count += 1;
           bucket.red += red;
           bucket.green += green;
           bucket.blue += blue;
+          bucket.saturation += saturation;
           buckets.set(key, bucket);
         }
-        const dominant = [...buckets.values()].sort((left, right) => right.count - left.count)[0];
-        const color = dominant ? `rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.72)` : DEFAULT_ALBUM_TINT;
+        const dominant = [...buckets.values()].sort((left, right) => {
+          const leftScore = left.count * (0.55 + left.saturation / left.count * 0.45);
+          const rightScore = right.count * (0.55 + right.saturation / right.count * 0.45);
+          return rightScore - leftScore;
+        })[0];
+        const color = dominant ? `rgba(${Math.round(dominant.red / dominant.count)}, ${Math.round(dominant.green / dominant.count)}, ${Math.round(dominant.blue / dominant.count)}, 0.82)` : DEFAULT_ALBUM_TINT;
         if (!cancelled) setTint({ artworkUrl, expanded, color });
       } catch {
         if (!cancelled) setTint({ artworkUrl, expanded, color: DEFAULT_ALBUM_TINT });

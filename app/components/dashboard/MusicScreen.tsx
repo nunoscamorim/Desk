@@ -6,7 +6,7 @@ import { useState } from "react";
 function PlaylistTile({ playlist, pending, onPlay }: { playlist: SpotifyPlaylist; pending: boolean; onPlay: () => void }) {
   return <button type="button" className={`playlist-tile${pending ? " is-pending" : ""}`} aria-label={`Play ${playlist.name}`} disabled={pending} onClick={onPlay}>
     <div className={`playlist-art ${playlist.artworkUrl ? "has-artwork" : ""}`} style={playlist.artworkUrl ? { backgroundImage: `url(${playlist.artworkUrl})` } as CSSProperties : undefined}><span>♫</span></div>
-    <span className="playlist-name">{playlist.name}</span>
+    <span className="playlist-name" title={playlist.name}>{playlist.name}</span>
     <span className="playlist-count">{playlist.trackCount} {playlist.trackCount === 1 ? "track" : "tracks"}</span>
   </button>;
 }
