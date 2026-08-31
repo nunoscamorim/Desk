@@ -11,8 +11,32 @@ import type { DashboardData } from "@/lib/dashboard/types";
 
 type DisplayConfig = { widgets: WidgetConfig[]; accentColor: string; fontFamily: string; canvas: CanvasSize };
 
+/**
+ * Minutes to pretend the next meeting is away, from `?meetingIn=3`.
+ *
+ * A meeting is almost never five minutes out at the moment you want to look at
+ * the card that says so, and the states worth reviewing — the red countdown, an
+ * empty runway — are the ones real data hands you least often. Read from the
+ * URL rather than a control on the page: this is a preview of the display, and
+ * the display has no simulate button.
+ *
+ * Read once, on mount, and off `window` rather than through useSearchParams so
+ * the page needs no Suspense boundary around it.
+ */
+function readSimulatedStart(): { startAt: string; minutesUntil: number } | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URLSearchParams(window.location.search).get("meetingIn");
+  const minutes = Number(raw);
+  if (raw === null || !Number.isFinite(minutes)) return null;
+  return { startAt: new Date(Date.now() + minutes * 60_000).toISOString(), minutesUntil: Math.ceil(minutes) };
+}
+
 export default function PreviewPage() {
   const { settings, brightness } = useDeviceSettings();
+  // Pinned at mount, so it counts down from there instead of being reset to the
+  // same number by every dashboard refresh — crossing the five-minute line is
+  // the thing being watched.
+  const [simulatedStart] = useState(readSimulatedStart);
   // Now playing polls on its own fast interval so a track change shows up in
   // seconds, whatever the display's dashboard refresh is set to.
   const nowPlaying = useNowPlaying();
@@ -34,5 +58,10 @@ export default function PreviewPage() {
   }, [settings.refreshSeconds]);
   if (config === null) return <main className="dashboard-boot" aria-busy="true"><span className="sr-only">Loading preview…</span></main>;
   if (!data) return <main className="dashboard loading-dashboard" aria-busy="true"><span className="sr-only">Loading preview…</span></main>;
-  return <div className="display-surface" style={{ filter: brightness < 100 ? `brightness(${Math.max(brightness, 0) / 100})` : undefined }} data-screen-off={brightness === 0 ? "true" : undefined}><CanvasViewport canvas={config.canvas}><DashboardShell data={nowPlaying === undefined ? data : { ...data, spotifyNowPlaying: nowPlaying }} widgets={config.widgets} accentColor={config.accentColor} fontFamily={config.fontFamily} canvas={config.canvas} /></CanvasViewport></div>;
+  // Only the start time is moved; the meeting is otherwise the real one, so the
+  // title and location on screen are still what the calendar returned.
+  const shown = simulatedStart && data.nextMeeting
+    ? { ...data, nextMeeting: { ...data.nextMeeting, ...simulatedStart } }
+    : data;
+  return <div className="display-surface" style={{ filter: brightness < 100 ? `brightness(${Math.max(brightness, 0) / 100})` : undefined }} data-screen-off={brightness === 0 ? "true" : undefined}><CanvasViewport canvas={config.canvas}><DashboardShell data={nowPlaying === undefined ? shown : { ...shown, spotifyNowPlaying: nowPlaying }} widgets={config.widgets} accentColor={config.accentColor} fontFamily={config.fontFamily} canvas={config.canvas} /></CanvasViewport></div>;
 }

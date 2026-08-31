@@ -28,7 +28,10 @@
   /* One tracking step for every uppercase label; these ran .04em–.1em before. */
   --w-ls-label: .09em;
   --surface-0: #111110; --surface-1: #171716; --surface-2: #181817; --surface-3: #222220; --surface-4: #252522; --label: #b5b2aa;
-  --danger: #e79191; --danger-border: #5a2b2b; --warn: #e3c766; --warn-border: #4a4327; --success: #b8d977; --success-border: #303c1e;
+  --danger: #e79191; --danger-border: #5a2b2b;
+  /* Alert fill, not text: the one colour a whole card is flooded with. --danger
+     is a pale pink tuned for text on dark surfaces and fails under white. */
+  --alert: #c0271d; --warn: #e3c766; --warn-border: #4a4327; --success: #b8d977; --success-border: #303c1e;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: #1c1b18; }
@@ -219,6 +222,28 @@ button { font: inherit; }
 .meeting-rail { position: relative; flex: 1; height: 1px; background: color-mix(in srgb, var(--card-ink, #11120e) 30%, transparent); }
 .meeting-rail i { position: absolute; top: 50%; right: 0; width: 7px; height: 7px; border: 2px solid var(--widget-bg, var(--lime)); border-radius: 50%; background: var(--card-ink, #11120e); transform: translateY(-50%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--card-ink, #11120e) 15%, transparent); }
 .meeting-empty { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: var(--w-gap-2); }.meeting-empty strong { font-size: var(--w-fs-hero); }.meeting-empty span { color: color-mix(in srgb, var(--card-ink, #11120e) 62%, transparent); font-size: var(--w-fs-sub); }
+/* The last five minutes. The card stops being a countdown and becomes a warning:
+   flooded red with white text, so it reads as "leave now" from across the room
+   rather than as one more lime card among several.
+
+   Written to outrank `.configured-widget.has-widget-bg > .card` — a background
+   picked in admin is a preference, and this is not. */
+.next-card.is-imminent, .configured-widget.has-widget-bg > .next-card.is-imminent {
+  --card-ink: #fff;
+  /* The rail dot rings itself in the card's own colour; without this it keeps
+     drawing a lime (or configured) ring on red. */
+  --widget-bg: var(--alert);
+  color: #fff;
+  background-color: var(--alert);
+  transition: background-color .45s ease;
+}
+/* The secondary tones are mixed toward transparent at percentages chosen for
+   near-black ink on lime; the same percentages as white on red land near 3:1 at
+   10px. Lifted to 86% here — 4.7:1, slightly better than the lime card's own —
+   rather than left to fade on the one card that has to be readable. */
+.next-card.is-imminent .meeting-kicker, .next-card.is-imminent .meeting-copy p, .next-card.is-imminent .meeting-countdown small, .next-card.is-imminent .meeting-footer { color: color-mix(in srgb, #fff 86%, transparent); }
+.next-card.is-imminent .meeting-rail { background: color-mix(in srgb, #fff 38%, transparent); }
+@media (prefers-reduced-motion: reduce) { .next-card.is-imminent { transition: none; } }
 .calendar-card { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; padding: 28px var(--w-pad) 20px; background: var(--panel); }
 .calendar-card::after { content: ""; position: absolute; z-index: 2; right: var(--w-pad); bottom: 20px; left: var(--w-pad); height: 34px; pointer-events: none; background: linear-gradient(180deg, transparent, var(--widget-bg, var(--panel)) 92%); }
 .calendar-heading { display: flex; align-items: center; justify-content: space-between; }.calendar-heading > div, .calendar-heading > .calendar-heading-stack { display: flex; flex-direction: column; }.calendar-heading .card-label { margin-bottom: var(--w-gap-2); color: #8f8b83; }.calendar-heading .card-title { font-size: var(--w-fs-title); letter-spacing: -.025em; }.event-count { display: flex; align-items: baseline; gap: var(--w-gap-2); color: var(--ink); font-size: var(--w-fs-hero); font-weight: 700; }.event-count small { color: var(--muted); font-size: var(--w-fs-meta); font-weight: 400; }
